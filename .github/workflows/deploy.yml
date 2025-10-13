@@ -19,6 +19,6 @@ jobs:
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           accountId: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
-          projectName: isekai
+          projectName: isekai-f2i
           directory: out
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
