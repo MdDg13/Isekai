@@ -5,20 +5,42 @@ import { useMemo, useState, useEffect } from "react";
 
 export default function Home() {
   const supabase = useMemo(() => {
-    const url = process.env.NEXT_PUBLIC_SUPABASE_URL as string;
-    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string;
+    const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+    if (!url || !key) {
+      console.warn('Supabase environment variables not found');
+      return null;
+    }
     return createClient(url, key);
   }, []);
 
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<string>("");
   const [diag, setDiag] = useState<string>("");
-  const [user, setUser] = useState<any>(null);
-  const [campaigns, setCampaigns] = useState<any[]>([]);
+  const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
+  const [campaigns, setCampaigns] = useState<{ id: string; name: string; created_at: string }[]>([]);
   const [newCampaignName, setNewCampaignName] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
 
+  const loadCampaigns = async () => {
+    if (!supabase) return;
+    
+    const { data, error } = await supabase
+      .from('campaigns')
+      .select('*')
+      .order('created_at', { ascending: false });
+    
+    if (error) {
+      console.error('Error loading campaigns:', error);
+      setStatus(`Error loading campaigns: ${error.message}`);
+    } else {
+      setCampaigns(data || []);
+    }
+  };
+
   useEffect(() => {
+    if (!supabase) return;
+    
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
@@ -36,24 +58,10 @@ export default function Home() {
         setCampaigns([]);
       }
     });
-  }, [supabase.auth]);
-
-  const loadCampaigns = async () => {
-    const { data, error } = await supabase
-      .from('campaigns')
-      .select('*')
-      .order('created_at', { ascending: false });
-    
-    if (error) {
-      console.error('Error loading campaigns:', error);
-      setStatus(`Error loading campaigns: ${error.message}`);
-    } else {
-      setCampaigns(data || []);
-    }
-  };
+  }, [supabase]);
 
   const createCampaign = async () => {
-    if (!newCampaignName.trim()) return;
+    if (!newCampaignName.trim() || !user || !supabase) return;
     
     setStatus("Creating campaign...");
     const slug = newCampaignName.toLowerCase().replace(/[^a-z0-9]/g, '-');
@@ -88,6 +96,8 @@ export default function Home() {
   };
 
   const onSignIn = async () => {
+    if (!supabase) return;
+    
     setStatus("Sending magic link...");
     const { error } = await supabase.auth.signInWithOtp({
       email,
@@ -97,6 +107,8 @@ export default function Home() {
   };
 
   const onSignOut = async () => {
+    if (!supabase) return;
+    
     await supabase.auth.signOut();
     setUser(null);
     setCampaigns([]);
@@ -122,7 +134,7 @@ export default function Home() {
         <h1 className="font-display text-3xl">Isekai</h1>
         {user ? (
           <div className="flex items-center justify-between">
-            <p className="text-sm text-[var(--color-muted)]">Welcome, {user.email}</p>
+            <p className="text-sm text-[var(--color-muted)]">Welcome, {user.email || 'User'}</p>
             <button
               onClick={onSignOut}
               className="text-xs underline opacity-70"
