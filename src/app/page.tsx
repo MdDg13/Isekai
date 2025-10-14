@@ -31,8 +31,9 @@ export default function Home() {
         headers: { apikey: key, Authorization: `Bearer ${key}` },
       });
       setDiag(`GET /auth/v1/settings → ${res.status}`);
-    } catch (e: any) {
-      setDiag(`Diag error: ${e?.message ?? e}`);
+    } catch (error: unknown) {
+      const message = error instanceof Error ? error.message : String(error);
+      setDiag(`Diag error: ${message}`);
     }
   };
 
