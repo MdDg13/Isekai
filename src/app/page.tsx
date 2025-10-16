@@ -66,28 +66,14 @@ export default function Home() {
     setStatus("Creating campaign...");
     const slug = newCampaignName.toLowerCase().replace(/[^a-z0-9]/g, '-');
     
-    const { data, error } = await supabase
-      .from('campaigns')
-      .insert({
-        name: newCampaignName.trim(),
-        slug: slug,
-        created_by: user.id
-      })
-      .select()
-      .single();
+    const { data, error } = await supabase.rpc('create_campaign_with_dm', {
+      p_name: newCampaignName.trim(),
+      p_slug: slug,
+    });
 
     if (error) {
       setStatus(`Error creating campaign: ${error.message}`);
     } else {
-      // Add user as DM
-      await supabase
-        .from('campaign_members')
-        .insert({
-          campaign_id: data.id,
-          user_id: user.id,
-          role: 'dm'
-        });
-      
       setStatus("Campaign created!");
       setNewCampaignName("");
       setShowCreateForm(false);
