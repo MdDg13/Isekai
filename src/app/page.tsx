@@ -155,6 +155,12 @@ export default function Home() {
                   <div key={campaign.id} className="rounded border border-[var(--color-border)] p-3">
                     <h3 className="font-medium">{campaign.name}</h3>
                     <p className="text-xs text-[var(--color-muted)]">Created {new Date(campaign.created_at).toLocaleDateString()}</p>
+                    <a
+                      href={`/campaign/${campaign.id}`}
+                      className="mt-2 inline-block rounded-md bg-[var(--color-primary)] px-3 py-1 text-xs font-medium text-white hover:bg-[var(--primary-hover)]"
+                    >
+                      Open
+                    </a>
                   </div>
                 ))}
               </div>
