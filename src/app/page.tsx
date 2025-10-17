@@ -66,7 +66,7 @@ export default function Home() {
     setStatus("Creating campaign...");
     const slug = newCampaignName.toLowerCase().replace(/[^a-z0-9]/g, '-');
     
-    const { data, error } = await supabase.rpc('create_campaign_with_dm', {
+    const { error } = await supabase.rpc('create_campaign_with_dm', {
       p_name: newCampaignName.trim(),
       p_slug: slug,
     });

@@ -4,6 +4,11 @@ import { createClient } from "@supabase/supabase-js";
 import { useMemo, useState, useEffect } from "react";
 import { useParams } from "next/navigation";
 
+// This is required for static export with dynamic routes
+export async function generateStaticParams() {
+  return [];
+}
+
 export default function CampaignPage() {
   const params = useParams();
   const campaignId = params.id as string;
@@ -77,7 +82,7 @@ export default function CampaignPage() {
     
     setStatus("Creating entity...");
     
-    const { data, error } = await supabase.rpc('create_entity', {
+    const { error } = await supabase.rpc('create_entity', {
       p_campaign_id: campaignId,
       p_type: newEntity.type,
       p_title: newEntity.title.trim(),
