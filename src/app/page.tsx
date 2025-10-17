@@ -2,6 +2,7 @@
 
 import { createClient } from "@supabase/supabase-js";
 import { useMemo, useState, useEffect } from "react";
+import Link from "next/link";
 
 export default function Home() {
   const supabase = useMemo(() => {
@@ -155,12 +156,12 @@ export default function Home() {
                   <div key={campaign.id} className="rounded border border-[var(--color-border)] p-3">
                     <h3 className="font-medium">{campaign.name}</h3>
                     <p className="text-xs text-[var(--color-muted)]">Created {new Date(campaign.created_at).toLocaleDateString()}</p>
-                    <a
+                    <Link
                       href={`/campaign/${campaign.id}`}
                       className="mt-2 inline-block rounded-md bg-[var(--color-primary)] px-3 py-1 text-xs font-medium text-white hover:bg-[var(--primary-hover)]"
                     >
                       Open
-                    </a>
+                    </Link>
                   </div>
                 ))}
               </div>

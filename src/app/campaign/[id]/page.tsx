@@ -1,11 +1,9 @@
-'use client';
-
-import { useParams } from 'next/navigation';
 import CampaignClient from './campaign-client';
 
-export default function CampaignPage() {
-  const params = useParams();
-  const campaignId = params.id as string;
-  
-  return <CampaignClient campaignId={campaignId} />;
+interface PageProps {
+  params: { id: string };
+}
+
+export default function CampaignPage({ params }: PageProps) {
+  return <CampaignClient campaignId={params.id} />;
 }
