@@ -1,6 +1,6 @@
 import CampaignClient from './campaign-client';
 
-// This is required for static export with dynamic routes
+// Required for static export - returns empty array to disable static generation
 export async function generateStaticParams() {
   return [];
 }
