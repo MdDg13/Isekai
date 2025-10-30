@@ -1,5 +1,10 @@
 import CampaignClient from '../[id]/campaign-client';
 
+// Required for static export - returns empty array to disable static generation
+export async function generateStaticParams() {
+  return [];
+}
+
 interface PageProps {
   params: { slug: string[] };
 }

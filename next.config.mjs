@@ -1,6 +1,6 @@
 ﻿/** @type {import('next').NextConfig} */
 const nextConfig = { 
-  output: 'export',
+  // Switch to Node runtime so API routes work on Cloudflare Pages
   trailingSlash: true,
   images: {
     unoptimized: true
