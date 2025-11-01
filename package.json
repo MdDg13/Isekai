@@ -10,7 +10,8 @@
     "lint": "eslint",
     "test": "vitest run",
     "test:ui": "vitest",
-    "e2e": "playwright test"
+    "e2e": "playwright test",
+    "auto-fix": "powershell -ExecutionPolicy Bypass -File scripts/auto-fix-cycle.ps1"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.75.0",
