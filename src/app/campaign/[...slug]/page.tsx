@@ -6,10 +6,11 @@ export async function generateStaticParams() {
 }
 
 interface PageProps {
-  params: { slug: string[] };
+  params: Promise<{ slug: string[] }>;
 }
 
-export default function CampaignPage({ params }: PageProps) {
-  const campaignId = params.slug[0];
+export default async function CampaignPage({ params }: PageProps) {
+  const { slug } = await params;
+  const campaignId = slug[0];
   return <CampaignClient campaignId={campaignId} />;
 }
