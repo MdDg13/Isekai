@@ -1,9 +1,11 @@
-# Automated Build/Test Cycle Script for Isekai Project
+﻿# Automated Build/Test Cycle Script for Isekai Project
 # Monitors deployments, reads logs, makes fixes, and iterates automatically
 
 param(
     [int]$MaxFailures = 10,
-    [int]$CheckInterval = 30,  # seconds between checks
+    [int]$CheckInterval = 10,  # seconds between checks (optimized for 30-40s deployments)
+    [int]$DeploymentTimeout = 120,  # max seconds to wait for deployment (2 minutes)
+    [int]$LogCommitTimeout = 90,  # max seconds to wait for logs to appear in GitHub (1.5 minutes)
     [string]$ProgressLog = "scripts/progress-log.md"
 )
 
@@ -46,54 +48,79 @@ function Get-LatestCommit {
 }
 
 function Wait-ForGitHubDeployment {
-    param([string]$CommitSha, [int]$MaxWait = 600)
+    param([string]$CommitSha, [int]$MaxWait = $DeploymentTimeout)
     
-    Write-ProgressLog "Waiting for GitHub Actions deployment to complete for commit $($CommitSha.Substring(0,7))..."
+    Write-ProgressLog "Waiting for GitHub Actions deployment (timeout: ${MaxWait}s, check every: ${CheckInterval}s)..."
     $elapsed = 0
-    $lastCommit = $CommitSha
+    $lastLogTime = Get-Date
+    $workflowStartTime = Get-Date
     
     while ($elapsed -lt $MaxWait) {
         Start-Sleep -Seconds $CheckInterval
         $elapsed += $CheckInterval
         
         # Check if new commit exists (deployment logs committed)
-        git fetch origin main --quiet 2>&1 | Out-Null
-        git pull origin main --quiet 2>&1 | Out-Null
+        try {
+            git fetch origin main --quiet 2>&1 | Out-Null
+            git pull origin main --quiet 2>&1 | Out-Null
+        } catch {
+            Write-ProgressLog "Warning: Git fetch/pull failed - $($_.Exception.Message)"
+        }
         
         $newLogs = Get-ChildItem "deployment-logs" -Filter "build-*.log" -ErrorAction SilentlyContinue | 
             Sort-Object LastWriteTime -Descending | 
             Select-Object -First 1
         
         if ($newLogs) {
-            # Check if log is newer than our commit
             $logContent = Get-Content $newLogs.FullName -Raw
             
-            # Check if this is for our commit
-            if ($logContent -match $CommitSha.Substring(0,7)) {
+            # Check if this is for our commit (check commit SHA in log content or summary)
+            $summaryFiles = Get-ChildItem "deployment-logs" -Filter "summary-*.md" -ErrorAction SilentlyContinue |
+                Sort-Object LastWriteTime -Descending | 
+                Select-Object -First 1
+            
+            $isOurCommit = $false
+            if ($summaryFiles) {
+                $summaryContent = Get-Content $summaryFiles.FullName -Raw
+                if ($summaryContent -match $CommitSha.Substring(0,7)) {
+                    $isOurCommit = $true
+                }
+            }
+            
+            # Also check if log content matches our commit timeframe
+            if ($logContent -match $CommitSha.Substring(0,7) -or $isOurCommit) {
                 # Check build result
-                if ($logContent -match 'Failed|Error.*build') {
+                if ($logContent -match 'Failed|Error.*build|Build error occurred') {
                     Write-ProgressLog "Deployment completed - Build failed (elapsed: ${elapsed}s)"
-                    return $false
+                    return @{ Success = $false; HasLogs = $true }
                 }
-                elseif ($logContent -match 'Generating static pages|Route.*Size') {
-                    Write-ProgressLog "Deployment completed - Build succeeded (elapsed: ${elapsed}s)"
-                    return $true
+                elseif ($logContent -match 'Generating static pages|Route.*Size|Creating an optimized|✓ Compiled') {
+                    # Successful build patterns
+                    if ($logContent -notmatch 'Build error|Failed') {
+                        Write-ProgressLog "Deployment completed - Build succeeded (elapsed: ${elapsed}s)"
+                        return @{ Success = $true; HasLogs = $true }
+                    }
                 }
+                
+                # Log found but status unclear
+                $lastLogTime = Get-Date
             }
         }
         
-        # Alternative: Check for gh CLI if available
+        # Alternative: Check for gh CLI if available (faster detection)
         if (Get-Command gh -ErrorAction SilentlyContinue) {
             try {
-                $workflows = gh run list --limit 1 --json status,conclusion,headSha --jq '.[0]' 2>$null
+                $workflows = gh run list --limit 1 --json status,conclusion,headSha,createdAt,updatedAt --jq '.[0]' 2>$null
                 if ($workflows) {
                     $wfData = $workflows | ConvertFrom-Json
                     if ($wfData.headSha -eq $CommitSha) {
                         if ($wfData.status -eq "completed") {
-                            Write-ProgressLog "Deployment completed with status: $($wfData.conclusion)"
-                            return $wfData.conclusion -eq "success"
+                            Write-ProgressLog "Deployment completed with status: $($wfData.conclusion) (elapsed: ${elapsed}s)"
+                            return @{ Success = ($wfData.conclusion -eq "success"); HasLogs = $true }
                         }
-                        Write-ProgressLog "Deployment status: $($wfData.status) (elapsed: ${elapsed}s)"
+                        if ($elapsed % 30 -eq 0) {  # Only log every 30s to reduce noise
+                            Write-ProgressLog "Deployment status: $($wfData.status) (elapsed: ${elapsed}s)"
+                        }
                     }
                 }
             } catch {
@@ -101,11 +128,25 @@ function Wait-ForGitHubDeployment {
             }
         }
         
-        Write-ProgressLog "Waiting for deployment... (${elapsed}s elapsed)"
+        # Warning if deployment is taking too long
+        if ($elapsed -ge 60 -and $elapsed % 30 -eq 0) {
+            Write-ProgressLog "Deployment taking longer than expected (${elapsed}s elapsed, typical: 30-40s)"
+        }
+        
+        # Check if stuck (no logs after reasonable time)
+        if ($elapsed -gt 90) {
+            $timeSinceLastLog = ((Get-Date) - $lastLogTime).TotalSeconds
+            if ($timeSinceLastLog -gt 60 -and -not $newLogs) {
+                Write-ProgressLog "WARNING: No logs found after ${elapsed}s - deployment may be stuck or log commit failed"
+            }
+        }
     }
     
-    Write-ProgressLog "Timeout waiting for deployment"
-    return $false
+    Write-ProgressLog "TIMEOUT: Deployment exceeded ${MaxWait}s timeout (typical: 30-40s) - possible issues:"
+    Write-ProgressLog "  - GitHub Actions workflow stuck/failed"
+    Write-ProgressLog "  - Cloudflare deployment delayed"
+    Write-ProgressLog "  - Log commit step failed (check Actions logs)"
+    return @{ Success = $false; HasLogs = $false; Timeout = $true }
 }
 
 function Get-LatestBuildLog {
@@ -247,10 +288,31 @@ function Run-Cycle {
         }
         
         # Wait for deployment
-        $success = Wait-ForGitHubDeployment -CommitSha $currentCommit -MaxWait 600
+        $deployResult = Wait-ForGitHubDeployment -CommitSha $currentCommit -MaxWait $DeploymentTimeout
+        
+        # Handle timeout or missing logs
+        if ($deployResult.Timeout -or -not $deployResult.HasLogs) {
+            Write-ProgressLog "Deployment issue detected - waiting additional ${LogCommitTimeout}s for logs..."
+            $logWaitElapsed = 0
+            while ($logWaitElapsed -lt $LogCommitTimeout) {
+                Start-Sleep -Seconds $CheckInterval
+                $logWaitElapsed += $CheckInterval
+                
+                git pull origin main --quiet 2>&1 | Out-Null
+                $logContent = Get-LatestBuildLog
+                if ($logContent) {
+                    Write-ProgressLog "Logs found after additional ${logWaitElapsed}s wait"
+                    break
+                }
+                
+                if ($logWaitElapsed % 20 -eq 0) {
+                    Write-ProgressLog "Still waiting for logs... (${logWaitElapsed}s)"
+                }
+            }
+        }
         
         # Pull latest to get logs
-        git pull origin main 2>&1 | Out-Null
+        git pull origin main --quiet 2>&1 | Out-Null
         
         # Get and analyze logs
         $logContent = Get-LatestBuildLog
@@ -258,7 +320,7 @@ function Run-Cycle {
             $issues = Analyze-BuildFailure -LogContent $logContent
             Write-ProgressLog "Detected issues: $($issues.Keys -join ', ')"
             
-            if ($success) {
+            if ($deployResult.Success) {
                 $script:SuccessCount++
                 Write-ProgressLog "✓ SUCCESS - Build passed!"
                 break
@@ -271,14 +333,26 @@ function Run-Cycle {
                 if ($fixApplied) {
                     Write-ProgressLog "Fix applied, pushing and waiting..."
                     git push origin main
-                    Start-Sleep -Seconds $CheckInterval
+                    Start-Sleep -Seconds 5  # Short wait before checking again
                 } else {
                     Write-ProgressLog "No automatic fix available, manual intervention needed"
                     break
                 }
             }
         } else {
-            Write-ProgressLog "No build log found, waiting longer..."
+            Write-ProgressLog "ERROR: No build log found after deployment timeout"
+            Write-ProgressLog "Possible causes:"
+            Write-ProgressLog "  - GitHub Actions workflow failed before build step"
+            Write-ProgressLog "  - Log commit step failed (check Actions: Commit deployment logs step)"
+            Write-ProgressLog "  - Deployment still in progress (check manually)"
+            
+            $script:FailureCount++
+            if ($script:FailureCount -ge $MaxFailures) {
+                Write-ProgressLog "Max failures reached without logs - stopping"
+                break
+            }
+            
+            Write-ProgressLog "Waiting ${CheckInterval}s before retry..."
             Start-Sleep -Seconds $CheckInterval
         }
     }
@@ -287,7 +361,7 @@ function Run-Cycle {
     Write-ProgressLog "Attempts: $script:AttemptCount | Success: $script:SuccessCount | Failures: $script:FailureCount"
     
     if ($script:FailureCount -ge $MaxFailures) {
-        Write-ProgressLog "`n⚠ MAX FAILURES REACHED - Analyzing methodology..."
+        Write-ProgressLog "`nΓÜá MAX FAILURES REACHED - Analyzing methodology..."
         Write-AnalysisReport
     }
 }

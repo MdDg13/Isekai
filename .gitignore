@@ -16,9 +16,6 @@
 # deployment logs (tracked in git for debugging)
 # /deployment-logs
 
-# auto-fix progress logs
-scripts/progress-log.md
-
 # next.js
 /.next/
 /out/
