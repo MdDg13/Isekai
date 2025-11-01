@@ -1,7 +1,7 @@
 import CampaignClient from './campaign-client';
 
 // Required for static export - returns empty array to disable static generation
-export function generateStaticParams() {
+export async function generateStaticParams() {
   return [];
 }
 
