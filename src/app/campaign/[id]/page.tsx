@@ -1,15 +1,15 @@
 import CampaignClient from './campaign-client';
 
 // Required for static export - returns empty array to disable static generation
-export async function generateStaticParams() {
+// Must be synchronous for Next.js 15.5.4 + static export
+export function generateStaticParams() {
   return [];
 }
 
 interface PageProps {
-  params: Promise<{ id: string }>;
+  params: { id: string };
 }
 
-export default async function CampaignPage({ params }: PageProps) {
-  const { id } = await params;
-  return <CampaignClient campaignId={id} />;
+export default function CampaignPage({ params }: PageProps) {
+  return <CampaignClient campaignId={params.id} />;
 }
