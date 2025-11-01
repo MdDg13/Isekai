@@ -13,6 +13,9 @@
 # testing
 /coverage
 
+# deployment logs (tracked in git for debugging)
+# /deployment-logs
+
 # next.js
 /.next/
 /out/

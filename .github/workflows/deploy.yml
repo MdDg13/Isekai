@@ -8,13 +8,25 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      
       - uses: actions/setup-node@v4
         with:
           node-version: 20
           cache: npm
-      - run: npm ci
-      - run: npm run build
-      - name: Publish
+      
+      - name: Install dependencies
+        run: npm ci
+        continue-on-error: false
+      
+      - name: Build project
+        id: build
+        run: |
+          mkdir -p deployment-logs
+          npm run build 2>&1 | tee deployment-logs/build-$(date +%Y%m%d-%H%M%S).log
+        continue-on-error: false
+      
+      - name: Publish to Cloudflare Pages
+        id: deploy
         uses: cloudflare/pages-action@v1
         with:
           apiToken: ${{ secrets.CLOUDFLARE_API_TOKEN }}
@@ -22,3 +34,63 @@ jobs:
           projectName: isekai-f2i
           directory: out
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
+        continue-on-error: true
+      
+      - name: Fetch deployment logs from Cloudflare API
+        if: always()
+        id: fetch-logs
+        env:
+          CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+          CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
+        run: |
+          if [ -n "${{ steps.deploy.outputs.deployment_id }}" ]; then
+            DEPLOY_ID="${{ steps.deploy.outputs.deployment_id }}"
+            echo "Fetching logs for deployment: $DEPLOY_ID"
+            
+            # Fetch deployment details and logs
+            curl -s -X GET \
+              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/isekai-f2i/deployments/$DEPLOY_ID/history/logs" \
+              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              -H "Content-Type: application/json" \
+              > deployment-logs/cloudflare-deploy-${{ github.sha }}.json || echo "Failed to fetch logs"
+          else
+            echo "No deployment ID available. Checking latest deployment..."
+            # Get latest deployment ID
+            LATEST_DEPLOY=$(curl -s -X GET \
+              "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/isekai-f2i/deployments" \
+              -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+              -H "Content-Type: application/json" \
+              | jq -r '.result[0].id // empty')
+            
+            if [ -n "$LATEST_DEPLOY" ]; then
+              curl -s -X GET \
+                "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/isekai-f2i/deployments/$LATEST_DEPLOY/history/logs" \
+                -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
+                -H "Content-Type: application/json" \
+                > deployment-logs/cloudflare-deploy-${{ github.sha }}.json || echo "Failed to fetch logs"
+            fi
+          fi
+        continue-on-error: true
+      
+      - name: Save workflow logs
+        if: always()
+        run: |
+          mkdir -p deployment-logs
+          echo "## Deployment Summary" > deployment-logs/summary-${{ github.sha }}.md
+          echo "" >> deployment-logs/summary-${{ github.sha }}.md
+          echo "- **Commit**: ${{ github.sha }}" >> deployment-logs/summary-${{ github.sha }}.md
+          echo "- **Author**: ${{ github.actor }}" >> deployment-logs/summary-${{ github.sha }}.md
+          echo "- **Timestamp**: $(date -u +'%Y-%m-%d %H:%M:%S UTC')" >> deployment-logs/summary-${{ github.sha }}.md
+          echo "- **Build Status**: ${{ steps.build.outcome }}" >> deployment-logs/summary-${{ github.sha }}.md
+          echo "- **Deploy Status**: ${{ steps.deploy.outcome }}" >> deployment-logs/summary-${{ github.sha }}.md
+          echo "- **Deployment ID**: ${{ steps.deploy.outputs.deployment_id || 'N/A' }}" >> deployment-logs/summary-${{ github.sha }}.md
+          echo "- **Deployment URL**: ${{ steps.deploy.outputs.url || 'N/A' }}" >> deployment-logs/summary-${{ github.sha }}.md
+      
+      - name: Commit deployment logs
+        if: always()
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add deployment-logs/ || true
+          git diff --staged --quiet || git commit -m "ci: save deployment logs for ${{ github.sha }}"
+          git push || echo "No changes to push or push failed"
