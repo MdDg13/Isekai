@@ -57,14 +57,30 @@ create table if not exists public.npc (
   campaign_id uuid not null references public.campaign(id) on delete cascade,
   name text not null,
   bio text,
+  backstory text,
   traits jsonb,
   stats jsonb,
   image_url text,
   voice_id text,
+  location_id uuid references public.location(id) on delete set null,
+  affiliations jsonb default '[]', -- array of { type, name, ref_id }
+  relationships jsonb default '{}', -- map of subject_id -> { attitude: -100..+100, notes }
+  connections jsonb default '[]', -- array of { kind: 'npc'|'location'|'item', ref_id, label }
   visibility public.visibility not null default 'dm_only',
   permitted_member_ids uuid[] default '{}',
   created_at timestamptz default now(),
   created_by uuid
+);
+
+-- Interaction log for NPCs
+create table if not exists public.npc_interaction (
+  id uuid primary key default gen_random_uuid(),
+  campaign_id uuid not null references public.campaign(id) on delete cascade,
+  npc_id uuid not null references public.npc(id) on delete cascade,
+  entry text not null,
+  by_user uuid,
+  metadata jsonb,
+  created_at timestamptz default now()
 );
 
 create table if not exists public.location (

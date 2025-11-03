@@ -11,6 +11,7 @@ alter table public.beat enable row level security;
 alter table public.encounter enable row level security;
 alter table public.shop enable row level security;
 alter table public.scene enable row level security;
+alter table public.npc_interaction enable row level security;
 
 -- Helpers
 create or replace function public.is_dm(c_id uuid, u_id uuid)
@@ -61,6 +62,16 @@ create policy npc_read on public.npc for select
 
 create policy npc_write on public.npc for all
   using (public.is_dm(campaign_id, auth.uid())) with check (public.is_dm(campaign_id, auth.uid()));
+
+-- npc interaction logs
+create policy npc_interaction_read on public.npc_interaction for select using (
+  public.is_dm(campaign_id, auth.uid()) or public.is_member(campaign_id, auth.uid())
+);
+create policy npc_interaction_write on public.npc_interaction for all using (
+  public.is_dm(campaign_id, auth.uid())
+) with check (
+  public.is_dm(campaign_id, auth.uid())
+);
 
 -- Repeat the same visibility pattern for other narrative tables
 create policy location_read on public.location for select using (

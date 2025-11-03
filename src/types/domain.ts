@@ -32,14 +32,29 @@ export interface Npc {
   campaign_id: string;
   name: string;
   bio?: string;
+  backstory?: string;
   traits?: unknown;
   stats?: unknown;
   image_url?: string;
   voice_id?: string;
+  location_id?: string | null;
+  affiliations?: Array<{ type?: string; name?: string; ref_id?: string }>; 
+  relationships?: Record<string, { attitude?: number; notes?: string }>;
+  connections?: Array<{ kind: 'npc' | 'location' | 'item'; ref_id: string; label?: string }>;
   visibility: Visibility;
   permitted_member_ids?: string[];
   created_at: string;
   created_by?: string;
+}
+
+export interface NpcInteraction {
+  id: string;
+  campaign_id: string;
+  npc_id: string;
+  entry: string;
+  by_user?: string;
+  metadata?: unknown;
+  created_at: string;
 }
 
 export interface Location {
