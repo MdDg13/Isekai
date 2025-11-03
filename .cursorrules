@@ -1,0 +1,349 @@
+# Isekai Project - Cursor AI Rules
+
+## Project Overview
+Isekai is a D&D world-building application built with Next.js 15.5.4, React 19, TypeScript, Supabase, and deployed to Cloudflare Pages. It's a PWA that will run on browsers and Android via Capacitor.
+
+## Core Principles
+
+### 1. Code Quality & Standards
+- Always use TypeScript with strict type checking
+- Prefer explicit types over `any`; use `unknown` when type is truly unknown
+- Follow React 19 and Next.js 15.5.4 patterns and conventions
+- Use ESLint and fix all warnings before committing
+- Write self-documenting code with clear variable names
+- Add JSDoc comments for complex functions and exported APIs
+
+### 2. Next.js 15.5.4 Specific Rules
+
+#### Static Export Compatibility
+- **Static export** (`output: 'export'`) is enabled in `next.config.mjs`
+- When using static export:
+  - `generateStaticParams()` must be **synchronous** (not async) for detection to work
+  - `params` in page components must be **non-Promise** types: `{ id: string }` not `Promise<{ id: string }>`
+  - Page components should be **synchronous** (not async) when using static export
+  - Dynamic routes MUST export `generateStaticParams()` - even if returning empty array `[]`
+  
+#### Server vs Client Components
+- Default to Server Components unless:
+  - Component uses React hooks (`useState`, `useEffect`, etc.)
+  - Component uses browser APIs (`window`, `localStorage`, etc.)
+  - Component has event handlers (`onClick`, `onChange`, etc.)
+- Client Components must have `"use client"` directive at the top
+- Keep Server Components async when fetching data
+- Pass data from Server to Client Components via props
+
+#### Route Patterns
+- Use `[id]` for single dynamic segments, not `[...slug]` catch-all (causes conflicts)
+- Always provide `generateStaticParams()` for dynamic routes with static export
+- Use `trailingSlash: true` in Next.js config for Cloudflare Pages compatibility
+
+### 3. TypeScript Patterns
+
+#### Type Definitions
+```typescript
+// ✅ GOOD: Explicit types
+interface Campaign {
+  id: string;
+  name: string;
+  created_at: string;
+}
+
+// ✅ GOOD: Type-safe props
+interface PageProps {
+  params: { id: string }; // Non-Promise for static export
+}
+
+// ❌ BAD: Using any
+function processData(data: any) { ... }
+
+// ✅ GOOD: Use unknown when type is truly unknown
+function processData(data: unknown) {
+  if (typeof data === 'string') { ... }
+}
+```
+
+#### React 19 Patterns
+- Use new `use()` hook for promises when available
+- Prefer Server Components with async data fetching
+- Use `useMemo` and `useCallback` judiciously (React 19 is more optimized)
+
+### 4. Supabase Integration
+
+#### Client Creation
+- Use `createClient` from `@supabase/supabase-js`
+- Create Supabase client in Client Components with `useMemo` to avoid recreating
+- Never commit service role keys to git; use environment variables
+- Use RPC functions for complex operations (`create_entity`, `create_campaign_with_dm`)
+
+#### Error Handling
+- Always check for Supabase errors: `if (error) { handle(error) }`
+- Display user-friendly error messages
+- Log detailed errors for debugging
+
+#### RLS (Row Level Security)
+- Use SECURITY DEFINER RPC functions for operations that need to bypass RLS
+- Ensure all RPCs have proper input validation
+- Test RLS policies thoroughly
+
+### 5. File Structure & Organization
+
+```
+src/
+  app/                    # Next.js App Router
+    layout.tsx           # Root layout
+    page.tsx             # Home page
+    campaign/
+      [id]/
+        page.tsx         # Server component (campaign detail)
+        campaign-client.tsx  # Client component (interactive UI)
+  # Components organized by feature, not type
+
+functions/               # Cloudflare Pages Functions
+  api/
+    *.ts                 # API routes as Cloudflare Functions
+
+scripts/                 # Automation scripts
+  auto-fix-cycle.ps1     # Automated build/test cycle
+  check-logs.ps1         # Quick log checker
+
+docs/                    # Project documentation
+  CURSOR_CONTEXT.md     # Project context
+  MIGRATION.md          # Setup guide
+```
+
+### 6. Deployment & CI/CD
+
+#### Cloudflare Pages
+- Static export required (`output: 'export'`)
+- Images must be unoptimized: `images: { unoptimized: true }`
+- Use Cloudflare Pages Functions for API routes (not Next.js API routes)
+- Environment variables must be set in Cloudflare Pages dashboard
+- Deployment logs are automatically saved to `deployment-logs/` via GitHub Actions
+
+#### GitHub Actions Workflow
+- Workflow auto-captures build and deployment logs
+- Logs are committed back to repo in `deployment-logs/`
+- Always check deployment logs after pushing commits
+- Use `npm run check-logs` to quickly check latest deployment status
+
+#### Automated Testing
+- Before committing, run: `npm run lint`, `npm run test`, `npm run build`
+- Use `npm run auto-fix` to run automated build/test cycle (monitors deployments)
+- E2E tests in `tests/e2e/` using Playwright
+- Unit tests with Vitest
+
+### 7. Environment Variables
+
+#### Required Variables
+```env
+# Local (.env.local)
+NEXT_PUBLIC_SUPABASE_URL=https://xblkaezmfdhchndhkjsv.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key>
+
+# Cloudflare Pages (set in dashboard)
+NEXT_PUBLIC_SUPABASE_URL
+NEXT_PUBLIC_SUPABASE_ANON_KEY
+SUPABASE_SERVICE_ROLE_KEY  # For server-side operations
+E2E_BYPASS_TOKEN           # For E2E tests
+E2E_CAMPAIGN_ID           # Optional: test campaign ID
+CLOUDFLARE_API_TOKEN       # For GitHub Actions deployment
+```
+
+- Never commit `.env.local` (already in `.gitignore`)
+- Use `NEXT_PUBLIC_` prefix for client-accessible variables
+- Service role key should only be used server-side (Cloudflare Functions)
+
+### 8. Git Workflow
+
+#### Commit Messages
+- Use conventional commits: `fix:`, `feat:`, `docs:`, `refactor:`, etc.
+- Be descriptive: explain what and why, not just what
+- Reference issues if applicable
+
+#### Branch Strategy
+- Work on `main` branch directly (private repo)
+- Always pull before pushing to avoid conflicts
+- Test locally before pushing: `npm run build`
+
+### 9. Common Pitfalls & Solutions
+
+#### Issue: "generateStaticParams() is missing" with static export
+**Solution**: 
+1. Ensure function is synchronous: `export function generateStaticParams()`
+2. Ensure params are non-Promise: `params: { id: string }`
+3. Ensure page component is synchronous (not async)
+4. Function must be exported (not just defined)
+
+#### Issue: API routes don't work with static export
+**Solution**: Move API logic to Cloudflare Pages Functions in `functions/api/`
+
+#### Issue: Build works locally but fails on Cloudflare
+**Solution**: 
+1. Check deployment logs in `deployment-logs/`
+2. Verify environment variables are set in Cloudflare dashboard
+3. Ensure `output: 'export'` in `next.config.mjs`
+4. Check for Node.js version compatibility
+
+#### Issue: TypeScript errors after changes
+**Solution**: 
+1. Run `npm run lint` to see all issues
+2. Fix type errors before committing
+3. Use `@ts-expect-error` only when absolutely necessary, with explanation
+
+### 10. When Making Changes
+
+#### Before Committing
+1. ✅ Run `npm run lint` - fix all warnings
+2. ✅ Run `npm run build` - ensure build succeeds
+3. ✅ Run `npm run test` - ensure tests pass
+4. ✅ Check TypeScript compilation: `npx tsc --noEmit`
+5. ✅ Verify changes work in dev: `npm run dev`
+
+#### After Committing
+1. Push to GitHub: `git push origin main`
+2. Wait ~30-40 seconds for Cloudflare deployment
+3. Check logs: `npm run check-logs` or check `deployment-logs/`
+4. If deployment fails, check logs and fix issues
+5. Use `npm run auto-fix` for automated iteration if needed
+
+#### When Adding New Features
+1. Start with types/interfaces
+2. Implement Server Component for data fetching
+3. Create Client Component for interactivity
+4. Add error handling and loading states
+5. Write tests (unit and/or E2E)
+6. Update documentation in `docs/` if needed
+
+### 11. Testing Strategy
+
+#### Unit Tests (Vitest)
+- Test utility functions, helpers, and pure logic
+- Mock Supabase client for database operations
+- Use `@testing-library/react` for component tests
+
+#### E2E Tests (Playwright)
+- Test full user flows
+- Test authentication, campaign creation, entity management
+- Use E2E bypass token for authenticated operations
+- Tests in `tests/e2e/`
+
+#### Manual Testing Checklist
+- ✅ Test on dev server (`npm run dev`)
+- ✅ Test production build locally (`npm run build && npm run start`)
+- ✅ Verify deployment on Cloudflare Pages
+- ✅ Test on mobile device (PWA capabilities)
+
+### 12. Performance Considerations
+
+- Use `useMemo` for expensive computations
+- Use `useCallback` for stable function references
+- Optimize images (though unoptimized for static export)
+- Lazy load heavy components when possible
+- Minimize bundle size - analyze with `npm run build`
+
+### 13. Documentation
+
+- Keep `docs/CURSOR_CONTEXT.md` updated with current state
+- Document complex logic with inline comments
+- Update `docs/MIGRATION.md` when setup changes
+- Add to `docs/PROJECT_HISTORY.md` for significant milestones
+
+### 14. AI Assistant Guidelines
+
+When working with Cursor AI:
+- Always reference these rules when making changes
+- Check existing patterns in codebase before creating new ones
+- Read related documentation files before making architectural changes
+- When fixing bugs, explain the root cause in commit message
+- When adding features, consider static export compatibility
+- Test changes locally before suggesting commits
+- Use the automated tools (`check-logs`, `auto-fix`) when appropriate
+
+#### Preventing Command Hangs
+**CRITICAL**: Never execute commands that can hang or wait indefinitely:
+- ❌ NEVER run `npm run dev` or long-running processes without `-Background` flag
+- ❌ NEVER run commands that wait for user input (use non-interactive flags)
+- ❌ NEVER run `watch` commands or file watchers
+- ❌ NEVER use `-Wait` flag without timeout or in non-interactive contexts
+- ✅ Use `-Background` flag for processes that should run continuously
+- ✅ Always provide timeouts for network/API calls
+- ✅ Use `Start-Job` or background execution for monitoring scripts
+- ✅ Cancel any command that takes >30 seconds unless explicitly needed
+- ✅ For long operations, break into smaller steps with progress checks
+- ✅ Test commands first with dry-run or quick validation before full execution
+
+### 15. Special Considerations
+
+#### Static Export Limitations
+- No server-side API routes (use Cloudflare Functions instead)
+- No incremental static regeneration
+- No dynamic `revalidate` per page
+- All pages are pre-rendered at build time
+- Dynamic routes require `generateStaticParams()` even if returning empty array
+
+#### Cloudflare Pages Functions
+- Must use `PagesFunction` type from `@cloudflare/workers-types`
+- Access environment via `context.env.*`
+- Functions must be in `functions/` directory
+- TypeScript config in `functions/tsconfig.json` (separate from main)
+
+#### PWA Considerations
+- Service worker (future)
+- Offline support (future)
+- Mobile-responsive design
+- Touch-friendly UI elements
+
+## References
+
+- Next.js 15 Docs: https://nextjs.org/docs
+- Supabase Docs: https://supabase.com/docs
+- Cloudflare Pages: https://developers.cloudflare.com/pages
+- React 19: https://react.dev/blog/2024/04/25/react-19
+- TypeScript: https://www.typescriptlang.org/docs
+
+## Project-Specific Files
+
+Always check these files for context:
+- `docs/CURSOR_CONTEXT.md` - Current project state and issues
+- `docs/MIGRATION.md` - Setup instructions
+- `docs/PROJECT_HISTORY.md` - Project timeline and decisions
+- `docs/TODO_STATUS.md` - Pending tasks
+- `package.json` - Dependencies and scripts
+- `.github/workflows/deploy.yml` - CI/CD configuration
+
+---
+
+**Last Updated**: 2025-11-02
+**Next.js Version**: 15.5.4
+**React Version**: 19.1.0
+**Node.js Version**: 20+
+
+## Cursor 2.0 Autonomy (YOLO-equivalent)
+
+- Allow only non-interactive commands; prefer Windows-safe wrappers via `cmd /c`.
+- Background long tasks (build, auto-fix); never run dev/watch.
+
+Allowed
+- `cmd /c npm ci --no-fund --no-audit`
+- `cmd /c npm run lint`
+- `cmd /c npx tsc --noEmit`
+- `cmd /c npm run test` (vitest unit only)
+- `cmd /c npm run build` (background when long)
+- `cmd /c npm run pre-pr`
+- `cmd /c npm run auto-fix` (background)
+- `cmd /c npm run check-logs`
+
+Denied
+- `npm run dev`, any `watch`, any command awaiting input, interactive git flows.
+
+Guardrails
+- Add timeouts; cancel tasks running >30s with no output.
+- Prefer small batches; commit frequently with clear messages.
+- Never disable typechecking/lint to “pass”. Fix root cause.
+
+Validation loops
+- Fast loop: lint → tsc → vitest (unit) → fix
+- Full loop: fast loop → build (static export) → optional e2e (Playwright)
+
+Reference: Cursor autonomy tips adapted from Builder.io article on Cursor best practices.
+
