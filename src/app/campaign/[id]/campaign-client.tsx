@@ -20,7 +20,17 @@ export default function CampaignClient({ campaignId }: CampaignClientProps) {
 
   const [campaign, setCampaign] = useState<{ id: string; name: string; created_at: string } | null>(null);
   const [entities, setEntities] = useState<{ id: string; type: string; title: string; summary: string; created_at: string }[]>([]);
-  const [npcs, setNpcs] = useState<Array<{ id: string; name: string; created_at: string; bio?: string }>>([]);
+  const [npcs, setNpcs] = useState<Array<{
+    id: string;
+    name: string;
+    created_at: string;
+    bio?: string;
+    backstory?: string;
+    traits?: unknown;
+    stats?: unknown;
+    location_id?: string | null;
+    affiliations?: unknown;
+  }>>([]);
   const [_user, setUser] = useState<{ id: string; email?: string } | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newEntity, setNewEntity] = useState({ type: 'npc', title: '', summary: '' });
@@ -80,7 +90,7 @@ export default function CampaignClient({ campaignId }: CampaignClientProps) {
     if (!supabase) return;
     const { data, error } = await supabase
       .from('npc')
-      .select('id,name,created_at,bio')
+      .select('id,name,created_at,bio,backstory,traits,stats,location_id,affiliations')
       .eq('campaign_id', campaignId)
       .order('created_at', { ascending: false });
     if (error) {
@@ -208,6 +218,7 @@ export default function CampaignClient({ campaignId }: CampaignClientProps) {
                     nameHint: npcForm.nameHint || undefined,
                     ruleset: 'DND5E_2024',
                     locationId: npcForm.locationId || undefined,
+                    level: npcForm.level || 3,
                     tags: [npcForm.race, npcForm.temperament, npcForm.equipment, npcForm.keyword1, npcForm.keyword2, npcForm.keyword3].filter(Boolean),
                     affiliations: [],
                     connections: [],
@@ -297,13 +308,28 @@ export default function CampaignClient({ campaignId }: CampaignClientProps) {
             <p className="text-sm text-[var(--color-muted)]">No NPCs yet.</p>
           ) : (
             <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
-              {npcs.map(n => (
-                <div key={n.id} className="rounded border border-[var(--color-border)] p-3">
-                  <h3 className="font-medium">{n.name}</h3>
-                  {n.bio && <p className="text-sm text-[var(--color-muted)] mt-1 line-clamp-3">{n.bio}</p>}
-                  <p className="text-xs text-[var(--color-muted)] mt-2">Created {new Date(n.created_at).toLocaleDateString()}</p>
-                </div>
-              ))}
+              {npcs.map(n => {
+                const traits = n.traits as { race?: string; temperament?: string; keywords?: string[] } | undefined;
+                const stats = n.stats as { level?: number; abilities?: Record<string, number> } | undefined;
+                return (
+                  <div key={n.id} className="rounded border border-[var(--color-border)] p-3 hover:bg-black/10 transition-colors">
+                    <div className="flex items-start justify-between mb-2">
+                      <h3 className="font-medium">{n.name}</h3>
+                      {stats?.level && <span className="text-xs bg-[var(--color-primary)] text-white px-2 py-0.5 rounded">Lv {stats.level}</span>}
+                    </div>
+                    {traits?.race && <p className="text-xs text-[var(--color-muted)] mb-1">{traits.race} {traits.temperament ? `• ${traits.temperament}` : ''}</p>}
+                    {n.bio && <p className="text-sm text-[var(--color-muted)] mt-1 line-clamp-2">{n.bio}</p>}
+                    {traits?.keywords && traits.keywords.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mt-2">
+                        {traits.keywords.slice(0, 3).map((kw, i) => (
+                          <span key={i} className="text-xs bg-[var(--color-border)] px-1.5 py-0.5 rounded">{kw}</span>
+                        ))}
+                      </div>
+                    )}
+                    <p className="text-xs text-[var(--color-muted)] mt-2">Created {new Date(n.created_at).toLocaleDateString()}</p>
+                  </div>
+                );
+              })}
             </div>
           )}
         </div>
