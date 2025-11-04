@@ -14,7 +14,8 @@
     "pre-pr": "eslint && npx tsc --noEmit && vitest run",
     "gen:types": "powershell -ExecutionPolicy Bypass -Command \"if (!(Test-Path src/types)) { New-Item -ItemType Directory -Path src/types -Force | Out-Null }; if (Get-Command supabase -ErrorAction SilentlyContinue) { supabase gen types typescript --project-id $env:SUPABASE_PROJECT_ID --schema public | Out-File -FilePath src/types/supabase.ts -Encoding UTF8 } else { Write-Host 'supabase CLI not found; skipping types generation' }\"",
     "auto-fix": "powershell -ExecutionPolicy Bypass -File scripts/auto-fix-cycle.ps1",
-    "check-logs": "powershell -ExecutionPolicy Bypass -File scripts/check-logs.ps1"
+    "check-logs": "powershell -ExecutionPolicy Bypass -File scripts/check-logs.ps1",
+    "cf:logs": "powershell -ExecutionPolicy Bypass -File scripts/fetch-cf-logs.ps1"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.75.0",
