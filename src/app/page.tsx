@@ -17,26 +17,53 @@ export default function Home() {
 
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<string>("");
-  const [diag, setDiag] = useState<string>("");
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
-  const [campaigns, setCampaigns] = useState<{ id: string; name: string; created_at: string }[]>([]);
-  const [newCampaignName, setNewCampaignName] = useState("");
-  const [showCreateForm, setShowCreateForm] = useState(false);
+  const [worlds, setWorlds] = useState<Array<{ id: string; name: string; slug: string; campaigns?: Array<{ id: string; name: string; world_id: string }> }>>([]);
+  const [newWorldName, setNewWorldName] = useState("");
+  const [showCreateWorld, setShowCreateWorld] = useState(false);
 
-  const loadCampaigns = useCallback(async () => {
+  const loadWorlds = useCallback(async () => {
     if (!supabase) return;
     
-    const { data, error } = await supabase
-      .from('campaigns')
-      .select('*')
+    // Load worlds with their campaigns
+    const { data: worldsData, error: worldsError } = await supabase
+      .from('world')
+      .select('id,name,slug')
       .order('created_at', { ascending: false });
     
-    if (error) {
-      console.error('Error loading campaigns:', error);
-      setStatus(`Error loading campaigns: ${error.message}`);
-    } else {
-      setCampaigns(data || []);
+    if (worldsError) {
+      console.error('Error loading worlds:', worldsError);
+      setStatus(`Error loading worlds: ${worldsError.message}`);
+      return;
     }
+    
+    if (!worldsData || worldsData.length === 0) {
+      setWorlds([]);
+      return;
+    }
+    
+    // Load campaigns for each world
+    const { data: campaignsData, error: campaignsError } = await supabase
+      .from('campaign')
+      .select('id,name,world_id')
+      .order('created_at', { ascending: false });
+    
+    if (campaignsError) {
+      console.error('Error loading campaigns:', campaignsError);
+      setStatus(`Error loading campaigns: ${campaignsError.message}`);
+    }
+    
+    // Group campaigns by world
+    const campaignsByWorld = (campaignsData || []).reduce((acc, camp) => {
+      if (!acc[camp.world_id]) acc[camp.world_id] = [];
+      acc[camp.world_id].push(camp);
+      return acc;
+    }, {} as Record<string, Array<{ id: string; name: string; world_id: string }>>);
+    
+    setWorlds(worldsData.map(w => ({
+      ...w,
+      campaigns: campaignsByWorld[w.id] || []
+    })));
   }, [supabase]);
 
   useEffect(() => {
@@ -46,7 +73,7 @@ export default function Home() {
     supabase.auth.getSession().then(({ data: { session } }) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        loadCampaigns();
+        loadWorlds();
       }
     });
 
@@ -54,31 +81,34 @@ export default function Home() {
     supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user ?? null);
       if (session?.user) {
-        loadCampaigns();
+        loadWorlds();
       } else {
-        setCampaigns([]);
+        setWorlds([]);
       }
     });
-  }, [supabase, loadCampaigns]);
+  }, [supabase, loadWorlds]);
 
-  const createCampaign = async () => {
-    if (!newCampaignName.trim() || !user || !supabase) return;
+  const createWorld = async () => {
+    if (!newWorldName.trim() || !user || !supabase) return;
     
-    setStatus("Creating campaign...");
-    const slug = newCampaignName.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    setStatus("Creating world...");
+    const slug = newWorldName.toLowerCase().replace(/[^a-z0-9]/g, '-');
     
-    const { error } = await supabase.rpc('create_campaign_with_dm', {
-      p_name: newCampaignName.trim(),
-      p_slug: slug,
-    });
+    const { error } = await supabase
+      .from('world')
+      .insert({
+        name: newWorldName.trim(),
+        slug,
+        ruleset: 'DND5E_2024',
+      });
 
     if (error) {
-      setStatus(`Error creating campaign: ${error.message}`);
+      setStatus(`Error creating world: ${error.message}`);
     } else {
-      setStatus("Campaign created!");
-      setNewCampaignName("");
-      setShowCreateForm(false);
-      loadCampaigns();
+      setStatus("World created!");
+      setNewWorldName("");
+      setShowCreateWorld(false);
+      loadWorlds();
     }
   };
 
@@ -98,130 +128,130 @@ export default function Home() {
     
     await supabase.auth.signOut();
     setUser(null);
-    setCampaigns([]);
-  };
-
-  const onDiagnose = async () => {
-    try {
-      const url = (process.env.NEXT_PUBLIC_SUPABASE_URL as string) ?? "";
-      const key = (process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY as string) ?? "";
-      const res = await fetch(`${url}/auth/v1/settings`, {
-        headers: { apikey: key, Authorization: `Bearer ${key}` },
-      });
-      setDiag(`GET /auth/v1/settings → ${res.status}`);
-    } catch (error: unknown) {
-      const message = error instanceof Error ? error.message : String(error);
-      setDiag(`Diag error: ${message}`);
-    }
+    setWorlds([]);
   };
 
   return (
-    <div className="mx-auto max-w-xl p-6">
-      <header className="mb-8">
-        <h1 className="font-display text-3xl">Isekai</h1>
-        {user ? (
-          <div className="flex items-center justify-between">
-            <p className="text-sm text-[var(--color-muted)]">Welcome, {user.email || 'User'}</p>
-            <button
-              onClick={onSignOut}
-              className="text-xs underline opacity-70"
-            >
-              Sign out
-            </button>
-          </div>
-        ) : (
-          <p className="text-sm text-[var(--color-muted)]">Sign in to get started.</p>
-        )}
-      </header>
-
-      {user ? (
-        <div className="space-y-4">
-          {/* Campaign List */}
-          <div className="rounded-lg border border-[var(--color-border)] bg-black/20 p-4">
-            <div className="flex items-center justify-between mb-4">
-              <h2 className="text-lg font-medium">My Campaigns</h2>
+    <div className="min-h-screen bg-black text-white p-4 sm:p-6">
+      <div className="mx-auto max-w-2xl">
+        <header className="mb-6 sm:mb-8">
+          <h1 className="font-display text-2xl sm:text-3xl mb-2">Isekai</h1>
+          {user ? (
+            <div className="flex items-center justify-between">
+              <p className="text-xs sm:text-sm text-gray-400">Welcome, {user.email || 'User'}</p>
               <button
-                onClick={() => setShowCreateForm(true)}
-                className="rounded-md bg-[var(--color-primary)] px-3 py-1 text-sm font-medium text-white hover:bg-[var(--primary-hover)]"
+                onClick={onSignOut}
+                className="text-xs underline opacity-70 hover:opacity-100"
               >
-                Create Campaign
+                Sign out
               </button>
             </div>
-            
-            {campaigns.length === 0 ? (
-              <p className="text-sm text-[var(--color-muted)]">No campaigns yet. Create your first one!</p>
-            ) : (
-              <div className="space-y-2">
-                {campaigns.map((campaign) => (
-                  <div key={campaign.id} className="rounded border border-[var(--color-border)] p-3">
-                    <h3 className="font-medium">{campaign.name}</h3>
-                    <p className="text-xs text-[var(--color-muted)]">Created {new Date(campaign.created_at).toLocaleDateString()}</p>
-                    <Link
-                      href={`/campaign/${campaign.id}`}
-                      className="mt-2 inline-block rounded-md bg-[var(--color-primary)] px-3 py-1 text-xs font-medium text-white hover:bg-[var(--primary-hover)]"
-                    >
-                      Open
-                    </Link>
-                  </div>
-                ))}
+          ) : (
+            <p className="text-xs sm:text-sm text-gray-400">Sign in to get started.</p>
+          )}
+        </header>
+
+        {user ? (
+          <div className="space-y-4">
+            {/* World Selection */}
+            <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-4 sm:p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h2 className="text-lg sm:text-xl font-medium">World Selection</h2>
+                <button
+                  onClick={() => setShowCreateWorld(true)}
+                  className="rounded-md bg-blue-600 px-3 py-1.5 text-xs sm:text-sm font-medium text-white hover:bg-blue-700 active:bg-blue-800 transition-colors touch-manipulation"
+                >
+                  + New World
+                </button>
+              </div>
+              
+              {worlds.length === 0 ? (
+                <p className="text-sm text-gray-400">No worlds yet. Create your first world!</p>
+              ) : (
+                <div className="space-y-3">
+                  {worlds.map((world) => (
+                    <div key={world.id} className="rounded-lg border border-gray-800 bg-gray-900/30 p-4">
+                      <div className="flex items-start justify-between mb-2">
+                        <h3 className="font-medium text-base sm:text-lg">{world.name}</h3>
+                        <span className="text-xs text-gray-500">{world.campaigns?.length || 0} campaigns</span>
+                      </div>
+                      {world.campaigns && world.campaigns.length > 0 ? (
+                        <div className="space-y-2 mt-3">
+                          {world.campaigns.map((campaign) => (
+                            <Link
+                              key={campaign.id}
+                              href={`/campaign/${campaign.id}/`}
+                              className="block rounded-md bg-blue-600/20 border border-blue-600/30 p-3 hover:bg-blue-600/30 active:bg-blue-600/40 transition-colors touch-manipulation"
+                            >
+                              <div className="flex items-center justify-between">
+                                <span className="font-medium text-sm sm:text-base">{campaign.name}</span>
+                                <span className="text-xs text-blue-400">→</span>
+                              </div>
+                            </Link>
+                          ))}
+                        </div>
+                      ) : (
+                        <p className="text-xs text-gray-500 mt-2">No campaigns in this world yet.</p>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
+            {/* Create World Form */}
+            {showCreateWorld && (
+              <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-4 sm:p-6">
+                <h3 className="text-lg font-medium mb-4">Create New World</h3>
+                <input
+                  className="w-full rounded-md border border-gray-700 bg-gray-900/50 p-3 text-sm outline-none focus:border-blue-600 mb-3"
+                  type="text"
+                  placeholder="World name"
+                  value={newWorldName}
+                  onChange={(e) => setNewWorldName(e.target.value)}
+                />
+                <div className="flex gap-2">
+                  <button
+                    onClick={createWorld}
+                    className="flex-1 rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 active:bg-blue-800 transition-colors touch-manipulation"
+                  >
+                    Create
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowCreateWorld(false);
+                      setNewWorldName("");
+                    }}
+                    className="flex-1 rounded-md border border-gray-700 px-4 py-2 text-sm font-medium hover:bg-gray-800 active:bg-gray-700 transition-colors touch-manipulation"
+                  >
+                    Cancel
+                  </button>
+                </div>
               </div>
             )}
+
+            {status && <p className="text-sm text-gray-300">{status}</p>}
           </div>
-
-          {/* Create Campaign Form */}
-          {showCreateForm && (
-            <div className="rounded-lg border border-[var(--color-border)] bg-black/20 p-4">
-              <h3 className="text-lg font-medium mb-4">Create New Campaign</h3>
-              <input
-                className="w-full rounded-md border border-[var(--color-border)] bg-transparent p-2 outline-none mb-3"
-                type="text"
-                placeholder="Campaign name"
-                value={newCampaignName}
-                onChange={(e) => setNewCampaignName(e.target.value)}
-              />
-              <div className="flex gap-2">
-                <button
-                  onClick={createCampaign}
-                  className="rounded-md bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--primary-hover)]"
-                >
-                  Create
-                </button>
-                <button
-                  onClick={() => {
-                    setShowCreateForm(false);
-                    setNewCampaignName("");
-                  }}
-                  className="rounded-md border border-[var(--color-border)] px-4 py-2 text-sm font-medium"
-                >
-                  Cancel
-                </button>
-              </div>
-            </div>
-          )}
-
-          {status && <p className="text-sm">{status}</p>}
-        </div>
-      ) : (
-        <div className="rounded-lg border border-[var(--color-border)] bg-black/20 p-4">
-          <label className="mb-2 block text-sm">Email</label>
-          <input
-            className="w-full rounded-md border border-[var(--color-border)] bg-transparent p-2 outline-none"
-            type="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-          <button
-            onClick={onSignIn}
-            className="mt-3 inline-flex items-center rounded-md bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--primary-hover)]"
-          >
-            Send magic link
-          </button>
-          {status && <p className="mt-2 text-sm">{status}</p>}
-          <button onClick={onDiagnose} className="mt-3 text-xs underline opacity-70">Run connection test</button>
-          {diag && <p className="mt-1 text-xs opacity-80">{diag}</p>}
-        </div>
-      )}
+        ) : (
+          <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-4 sm:p-6">
+            <label className="mb-2 block text-sm font-medium">Email</label>
+            <input
+              className="w-full rounded-md border border-gray-700 bg-gray-900/50 p-3 text-sm outline-none focus:border-blue-600"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
+            <button
+              onClick={onSignIn}
+              className="mt-3 w-full rounded-md bg-blue-600 px-4 py-3 text-sm font-medium text-white hover:bg-blue-700 active:bg-blue-800 transition-colors touch-manipulation"
+            >
+              Send magic link
+            </button>
+            {status && <p className="mt-2 text-sm text-gray-300">{status}</p>}
+          </div>
+        )}
+      </div>
     </div>
   );
 }
