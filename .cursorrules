@@ -282,33 +282,45 @@ When working with Cursor AI:
 - Never commit code with missing `useEffect` dependencies - fix with `useCallback` or add to deps array
 
 **Git Command Hang Prevention**:
-- **CRITICAL**: Git commit commands can hang on Windows/PowerShell due to:
+- **CRITICAL**: Git commands can hang on Windows/PowerShell due to:
   - Git trying to open an editor (even with `-m` flag)
   - Credential helper waiting for input
   - Git hooks waiting for input
   - File system locks or anti-virus scanning
-- **Solution**: Always set environment variables in PowerShell BEFORE running git commands:
+  - Network timeouts (push/pull/fetch)
+- **MANDATORY Pattern**: Always set environment variables AND use timeout protection:
   ```powershell
-  # PowerShell syntax (RECOMMENDED)
-  $env:GIT_EDITOR=':'
-  $env:GIT_TERMINAL_PROMPT='0'
-  cmd /c git commit -m 'your message' --no-verify
+  # For git commit (ALWAYS use this exact pattern):
+  $env:GIT_EDITOR=':'; $env:GIT_TERMINAL_PROMPT='0'; $timeout = 15; $job = Start-Job { cmd /c git commit -m 'message' --no-verify 2>&1 }; if ($job | Wait-Job -Timeout $timeout) { Receive-Job $job; Remove-Job $job } else { Stop-Job $job; Remove-Job $job; Write-Host "ERROR: Git commit timed out" }
+  
+  # For git push (ALWAYS use this exact pattern):
+  $env:GIT_TERMINAL_PROMPT='0'; $timeout = 30; $job = Start-Job { cmd /c git push origin main 2>&1 }; if ($job | Wait-Job -Timeout $timeout) { Receive-Job $job; Remove-Job $job } else { Stop-Job $job; Remove-Job $job; Write-Host "ERROR: Git push timed out" }
+  
+  # For git pull/fetch (ALWAYS use this exact pattern):
+  $env:GIT_TERMINAL_PROMPT='0'; $timeout = 30; $job = Start-Job { cmd /c git pull --rebase origin main --no-edit 2>&1 }; if ($job | Wait-Job -Timeout $timeout) { Receive-Job $job; Remove-Job $job } else { Stop-Job $job; Remove-Job $job; Write-Host "ERROR: Git pull timed out" }
   ```
-- **Best Practice**: Use this pattern for ALL git commits:
+- **Simplified Pattern** (if timeout wrapper fails, use direct with env vars):
   ```powershell
-  $env:GIT_EDITOR=':'; $env:GIT_TERMINAL_PROMPT='0'; cmd /c git commit -m 'your message' --no-verify
-  ```
-- **For git push**: Also set environment variables:
-  ```powershell
+  # For git commit:
+  $env:GIT_EDITOR=':'; $env:GIT_TERMINAL_PROMPT='0'; cmd /c git commit -m 'message' --no-verify
+  
+  # For git push:
   $env:GIT_TERMINAL_PROMPT='0'; cmd /c git push origin main
+  
+  # For git pull:
+  $env:GIT_TERMINAL_PROMPT='0'; cmd /c git pull --rebase origin main --no-edit
   ```
 - **Why --no-verify**: Skips pre-commit hooks that might wait for input
 - **Why GIT_EDITOR=:** : Prevents Git from opening editor (even with -m flag)
 - **Why GIT_TERMINAL_PROMPT=0**: Prevents credential prompts
-- **Timeout**: If git commit hangs >10 seconds, cancel and retry with environment variables set
-- **Never use**: `git commit` without `-m` flag or without environment variables set
-- **Always use**: `--no-verify` flag for commits to skip potentially problematic hooks
-- **Alternative**: If you must use cmd /c directly, use proper quoting: `cmd /c "set GIT_EDITOR=: && set GIT_TERMINAL_PROMPT=0 && git commit -m message --no-verify"` (note: no quotes in message)
+- **Why --rebase --no-edit**: Prevents merge conflict prompts
+- **Timeout Rules**: 
+  - If git commit hangs >15 seconds, cancel and retry
+  - If git push/pull hangs >30 seconds, cancel and retry
+  - Always use timeout wrapper for network operations
+- **Never use**: `git commit` without `-m` flag, `git push` without env vars, `git pull` without `--rebase --no-edit`
+- **Always use**: Environment variables, `--no-verify` for commits, `--rebase --no-edit` for pulls
+- **Preferred**: Use `scripts/safe-git.ps1` wrapper script when available
 
 ### 15. Special Considerations
 
