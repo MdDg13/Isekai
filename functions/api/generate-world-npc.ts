@@ -45,13 +45,14 @@ export const onRequest: PagesFunction = async (context) => {
     auth: { persistSession: false },
   });
 
-  // Create a generation_request row
+  // Create a generation_request row (schema supports campaign_id only; store world info in prompt)
   const { data: reqRow, error: reqErr } = await supabase
     .from('generation_request')
     .insert({
-      world_id: body.worldId,
+      // campaign_id omitted for world-level generations
       kind: 'world_npc',
       prompt: {
+        worldId: body.worldId,
         nameHint: body.nameHint ?? null,
         tags: body.tags ?? [],
         ruleset: body.ruleset ?? 'DND5E_2024',
