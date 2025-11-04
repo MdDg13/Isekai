@@ -118,13 +118,13 @@ docs/                    # Project documentation
 - Images must be unoptimized: `images: { unoptimized: true }`
 - Use Cloudflare Pages Functions for API routes (not Next.js API routes)
 - Environment variables must be set in Cloudflare Pages dashboard
-- Deployment logs are automatically saved to `deployment-logs/` via GitHub Actions
+- Deployments are triggered by GitHub Actions only (Pages Git integration disabled). Logs are committed to a `deployment-logs` branch.
 
 #### GitHub Actions Workflow
-- Workflow auto-captures build and deployment logs
-- Logs are committed back to repo in `deployment-logs/`
-- Always check deployment logs after pushing commits
-- Use `npm run check-logs` to quickly check latest deployment status
+- Single deployer of record. Enable with repo var `ENABLE_PAGES_ACTION=true`.
+- Requires repo secret `CLOUDFLARE_API_TOKEN` and variable/secret `CLOUDFLARE_ACCOUNT_ID`.
+- Logs are committed to `deployment-logs` branch (with `[skip ci]`).
+- Check deployment via GitHub Actions UI or the `deployment-logs` branch.
 
 #### Automated Testing
 - Before committing, run: `npm run lint`, `npm run test`, `npm run build`

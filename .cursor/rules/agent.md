@@ -41,4 +41,5 @@
 ## Notes
 - Static export is required; keep `output: 'export'`, `trailingSlash: true`, and `images.unoptimized: true`.
 - Dynamic routes must have synchronous `generateStaticParams()`.
+- Deployments are driven by GitHub Actions only; Cloudflare Pages Git integration is disabled. Logs are pushed to the `deployment-logs` branch with `[skip ci]`.
 
