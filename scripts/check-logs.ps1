@@ -4,7 +4,8 @@
 param(
     [string]$CommitSha = "",
     [int]$WaitForDeployment = 45,  # Wait 45s for deployment (30-40s typical + buffer)
-    [int]$CheckInterval = 5  # Check every 5 seconds
+    [int]$CheckInterval = 5,  # Check every 5 seconds
+    [string]$LogsBranch = "origin/deployment-logs"  # Git ref where CI pushes logs
 )
 
 $ErrorActionPreference = "Continue"
@@ -13,7 +14,7 @@ if ([string]::IsNullOrEmpty($CommitSha)) {
     $CommitSha = git rev-parse HEAD
 }
 
-Write-Host "=== Log Checker ===" -ForegroundColor Cyan
+Write-Host "=== Log Checker (Actions-only) ===" -ForegroundColor Cyan
 Write-Host "Monitoring commit: $($CommitSha.Substring(0,7))" -ForegroundColor Yellow
 Write-Host "Waiting for deployment (max ${WaitForDeployment}s)..." -ForegroundColor Yellow
 
@@ -24,20 +25,25 @@ while ($elapsed -lt $WaitForDeployment) {
     Start-Sleep -Seconds $CheckInterval
     $elapsed += $CheckInterval
     
-    # Pull latest logs
-    git pull origin main --quiet 2>&1 | Out-Null
-    
-    # Check for new logs
-    $logs = Get-ChildItem "deployment-logs" -Filter "build-*.log" -ErrorAction SilentlyContinue | 
-        Sort-Object LastWriteTime -Descending | 
-        Select-Object -First 1
-    
-    $summaries = Get-ChildItem "deployment-logs" -Filter "summary-*.md" -ErrorAction SilentlyContinue | 
-        Sort-Object LastWriteTime -Descending | 
-        Select-Object -First 1
+    # Fetch logs branch without switching branches
+    git fetch origin deployment-logs --quiet 2>&1 | Out-Null
+
+    # List files in logs branch
+    $logNames = (& git ls-tree -r --name-only $LogsBranch -- deployment-logs/ 2>&1)
+    if ($LASTEXITCODE -ne 0) { $logNames = @() }
+    $buildFiles = $logNames | Where-Object { $_ -like "deployment-logs/build-*.log" }
+    $summaryFiles = $logNames | Where-Object { $_ -like "deployment-logs/summary-*.md" }
+
+    # Choose latest by lexical sort (files are timestamped or per-commit)
+    $buildPath = ($buildFiles | Sort-Object | Select-Object -Last 1)
+    $summaryPath = ($summaryFiles | Sort-Object | Select-Object -Last 1)
+    $logs = $null
+    $summaries = $null
+    if ($buildPath) { $logs = $buildPath }
+    if ($summaryPath) { $summaries = $summaryPath }
     
     if ($summaries) {
-        $summaryContent = Get-Content $summaries.FullName -Raw
+        $summaryContent = (& git show "$LogsBranch:$summaries" 2>$null)
         if ($summaryContent -match $CommitSha.Substring(0,7)) {
             $foundLog = $true
             $msg = "Logs found for commit $($CommitSha.Substring(0,7)) (" + $elapsed + "s elapsed)"
@@ -54,10 +60,9 @@ while ($elapsed -lt $WaitForDeployment) {
 if ($foundLog -or $logs) {
     Write-Host "`n=== LATEST BUILD LOG ===" -ForegroundColor Cyan
     if ($logs) {
-        Write-Host "File: $($logs.Name)" -ForegroundColor Yellow
-        Write-Host "Modified: $($logs.LastWriteTime)" -ForegroundColor Gray
+        Write-Host "File: $($logs)" -ForegroundColor Yellow
         
-        $logContent = Get-Content $logs.FullName -Raw
+        $logContent = (& git show "$LogsBranch:$logs" 2>$null)
         
         # Check build result
         if ($logContent -match 'Build error occurred|Failed|Error.*build') {
@@ -72,12 +77,12 @@ if ($foundLog -or $logs) {
         }
         
         Write-Host "`n=== LAST 30 LINES ===" -ForegroundColor Cyan
-        Get-Content $logs.FullName -Tail 30
+        ($logContent -split "`n" | Select-Object -Last 30) -join "`n"
     }
     
     if ($summaries) {
         Write-Host "`n=== DEPLOYMENT SUMMARY ===" -ForegroundColor Cyan
-        Get-Content $summaries.FullName
+        (& git show "$LogsBranch:$summaries" 2>$null)
     }
 } else {
     Write-Host "`n[WARN] No logs found yet for commit $($CommitSha.Substring(0,7))" -ForegroundColor Yellow
