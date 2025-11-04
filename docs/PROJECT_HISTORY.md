@@ -32,6 +32,7 @@
 - ✅ Entity creation forms
 - 🔄 Adding `create_entity` RPC to Supabase
 - 🔄 Testing entity creation functionality
+- 🔄 Migrated deploy to GitHub Actions-only (Pages Git integration disabled)
 
 ### Phase 3: Next Features (Pending)
 - Graph visualization (Cytoscape.js)
