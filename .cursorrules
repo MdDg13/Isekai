@@ -287,18 +287,20 @@ When working with Cursor AI:
   - Credential helper waiting for input
   - Git hooks waiting for input
   - File system locks or anti-virus scanning
-- **Solution**: Always use environment variables inline to prevent interactive behavior:
-  ```cmd
-  # Windows cmd syntax (for cmd /c)
-  cmd /c "set GIT_EDITOR=: && set GIT_TERMINAL_PROMPT=0 && git commit -m \"message\" --no-verify"
+- **Solution**: Always set environment variables in PowerShell BEFORE running git commands:
+  ```powershell
+  # PowerShell syntax (RECOMMENDED)
+  $env:GIT_EDITOR=':'
+  $env:GIT_TERMINAL_PROMPT='0'
+  cmd /c git commit -m 'your message' --no-verify
   ```
 - **Best Practice**: Use this pattern for ALL git commits:
-  ```cmd
-  cmd /c "set GIT_EDITOR=: && set GIT_TERMINAL_PROMPT=0 && git commit -m \"your message\" --no-verify"
+  ```powershell
+  $env:GIT_EDITOR=':'; $env:GIT_TERMINAL_PROMPT='0'; cmd /c git commit -m 'your message' --no-verify
   ```
 - **For git push**: Also set environment variables:
-  ```cmd
-  cmd /c "set GIT_TERMINAL_PROMPT=0 && git push origin main"
+  ```powershell
+  $env:GIT_TERMINAL_PROMPT='0'; cmd /c git push origin main
   ```
 - **Why --no-verify**: Skips pre-commit hooks that might wait for input
 - **Why GIT_EDITOR=:** : Prevents Git from opening editor (even with -m flag)
@@ -306,6 +308,7 @@ When working with Cursor AI:
 - **Timeout**: If git commit hangs >10 seconds, cancel and retry with environment variables set
 - **Never use**: `git commit` without `-m` flag or without environment variables set
 - **Always use**: `--no-verify` flag for commits to skip potentially problematic hooks
+- **Alternative**: If you must use cmd /c directly, use proper quoting: `cmd /c "set GIT_EDITOR=: && set GIT_TERMINAL_PROMPT=0 && git commit -m message --no-verify"` (note: no quotes in message)
 
 ### 15. Special Considerations
 
