@@ -21,6 +21,8 @@ export default function Home() {
   const [worlds, setWorlds] = useState<Array<{ id: string; name: string; slug: string; campaigns?: Array<{ id: string; name: string; world_id: string }> }>>([]);
   const [newWorldName, setNewWorldName] = useState("");
   const [showCreateWorld, setShowCreateWorld] = useState(false);
+  const [newCampaignName, setNewCampaignName] = useState("");
+  const [creatingCampaignForWorld, setCreatingCampaignForWorld] = useState<string | null>(null);
 
   const loadWorlds = useCallback(async () => {
     if (!supabase) return;
@@ -112,6 +114,50 @@ export default function Home() {
     }
   };
 
+  const createCampaign = async (worldId: string) => {
+    if (!newCampaignName.trim() || !user || !supabase) return;
+    
+    setStatus("Creating campaign...");
+    const slug = newCampaignName.toLowerCase().replace(/[^a-z0-9]/g, '-');
+    
+    const { data: campaign, error: campaignError } = await supabase
+      .from('campaign')
+      .insert({
+        world_id: worldId,
+        name: newCampaignName.trim(),
+        slug,
+      })
+      .select()
+      .single();
+
+    if (campaignError) {
+      setStatus(`Error creating campaign: ${campaignError.message}`);
+      return;
+    }
+
+    // Add creator as DM
+    if (campaign && user.id) {
+      const { error: memberError } = await supabase
+        .from('campaign_member')
+        .insert({
+          campaign_id: campaign.id,
+          user_id: user.id,
+          role: 'dm',
+        });
+
+      if (memberError) {
+        setStatus(`Campaign created, but failed to add you as DM: ${memberError.message}`);
+      } else {
+        setStatus("Campaign created!");
+        setNewCampaignName("");
+        setCreatingCampaignForWorld(null);
+        loadWorlds();
+        // Navigate to the new campaign
+        window.location.href = `/campaign/${campaign.id}/`;
+      }
+    }
+  };
+
   const onSignIn = async () => {
     if (!supabase) return;
     
@@ -171,12 +217,61 @@ export default function Home() {
                 <div className="space-y-3">
                   {worlds.map((world) => (
                     <div key={world.id} className="rounded-lg border border-gray-800 bg-gray-900/30 p-4">
-                      <div className="flex items-start justify-between mb-2">
+                      <div className="flex items-start justify-between mb-3">
                         <h3 className="font-medium text-base sm:text-lg">{world.name}</h3>
-                        <span className="text-xs text-gray-500">{world.campaigns?.length || 0} campaigns</span>
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs text-gray-500">{world.campaigns?.length || 0} campaigns</span>
+                          <button
+                            onClick={() => setCreatingCampaignForWorld(world.id)}
+                            className="rounded-md bg-blue-600 px-2.5 py-1 text-xs font-medium text-white hover:bg-blue-700 active:bg-blue-800 transition-colors touch-manipulation"
+                            title="Add campaign to this world"
+                          >
+                            + Campaign
+                          </button>
+                        </div>
                       </div>
+
+                      {/* Create Campaign Form for this world */}
+                      {creatingCampaignForWorld === world.id && (
+                        <div className="rounded-md border border-gray-700 bg-gray-900/50 p-3 mb-3">
+                          <input
+                            className="w-full rounded-md border border-gray-700 bg-gray-900/50 p-2 text-sm outline-none focus:border-blue-600 mb-2"
+                            type="text"
+                            placeholder="Campaign name"
+                            value={newCampaignName}
+                            onChange={(e) => setNewCampaignName(e.target.value)}
+                            onKeyDown={(e) => {
+                              if (e.key === 'Enter') {
+                                createCampaign(world.id);
+                              } else if (e.key === 'Escape') {
+                                setCreatingCampaignForWorld(null);
+                                setNewCampaignName("");
+                              }
+                            }}
+                            autoFocus
+                          />
+                          <div className="flex gap-2">
+                            <button
+                              onClick={() => createCampaign(world.id)}
+                              className="flex-1 rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 active:bg-blue-800 transition-colors touch-manipulation"
+                            >
+                              Create
+                            </button>
+                            <button
+                              onClick={() => {
+                                setCreatingCampaignForWorld(null);
+                                setNewCampaignName("");
+                              }}
+                              className="flex-1 rounded-md border border-gray-700 px-3 py-1.5 text-xs font-medium hover:bg-gray-800 active:bg-gray-700 transition-colors touch-manipulation"
+                            >
+                              Cancel
+                            </button>
+                          </div>
+                        </div>
+                      )}
+
                       {world.campaigns && world.campaigns.length > 0 ? (
-                        <div className="space-y-2 mt-3">
+                        <div className="space-y-2">
                           {world.campaigns.map((campaign) => (
                             <Link
                               key={campaign.id}
@@ -191,7 +286,9 @@ export default function Home() {
                           ))}
                         </div>
                       ) : (
-                        <p className="text-xs text-gray-500 mt-2">No campaigns in this world yet.</p>
+                        !creatingCampaignForWorld && (
+                          <p className="text-xs text-gray-500 mt-2">No campaigns in this world yet. Click &quot;+ Campaign&quot; to create one.</p>
+                        )
                       )}
                     </div>
                   ))}
