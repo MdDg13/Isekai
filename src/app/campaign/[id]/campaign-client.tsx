@@ -33,23 +33,7 @@ export default function CampaignClient({ campaignId }: CampaignClientProps) {
   }>>([]);
   const [, setUser] = useState<{ id: string; email?: string } | null>(null);
   const [status, setStatus] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<'npc-generator' | 'npcs'>('npc-generator');
-
-  // NPC generator form state
-  const [npcForm, setNpcForm] = useState({
-    nameHint: '',
-    race: '',
-    temperament: '',
-    keyword1: '',
-    keyword2: '',
-    keyword3: '',
-    equipment: '',
-    level: 3,
-    locationId: '',
-    randomRole: '',
-    randomBiome: '',
-    randomFaction: '',
-  });
+  const [activeTab, setActiveTab] = useState<'arcs' | 'encounters' | 'characters' | 'sessions' | 'npcs'>('arcs');
 
   const loadCampaign = useCallback(async () => {
     if (!supabase) return;
@@ -70,13 +54,14 @@ export default function CampaignClient({ campaignId }: CampaignClientProps) {
 
   const loadNpcs = useCallback(async () => {
     if (!supabase) return;
+    // Load campaign-specific NPCs (not world NPCs)
     const { data, error } = await supabase
-      .from('npc')
+      .from('campaign_npc')
       .select('id,name,created_at,bio,backstory,traits,stats,location_id,affiliations')
       .eq('campaign_id', campaignId)
       .order('created_at', { ascending: false });
     if (error) {
-      console.error('Error loading NPCs:', error);
+      console.error('Error loading campaign NPCs:', error);
     } else {
       setNpcs(data || []);
     }
@@ -123,26 +108,56 @@ export default function CampaignClient({ campaignId }: CampaignClientProps) {
       {/* Tabs */}
       <div className="border-b border-gray-800 bg-gray-900/30">
         <div className="max-w-4xl mx-auto px-4 sm:px-6">
-          <div className="flex gap-1">
+          <div className="flex gap-1 overflow-x-auto">
             <button
-              onClick={() => setActiveTab('npc-generator')}
-              className={`px-4 py-3 text-sm font-medium transition-colors touch-manipulation ${
-                activeTab === 'npc-generator'
+              onClick={() => setActiveTab('arcs')}
+              className={`px-4 py-3 text-sm font-medium transition-colors touch-manipulation whitespace-nowrap ${
+                activeTab === 'arcs'
                   ? 'text-blue-400 border-b-2 border-blue-400'
                   : 'text-gray-400 hover:text-gray-300'
               }`}
             >
-              NPC Generator
+              Story Arcs
+            </button>
+            <button
+              onClick={() => setActiveTab('encounters')}
+              className={`px-4 py-3 text-sm font-medium transition-colors touch-manipulation whitespace-nowrap ${
+                activeTab === 'encounters'
+                  ? 'text-blue-400 border-b-2 border-blue-400'
+                  : 'text-gray-400 hover:text-gray-300'
+              }`}
+            >
+              Encounters
+            </button>
+            <button
+              onClick={() => setActiveTab('characters')}
+              className={`px-4 py-3 text-sm font-medium transition-colors touch-manipulation whitespace-nowrap ${
+                activeTab === 'characters'
+                  ? 'text-blue-400 border-b-2 border-blue-400'
+                  : 'text-gray-400 hover:text-gray-300'
+              }`}
+            >
+              Characters
+            </button>
+            <button
+              onClick={() => setActiveTab('sessions')}
+              className={`px-4 py-3 text-sm font-medium transition-colors touch-manipulation whitespace-nowrap ${
+                activeTab === 'sessions'
+                  ? 'text-blue-400 border-b-2 border-blue-400'
+                  : 'text-gray-400 hover:text-gray-300'
+              }`}
+            >
+              Sessions
             </button>
             <button
               onClick={() => setActiveTab('npcs')}
-              className={`px-4 py-3 text-sm font-medium transition-colors touch-manipulation ${
+              className={`px-4 py-3 text-sm font-medium transition-colors touch-manipulation whitespace-nowrap ${
                 activeTab === 'npcs'
                   ? 'text-blue-400 border-b-2 border-blue-400'
                   : 'text-gray-400 hover:text-gray-300'
               }`}
             >
-              NPCs ({npcs.length})
+              Campaign NPCs ({npcs.length})
             </button>
           </div>
         </div>
@@ -150,209 +165,46 @@ export default function CampaignClient({ campaignId }: CampaignClientProps) {
 
       {/* Content */}
       <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
-        {activeTab === 'npc-generator' && (
-          <div className="space-y-6">
-            {/* NPC Generator */}
-            <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-4 sm:p-6">
-              <h2 className="text-lg sm:text-xl font-medium mb-4">Generate NPC</h2>
-              <p className="text-xs text-gray-400 mb-4">Drafts are DM-only until published</p>
-              
-              <div className="space-y-4">
-                <div className="grid gap-4 sm:grid-cols-2">
-                  <div>
-                    <label className="block text-xs text-gray-400 mb-1.5">Name hint</label>
-                    <input
-                      className="w-full rounded-md border border-gray-700 bg-gray-900/50 p-2.5 text-sm outline-none focus:border-blue-600 transition-colors"
-                      value={npcForm.nameHint}
-                      onChange={e => setNpcForm({ ...npcForm, nameHint: e.target.value })}
-                      placeholder="e.g., Aelric"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-400 mb-1.5">Race</label>
-                    <input
-                      className="w-full rounded-md border border-gray-700 bg-gray-900/50 p-2.5 text-sm outline-none focus:border-blue-600 transition-colors"
-                      value={npcForm.race}
-                      onChange={e => setNpcForm({ ...npcForm, race: e.target.value })}
-                      placeholder="e.g., elf, human, dwarf"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-400 mb-1.5">Temperament</label>
-                    <input
-                      className="w-full rounded-md border border-gray-700 bg-gray-900/50 p-2.5 text-sm outline-none focus:border-blue-600 transition-colors"
-                      value={npcForm.temperament}
-                      onChange={e => setNpcForm({ ...npcForm, temperament: e.target.value })}
-                      placeholder="e.g., friendly, cautious, aggressive"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-400 mb-1.5">Equipment</label>
-                    <input
-                      className="w-full rounded-md border border-gray-700 bg-gray-900/50 p-2.5 text-sm outline-none focus:border-blue-600 transition-colors"
-                      value={npcForm.equipment}
-                      onChange={e => setNpcForm({ ...npcForm, equipment: e.target.value })}
-                      placeholder="e.g., sword, staff, bow"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-400 mb-1.5">Level</label>
-                    <input
-                      type="number"
-                      min={1}
-                      max={20}
-                      className="w-full rounded-md border border-gray-700 bg-gray-900/50 p-2.5 text-sm outline-none focus:border-blue-600 transition-colors"
-                      value={npcForm.level}
-                      onChange={e => setNpcForm({ ...npcForm, level: Number(e.target.value || 3) })}
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-400 mb-1.5">Location ID (optional)</label>
-                    <input
-                      className="w-full rounded-md border border-gray-700 bg-gray-900/50 p-2.5 text-sm outline-none focus:border-blue-600 transition-colors"
-                      value={npcForm.locationId}
-                      onChange={e => setNpcForm({ ...npcForm, locationId: e.target.value })}
-                      placeholder="UUID"
-                    />
-                  </div>
-                </div>
-                
-                <div>
-                  <label className="block text-xs text-gray-400 mb-1.5">Keywords (for roleplaying)</label>
-                  <div className="grid grid-cols-3 gap-2">
-                    <input
-                      className="w-full rounded-md border border-gray-700 bg-gray-900/50 p-2.5 text-sm outline-none focus:border-blue-600 transition-colors"
-                      value={npcForm.keyword1}
-                      onChange={e => setNpcForm({ ...npcForm, keyword1: e.target.value })}
-                      placeholder="Keyword 1"
-                    />
-                    <input
-                      className="w-full rounded-md border border-gray-700 bg-gray-900/50 p-2.5 text-sm outline-none focus:border-blue-600 transition-colors"
-                      value={npcForm.keyword2}
-                      onChange={e => setNpcForm({ ...npcForm, keyword2: e.target.value })}
-                      placeholder="Keyword 2"
-                    />
-                    <input
-                      className="w-full rounded-md border border-gray-700 bg-gray-900/50 p-2.5 text-sm outline-none focus:border-blue-600 transition-colors"
-                      value={npcForm.keyword3}
-                      onChange={e => setNpcForm({ ...npcForm, keyword3: e.target.value })}
-                      placeholder="Keyword 3"
-                    />
-                  </div>
-                </div>
+        {activeTab === 'arcs' && (
+          <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-8 text-center">
+            <p className="text-gray-400">Story Arcs feature coming soon</p>
+            <p className="text-xs text-gray-500 mt-2">Track your campaign&apos;s story arcs and beats here</p>
+          </div>
+        )}
 
-                <div className="grid gap-2 sm:grid-cols-3">
-                  <div>
-                    <label className="block text-xs text-gray-400 mb-1.5">Random role</label>
-                    <input
-                      className="w-full rounded-md border border-gray-700 bg-gray-900/50 p-2.5 text-sm outline-none focus:border-blue-600 transition-colors"
-                      value={npcForm.randomRole}
-                      onChange={e => setNpcForm({ ...npcForm, randomRole: e.target.value })}
-                      placeholder="e.g., merchant, guard"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-400 mb-1.5">Random biome</label>
-                    <input
-                      className="w-full rounded-md border border-gray-700 bg-gray-900/50 p-2.5 text-sm outline-none focus:border-blue-600 transition-colors"
-                      value={npcForm.randomBiome}
-                      onChange={e => setNpcForm({ ...npcForm, randomBiome: e.target.value })}
-                      placeholder="e.g., forest, city"
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-400 mb-1.5">Random faction</label>
-                    <input
-                      className="w-full rounded-md border border-gray-700 bg-gray-900/50 p-2.5 text-sm outline-none focus:border-blue-600 transition-colors"
-                      value={npcForm.randomFaction}
-                      onChange={e => setNpcForm({ ...npcForm, randomFaction: e.target.value })}
-                      placeholder="e.g., thieves guild"
-                    />
-                  </div>
-                </div>
-              </div>
+        {activeTab === 'encounters' && (
+          <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-8 text-center">
+            <p className="text-gray-400">Encounters feature coming soon</p>
+            <p className="text-xs text-gray-500 mt-2">Plan and run combat encounters here</p>
+          </div>
+        )}
 
-              <div className="flex flex-col sm:flex-row gap-3 mt-6">
-                <button
-                  onClick={async () => {
-                    setStatus('Generating NPC...');
-                    try {
-                      const res = await fetch('/api/generate-npc', {
-                        method: 'POST',
-                        headers: { 'content-type': 'application/json' },
-                        body: JSON.stringify({
-                          campaignId,
-                          nameHint: npcForm.nameHint || undefined,
-                          ruleset: 'DND5E_2024',
-                          locationId: npcForm.locationId || undefined,
-                          level: npcForm.level || 3,
-                          tags: [npcForm.race, npcForm.temperament, npcForm.equipment, npcForm.keyword1, npcForm.keyword2, npcForm.keyword3].filter(Boolean),
-                          affiliations: [],
-                          connections: [],
-                        })
-                      });
-                      if (!res.ok) throw new Error(await res.text());
-                      await res.json();
-                      setStatus('NPC draft created');
-                      setNpcForm({ ...npcForm, nameHint: '', keyword1: '', keyword2: '', keyword3: '', equipment: '' });
-                      loadNpcs();
-                      setActiveTab('npcs');
-                    } catch (e: unknown) {
-                      const message = e instanceof Error ? e.message : String(e);
-                      setStatus(`NPC generation failed: ${message}`);
-                    }
-                  }}
-                  className="flex-1 rounded-md bg-blue-600 px-4 py-3 text-sm font-medium text-white hover:bg-blue-700 active:bg-blue-800 transition-colors touch-manipulation"
-                >
-                  Generate from Prompt
-                </button>
-                <button
-                  onClick={async () => {
-                    setStatus('Generating random NPC...');
-                    try {
-                      const res = await fetch('/api/generate-npc', {
-                        method: 'POST',
-                        headers: { 'content-type': 'application/json' },
-                        body: JSON.stringify({
-                          campaignId,
-                          ruleset: 'DND5E_2024',
-                          tags: [npcForm.randomRole, npcForm.randomBiome, npcForm.randomFaction].filter(Boolean),
-                        })
-                      });
-                      if (!res.ok) throw new Error(await res.text());
-                      await res.json();
-                      setStatus('Random NPC draft created');
-                      loadNpcs();
-                      setActiveTab('npcs');
-                    } catch (e: unknown) {
-                      const message = e instanceof Error ? e.message : String(e);
-                      setStatus(`Random generation failed: ${message}`);
-                    }
-                  }}
-                  className="flex-1 rounded-md border border-gray-700 px-4 py-3 text-sm font-medium hover:bg-gray-800 active:bg-gray-700 transition-colors touch-manipulation"
-                >
-                  Random Generate
-                </button>
-              </div>
-            </div>
+        {activeTab === 'characters' && (
+          <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-8 text-center">
+            <p className="text-gray-400">Player Characters feature coming soon</p>
+            <p className="text-xs text-gray-500 mt-2">Manage player characters in this campaign</p>
+          </div>
+        )}
 
-            {status && (
-              <div className={`rounded-lg border p-4 ${
-                status.includes('failed') || status.includes('Error')
-                  ? 'border-red-800 bg-red-900/20 text-red-300'
-                  : 'border-blue-800 bg-blue-900/20 text-blue-300'
-              }`}>
-                <p className="text-sm">{status}</p>
-              </div>
-            )}
+        {activeTab === 'sessions' && (
+          <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-8 text-center">
+            <p className="text-gray-400">Sessions feature coming soon</p>
+            <p className="text-xs text-gray-500 mt-2">Track session logs and notes here</p>
           </div>
         )}
 
         {activeTab === 'npcs' && (
           <div className="space-y-4">
+            <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-4 mb-4">
+              <p className="text-sm text-gray-400">
+                <span className="font-medium">Note:</span> World-level NPCs are managed in the World page. 
+                These are campaign-specific NPCs created for this particular game.
+              </p>
+            </div>
             {npcs.length === 0 ? (
               <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-8 text-center">
-                <p className="text-gray-400">No NPCs yet. Generate your first NPC using the NPC Generator tab.</p>
+                <p className="text-gray-400">No campaign-specific NPCs yet.</p>
+                <p className="text-xs text-gray-500 mt-2">Campaign NPCs are different from world NPCs and are specific to this game.</p>
               </div>
             ) : (
               <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
@@ -390,6 +242,16 @@ export default function CampaignClient({ campaignId }: CampaignClientProps) {
                 })}
               </div>
             )}
+          </div>
+        )}
+
+        {status && (
+          <div className={`rounded-lg border p-4 mt-4 ${
+            status.includes('failed') || status.includes('Error')
+              ? 'border-red-800 bg-red-900/20 text-red-300'
+              : 'border-blue-800 bg-blue-900/20 text-blue-300'
+          }`}>
+            <p className="text-sm">{status}</p>
           </div>
         )}
       </div>

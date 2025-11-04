@@ -218,8 +218,16 @@ export default function Home() {
                   {worlds.map((world) => (
                     <div key={world.id} className="rounded-lg border border-gray-800 bg-gray-900/30 p-4">
                       <div className="flex items-start justify-between mb-3">
-                        <h3 className="font-medium text-base sm:text-lg">{world.name}</h3>
-                        <div className="flex items-center gap-2">
+                        <div className="flex-1">
+                          <Link
+                            href={`/world/${world.id}/`}
+                            className="font-medium text-base sm:text-lg hover:text-blue-400 transition-colors block"
+                          >
+                            {world.name}
+                          </Link>
+                          <p className="text-xs text-gray-500 mt-1">World-level content (NPCs, locations, items, lore)</p>
+                        </div>
+                        <div className="flex items-center gap-2 ml-4">
                           <span className="text-xs text-gray-500">{world.campaigns?.length || 0} campaigns</span>
                           <button
                             onClick={() => setCreatingCampaignForWorld(world.id)}

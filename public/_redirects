@@ -1,4 +1,7 @@
-# Cloudflare Pages redirects for dynamic campaign routes
+# Cloudflare Pages redirects for dynamic routes
 # Rewrite all /campaign/* to /campaign/campaign/ so static export can handle it
 /campaign/* /campaign/campaign/ 200
+
+# Rewrite all /world/* to /world/world/ so static export can handle it
+/world/* /world/world/ 200
 
