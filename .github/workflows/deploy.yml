@@ -46,6 +46,19 @@ jobs:
           directory: out
           gitHubToken: ${{ secrets.GITHUB_TOKEN }}
         continue-on-error: true
+
+      - name: Diagnose Pages deploy response
+        if: always()
+        run: |
+          echo "Deployment ID: ${{ steps.deploy.outputs.deployment_id }}" || true
+          echo "Deployment URL: ${{ steps.deploy.outputs.url }}" || true
+          echo "Deploy step outcome: ${{ steps.deploy.outcome }}"
+          if [ -z "${{ steps.deploy.outputs.deployment_id }}" ]; then
+            echo "No deployment_id returned. Validating API credentials..."
+            curl -s -X GET "https://api.cloudflare.com/client/v4/accounts/${{ secrets.CLOUDFLARE_ACCOUNT_ID }}" \
+              -H "Authorization: Bearer ${{ secrets.CLOUDFLARE_API_TOKEN }}" \
+              -H "Content-Type: application/json" | tee deployment-logs/cf-account-check-${{ github.sha }}.json || true
+          fi
       
       - name: Fetch deployment logs from Cloudflare API
         if: always()
