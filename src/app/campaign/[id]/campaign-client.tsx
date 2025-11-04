@@ -1,7 +1,7 @@
 "use client";
 
 import { createClient } from "@supabase/supabase-js";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 
 interface CampaignClientProps {
   campaignId: string;
@@ -20,25 +20,29 @@ export default function CampaignClient({ campaignId }: CampaignClientProps) {
 
   const [campaign, setCampaign] = useState<{ id: string; name: string; created_at: string } | null>(null);
   const [entities, setEntities] = useState<{ id: string; type: string; title: string; summary: string; created_at: string }[]>([]);
-  const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
+  const [npcs, setNpcs] = useState<Array<{ id: string; name: string; created_at: string; bio?: string }>>([]);
+  const [_user, setUser] = useState<{ id: string; email?: string } | null>(null);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [newEntity, setNewEntity] = useState({ type: 'npc', title: '', summary: '' });
   const [status, setStatus] = useState<string>("");
 
-  useEffect(() => {
-    if (!supabase) return;
-    
-    // Check auth
-    supabase.auth.getSession().then(({ data: { session } }) => {
-      setUser(session?.user ?? null);
-    });
+  // NPC generator form state
+  const [npcForm, setNpcForm] = useState({
+    nameHint: '',
+    race: '',
+    temperament: '',
+    keyword1: '',
+    keyword2: '',
+    keyword3: '',
+    equipment: '',
+    level: 3,
+    locationId: '',
+    randomRole: '',
+    randomBiome: '',
+    randomFaction: '',
+  });
 
-    // Load campaign and entities
-    loadCampaign();
-    loadEntities();
-  }, [supabase, campaignId]);
-
-  const loadCampaign = async () => {
+  const loadCampaign = useCallback(async () => {
     if (!supabase) return;
     
     const { data, error } = await supabase
@@ -53,9 +57,9 @@ export default function CampaignClient({ campaignId }: CampaignClientProps) {
     } else {
       setCampaign(data);
     }
-  };
+  }, [supabase, campaignId]);
 
-  const loadEntities = async () => {
+  const loadEntities = useCallback(async () => {
     if (!supabase) return;
     
     const { data, error } = await supabase
@@ -70,7 +74,35 @@ export default function CampaignClient({ campaignId }: CampaignClientProps) {
     } else {
       setEntities(data || []);
     }
-  };
+  }, [supabase, campaignId]);
+
+  const loadNpcs = useCallback(async () => {
+    if (!supabase) return;
+    const { data, error } = await supabase
+      .from('npc')
+      .select('id,name,created_at,bio')
+      .eq('campaign_id', campaignId)
+      .order('created_at', { ascending: false });
+    if (error) {
+      console.error('Error loading NPCs:', error);
+    } else {
+      setNpcs(data || []);
+    }
+  }, [supabase, campaignId]);
+
+  useEffect(() => {
+    if (!supabase) return;
+    
+    // Check auth
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      setUser(session?.user ?? null);
+    });
+
+    // Load campaign and entities
+    loadCampaign();
+    loadEntities();
+    loadNpcs();
+  }, [supabase, campaignId, loadCampaign, loadEntities, loadNpcs]);
 
   const createEntity = async () => {
     if (!newEntity.title.trim() || !supabase) return;
@@ -106,6 +138,119 @@ export default function CampaignClient({ campaignId }: CampaignClientProps) {
       </header>
 
       <div className="space-y-6">
+        {/* NPC Generator (DM) */}
+        <div className="rounded-lg border border-[var(--color-border)] bg-black/20 p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-medium">NPC Generator</h2>
+            <div className="text-xs text-[var(--color-muted)]">Drafts are DM-only until published</div>
+          </div>
+          <div className="grid gap-3 md:grid-cols-2">
+            <div>
+              <label className="block text-sm mb-1">Name hint</label>
+              <input className="w-full rounded-md border border-[var(--color-border)] bg-transparent p-2 outline-none" value={npcForm.nameHint} onChange={e=>setNpcForm({...npcForm,nameHint:e.target.value})} />
+            </div>
+            <div>
+              <label className="block text-sm mb-1">Race</label>
+              <input className="w-full rounded-md border border-[var(--color-border)] bg-transparent p-2 outline-none" value={npcForm.race} onChange={e=>setNpcForm({...npcForm,race:e.target.value})} />
+            </div>
+            <div>
+              <label className="block text-sm mb-1">Temperament</label>
+              <input className="w-full rounded-md border border-[var(--color-border)] bg-transparent p-2 outline-none" value={npcForm.temperament} onChange={e=>setNpcForm({...npcForm,temperament:e.target.value})} />
+            </div>
+            <div className="grid grid-cols-3 gap-2">
+              <div>
+                <label className="block text-sm mb-1">Keyword 1</label>
+                <input className="w-full rounded-md border border-[var(--color-border)] bg-transparent p-2 outline-none" value={npcForm.keyword1} onChange={e=>setNpcForm({...npcForm,keyword1:e.target.value})} />
+              </div>
+              <div>
+                <label className="block text-sm mb-1">Keyword 2</label>
+                <input className="w-full rounded-md border border-[var(--color-border)] bg-transparent p-2 outline-none" value={npcForm.keyword2} onChange={e=>setNpcForm({...npcForm,keyword2:e.target.value})} />
+              </div>
+              <div>
+                <label className="block text-sm mb-1">Keyword 3</label>
+                <input className="w-full rounded-md border border-[var(--color-border)] bg-transparent p-2 outline-none" value={npcForm.keyword3} onChange={e=>setNpcForm({...npcForm,keyword3:e.target.value})} />
+              </div>
+            </div>
+            <div>
+              <label className="block text-sm mb-1">Equipment</label>
+              <input className="w-full rounded-md border border-[var(--color-border)] bg-transparent p-2 outline-none" value={npcForm.equipment} onChange={e=>setNpcForm({...npcForm,equipment:e.target.value})} />
+            </div>
+            <div>
+              <label className="block text-sm mb-1">Level</label>
+              <input type="number" min={1} max={20} className="w-full rounded-md border border-[var(--color-border)] bg-transparent p-2 outline-none" value={npcForm.level} onChange={e=>setNpcForm({...npcForm,level:Number(e.target.value||3)})} />
+            </div>
+            <div>
+              <label className="block text-sm mb-1">Location Id (optional)</label>
+              <input className="w-full rounded-md border border-[var(--color-border)] bg-transparent p-2 outline-none" value={npcForm.locationId} onChange={e=>setNpcForm({...npcForm,locationId:e.target.value})} />
+            </div>
+          </div>
+          <div className="mt-3 grid gap-3 md:grid-cols-3">
+            <div>
+              <label className="block text-sm mb-1">Random role</label>
+              <input className="w-full rounded-md border border-[var(--color-border)] bg-transparent p-2 outline-none" value={npcForm.randomRole} onChange={e=>setNpcForm({...npcForm,randomRole:e.target.value})} />
+            </div>
+            <div>
+              <label className="block text-sm mb-1">Random biome</label>
+              <input className="w-full rounded-md border border-[var(--color-border)] bg-transparent p-2 outline-none" value={npcForm.randomBiome} onChange={e=>setNpcForm({...npcForm,randomBiome:e.target.value})} />
+            </div>
+            <div>
+              <label className="block text-sm mb-1">Random faction</label>
+              <input className="w-full rounded-md border border-[var(--color-border)] bg-transparent p-2 outline-none" value={npcForm.randomFaction} onChange={e=>setNpcForm({...npcForm,randomFaction:e.target.value})} />
+            </div>
+          </div>
+          <div className="flex gap-2 mt-4">
+            <button
+              onClick={async ()=>{
+                setStatus('Generating NPC...');
+                try {
+                  const res = await fetch('/api/generate-npc', { method:'POST', headers:{ 'content-type':'application/json' }, body: JSON.stringify({
+                    campaignId,
+                    nameHint: npcForm.nameHint || undefined,
+                    ruleset: 'DND5E_2024',
+                    locationId: npcForm.locationId || undefined,
+                    tags: [npcForm.race, npcForm.temperament, npcForm.equipment, npcForm.keyword1, npcForm.keyword2, npcForm.keyword3].filter(Boolean),
+                    affiliations: [],
+                    connections: [],
+                  })});
+                  if (!res.ok) throw new Error(await res.text());
+                  await res.json();
+                  setStatus('NPC draft created');
+                  setNpcForm({ ...npcForm, nameHint:'', keyword1:'', keyword2:'', keyword3:'', equipment:'' });
+                  loadNpcs();
+                } catch (e: unknown) {
+                  const message = e instanceof Error ? e.message : String(e);
+                  setStatus(`NPC generation failed: ${message}`);
+                }
+              }}
+              className="rounded-md bg-[var(--color-primary)] px-4 py-2 text-sm font-medium text-white hover:bg-[var(--primary-hover)]"
+            >
+              Generate from prompt
+            </button>
+            <button
+              onClick={async ()=>{
+                setStatus('Generating random NPC...');
+                try {
+                  const res = await fetch('/api/generate-npc', { method:'POST', headers:{ 'content-type':'application/json' }, body: JSON.stringify({
+                    campaignId,
+                    ruleset: 'DND5E_2024',
+                    tags: [npcForm.randomRole, npcForm.randomBiome, npcForm.randomFaction].filter(Boolean),
+                  })});
+                  if (!res.ok) throw new Error(await res.text());
+                  await res.json();
+                  setStatus('Random NPC draft created');
+                  loadNpcs();
+                } catch(e: unknown) {
+                  const message = e instanceof Error ? e.message : String(e);
+                  setStatus(`Random generation failed: ${message}`);
+                }
+              }}
+              className="rounded-md border border-[var(--color-border)] px-4 py-2 text-sm font-medium"
+            >
+              Random generate
+            </button>
+          </div>
+        </div>
+
         {/* Entities Section */}
         <div className="rounded-lg border border-[var(--color-border)] bg-black/20 p-4">
           <div className="flex items-center justify-between mb-4">
@@ -136,6 +281,27 @@ export default function CampaignClient({ campaignId }: CampaignClientProps) {
                   <p className="text-xs text-[var(--color-muted)] mt-2">
                     Created {new Date(entity.created_at).toLocaleDateString()}
                   </p>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
+        {/* NPC Drafts */}
+        <div className="rounded-lg border border-[var(--color-border)] bg-black/20 p-4">
+          <div className="flex items-center justify-between mb-4">
+            <h2 className="text-lg font-medium">NPC Drafts</h2>
+            <button onClick={loadNpcs} className="rounded-md border border-[var(--color-border)] px-3 py-1 text-sm font-medium">Refresh</button>
+          </div>
+          {npcs.length === 0 ? (
+            <p className="text-sm text-[var(--color-muted)]">No NPCs yet.</p>
+          ) : (
+            <div className="grid gap-3 md:grid-cols-2 lg:grid-cols-3">
+              {npcs.map(n => (
+                <div key={n.id} className="rounded border border-[var(--color-border)] p-3">
+                  <h3 className="font-medium">{n.name}</h3>
+                  {n.bio && <p className="text-sm text-[var(--color-muted)] mt-1 line-clamp-3">{n.bio}</p>}
+                  <p className="text-xs text-[var(--color-muted)] mt-2">Created {new Date(n.created_at).toLocaleDateString()}</p>
                 </div>
               ))}
             </div>

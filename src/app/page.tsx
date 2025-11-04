@@ -1,7 +1,7 @@
 "use client";
 
 import { createClient } from "@supabase/supabase-js";
-import { useMemo, useState, useEffect } from "react";
+import { useMemo, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 
 export default function Home() {
@@ -23,7 +23,7 @@ export default function Home() {
   const [newCampaignName, setNewCampaignName] = useState("");
   const [showCreateForm, setShowCreateForm] = useState(false);
 
-  const loadCampaigns = async () => {
+  const loadCampaigns = useCallback(async () => {
     if (!supabase) return;
     
     const { data, error } = await supabase
@@ -37,7 +37,7 @@ export default function Home() {
     } else {
       setCampaigns(data || []);
     }
-  };
+  }, [supabase]);
 
   useEffect(() => {
     if (!supabase) return;
@@ -59,7 +59,7 @@ export default function Home() {
         setCampaigns([]);
       }
     });
-  }, [supabase]);
+  }, [supabase, loadCampaigns]);
 
   const createCampaign = async () => {
     if (!newCampaignName.trim() || !user || !supabase) return;

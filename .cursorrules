@@ -272,6 +272,15 @@ When working with Cursor AI:
 - ✅ For long operations, break into smaller steps with progress checks
 - ✅ Test commands first with dry-run or quick validation before full execution
 
+**Build-Specific Hang Prevention**:
+- Before running `npm run build`, always run `npm run lint` first (faster, catches syntax issues)
+- If build hangs >60 seconds, cancel and clean `.next` directory: `Remove-Item -Recurse -Force .next`
+- Fix React Hook dependency warnings immediately (infinite loops can hang builds)
+- Use `useCallback` for functions in `useEffect` dependencies to prevent infinite re-renders
+- Always include all dependencies in `useEffect` arrays or use ESLint disable with explanation
+- If TypeScript hangs, run `npx tsc --noEmit --skipLibCheck` first (skips type checking node_modules)
+- Never commit code with missing `useEffect` dependencies - fix with `useCallback` or add to deps array
+
 ### 15. Special Considerations
 
 #### Static Export Limitations
