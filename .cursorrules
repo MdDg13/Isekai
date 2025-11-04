@@ -288,7 +288,18 @@ When working with Cursor AI:
   - Git hooks waiting for input
   - File system locks or anti-virus scanning
   - Network timeouts (push/pull/fetch)
-- **MANDATORY Pattern**: Always set environment variables AND use timeout protection:
+- **Inside Cursor terminal (MANDATORY)**: Do NOT use `Start-Job` for git and do NOT chain with `&&`. Use these direct, non-interactive patterns:
+  ```powershell
+  # Change directory first
+  Set-Location -Path 'C:\\Users\\Alex\\Projects\\App Development\\Isekai'
+
+  # Commit / Pull / Push
+  $env:GIT_EDITOR=':'; $env:GIT_TERMINAL_PROMPT='0'; cmd /c git commit -m 'message' --no-verify
+  $env:GIT_TERMINAL_PROMPT='0'; cmd /c git pull --rebase origin main --no-edit
+  $env:GIT_TERMINAL_PROMPT='0'; cmd /c git push origin main
+  ```
+
+- **Timeout wrapper (when running outside Cursor or in scripts)**: Always set environment variables AND use timeout protection:
   ```powershell
   # For git commit (ALWAYS use this exact pattern):
   $env:GIT_EDITOR=':'; $env:GIT_TERMINAL_PROMPT='0'; $timeout = 15; $job = Start-Job { cmd /c git commit -m 'message' --no-verify 2>&1 }; if ($job | Wait-Job -Timeout $timeout) { Receive-Job $job; Remove-Job $job } else { Stop-Job $job; Remove-Job $job; Write-Host "ERROR: Git commit timed out" }
@@ -320,7 +331,7 @@ When working with Cursor AI:
   - Always use timeout wrapper for network operations
 - **Never use**: `git commit` without `-m` flag, `git push` without env vars, `git pull` without `--rebase --no-edit`
 - **Always use**: Environment variables, `--no-verify` for commits, `--rebase --no-edit` for pulls
-- **Preferred**: Use `scripts/safe-git.ps1` wrapper script when available
+- **Preferred**: Use `scripts/safe-git.ps1` wrapper script when available (use its `-Direct` switch inside Cursor)
 
 ### 15. Special Considerations
 
