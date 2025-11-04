@@ -2,7 +2,11 @@ name: Deploy to Cloudflare Pages
 on:
   push:
     branches: [ main ]
+    paths-ignore:
+      - 'deployment-logs/**'
   workflow_dispatch:
+env:
+  ENABLE_PAGES_ACTION: ${{ vars.ENABLE_PAGES_ACTION || 'false' }}
 jobs:
   build-deploy:
     runs-on: ubuntu-latest
@@ -31,7 +35,8 @@ jobs:
           npm run build 2>&1 | tee deployment-logs/build-$(date +%Y%m%d-%H%M%S).log
         continue-on-error: false
       
-      - name: Publish to Cloudflare Pages
+      - name: Publish to Cloudflare Pages (optional)
+        if: env.ENABLE_PAGES_ACTION == 'true'
         id: deploy
         uses: cloudflare/pages-action@v1
         with:
@@ -92,7 +97,7 @@ jobs:
           echo "- **Deployment ID**: ${{ steps.deploy.outputs.deployment_id || 'N/A' }}" >> deployment-logs/summary-${{ github.sha }}.md
           echo "- **Deployment URL**: ${{ steps.deploy.outputs.url || 'N/A' }}" >> deployment-logs/summary-${{ github.sha }}.md
       
-      - name: Commit deployment logs
+      - name: Commit deployment logs to branch
         if: always()
         run: |
           git config user.name "github-actions[bot]"
@@ -101,7 +106,8 @@ jobs:
           if ! git diff --staged --quiet; then
             git commit -m "ci: save deployment logs for ${{ github.sha }} [skip ci]"
             git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
-            git push origin HEAD:main || echo "Push failed - check workflow permissions"
+            # Push logs to a dedicated branch to avoid triggering Pages deploys
+            git push origin HEAD:deployment-logs || echo "Push to deployment-logs branch failed"
           else
             echo "No changes to commit"
           fi
