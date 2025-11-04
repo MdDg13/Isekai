@@ -1,5 +1,11 @@
--- Worlds and Campaigns core schema
+-- Fixed schema with correct table ordering
+-- Run this in Supabase SQL Editor to fix the dependency issue
 
+-- First, create the enums if they don't exist
+create type if not exists public.campaign_role as enum ('dm','player');
+create type if not exists public.visibility as enum ('public','party','dm_only');
+
+-- Worlds and Campaigns (no dependencies)
 create table if not exists public.world (
   id uuid primary key default gen_random_uuid(),
   name text not null,
@@ -20,8 +26,6 @@ create table if not exists public.campaign (
   created_by uuid
 );
 
-create type public.campaign_role as enum ('dm','player');
-
 create table if not exists public.campaign_member (
   campaign_id uuid not null references public.campaign(id) on delete cascade,
   user_id uuid not null,
@@ -29,13 +33,11 @@ create table if not exists public.campaign_member (
   primary key (campaign_id, user_id)
 );
 
--- Visibility and provenance
-create type public.visibility as enum ('public','party','dm_only');
-
+-- Generation tracking
 create table if not exists public.generation_request (
   id uuid primary key default gen_random_uuid(),
   campaign_id uuid references public.campaign(id) on delete cascade,
-  kind text not null, -- npc|arc|encounter|...
+  kind text not null,
   prompt jsonb not null,
   model text,
   created_at timestamptz default now(),
@@ -46,13 +48,12 @@ create table if not exists public.generation_output (
   id uuid primary key default gen_random_uuid(),
   request_id uuid not null references public.generation_request(id) on delete cascade,
   content jsonb not null,
-  status text not null default 'draft', -- draft|approved|rejected
+  status text not null default 'draft',
   created_at timestamptz default now(),
   created_by uuid
 );
 
--- Narrative entities
--- Location must be created before NPC since NPC references it
+-- Location must be created BEFORE npc (npc references it)
 create table if not exists public.location (
   id uuid primary key default gen_random_uuid(),
   campaign_id uuid not null references public.campaign(id) on delete cascade,
@@ -65,6 +66,7 @@ create table if not exists public.location (
   created_by uuid
 );
 
+-- NPC (references location, so must come after)
 create table if not exists public.npc (
   id uuid primary key default gen_random_uuid(),
   campaign_id uuid not null references public.campaign(id) on delete cascade,
@@ -76,16 +78,16 @@ create table if not exists public.npc (
   image_url text,
   voice_id text,
   location_id uuid references public.location(id) on delete set null,
-  affiliations jsonb default '[]', -- array of { type, name, ref_id }
-  relationships jsonb default '{}', -- map of subject_id -> { attitude: -100..+100, notes }
-  connections jsonb default '[]', -- array of { kind: 'npc'|'location'|'item', ref_id, label }
+  affiliations jsonb default '[]',
+  relationships jsonb default '{}',
+  connections jsonb default '[]',
   visibility public.visibility not null default 'dm_only',
   permitted_member_ids uuid[] default '{}',
   created_at timestamptz default now(),
   created_by uuid
 );
 
--- Interaction log for NPCs
+-- NPC interaction log (references npc)
 create table if not exists public.npc_interaction (
   id uuid primary key default gen_random_uuid(),
   campaign_id uuid not null references public.campaign(id) on delete cascade,
@@ -96,6 +98,7 @@ create table if not exists public.npc_interaction (
   created_at timestamptz default now()
 );
 
+-- Other entities (no special ordering needed)
 create table if not exists public.item (
   id uuid primary key default gen_random_uuid(),
   campaign_id uuid not null references public.campaign(id) on delete cascade,
@@ -135,7 +138,7 @@ create table if not exists public.encounter (
   campaign_id uuid not null references public.campaign(id) on delete cascade,
   name text not null,
   difficulty text,
-  participants jsonb, -- monsters/npcs/party refs
+  participants jsonb,
   loot jsonb,
   visibility public.visibility not null default 'dm_only',
   permitted_member_ids uuid[] default '{}',
@@ -165,5 +168,4 @@ create table if not exists public.scene (
   created_at timestamptz default now(),
   created_by uuid
 );
-
 
