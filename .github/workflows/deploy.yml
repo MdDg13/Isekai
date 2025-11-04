@@ -40,6 +40,12 @@ jobs:
             npx next export -o out
           fi
         continue-on-error: false
+
+      - name: Inspect export directory
+        run: |
+          echo "PWD=$(pwd)"
+          echo "Listing out/" && ls -la out || true
+          echo "Disk usage of out/" && du -sh out || true
       
       - name: Publish to Cloudflare Pages (optional)
         if: env.ENABLE_PAGES_ACTION == 'true'
