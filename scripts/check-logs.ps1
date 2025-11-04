@@ -40,13 +40,14 @@ while ($elapsed -lt $WaitForDeployment) {
         $summaryContent = Get-Content $summaries.FullName -Raw
         if ($summaryContent -match $CommitSha.Substring(0,7)) {
             $foundLog = $true
-            Write-Host "`n✓ Logs found for commit $($CommitSha.Substring(0,7)) ($elapsed seconds elapsed)" -ForegroundColor Green
+            $msg = "Logs found for commit $($CommitSha.Substring(0,7)) (" + $elapsed + "s elapsed)"
+            Write-Host "`n[OK] $msg" -ForegroundColor Green
             break
         }
     }
     
     if ($elapsed % 10 -eq 0) {
-        Write-Host "Checking... ($elapsed seconds elapsed)" -ForegroundColor Gray
+        Write-Host ("Checking... (" + $elapsed + "s elapsed)") -ForegroundColor Gray
     }
 }
 
@@ -60,13 +61,13 @@ if ($foundLog -or $logs) {
         
         # Check build result
         if ($logContent -match 'Build error occurred|Failed|Error.*build') {
-            Write-Host "`n✗ BUILD FAILED" -ForegroundColor Red
+            Write-Host "`n[FAIL] BUILD FAILED" -ForegroundColor Red
             Write-Host "`n=== ERROR DETAILS ===" -ForegroundColor Red
             $logContent | Select-String -Pattern "Error|Failed|Build error" -Context 2,5 | ForEach-Object { Write-Host $_.Line }
         }
         elseif ($logContent -match 'Generating static pages|Route.*Size|Creating an optimized') {
             if ($logContent -notmatch 'Build error|Failed') {
-                Write-Host "`n✓ BUILD SUCCEEDED" -ForegroundColor Green
+                Write-Host "`n[OK] BUILD SUCCEEDED" -ForegroundColor Green
             }
         }
         
@@ -79,7 +80,7 @@ if ($foundLog -or $logs) {
         Get-Content $summaries.FullName
     }
 } else {
-    Write-Host "`n⚠ No logs found yet for commit $($CommitSha.Substring(0,7))" -ForegroundColor Yellow
+    Write-Host "`n[WARN] No logs found yet for commit $($CommitSha.Substring(0,7))" -ForegroundColor Yellow
     Write-Host "Deployment may still be in progress or log commit step may have failed" -ForegroundColor Yellow
 }
 
