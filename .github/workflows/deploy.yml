@@ -99,7 +99,7 @@ jobs:
           git config user.email "github-actions[bot]@users.noreply.github.com"
           git add deployment-logs/ || true
           if ! git diff --staged --quiet; then
-            git commit -m "ci: save deployment logs for ${{ github.sha }}"
+            git commit -m "ci: save deployment logs for ${{ github.sha }} [skip ci]"
             git remote set-url origin https://x-access-token:${{ secrets.GITHUB_TOKEN }}@github.com/${{ github.repository }}.git
             git push origin HEAD:main || echo "Push failed - check workflow permissions"
           else

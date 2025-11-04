@@ -1,12 +1,13 @@
 import CampaignClient from './campaign-client';
 
-// Required for static export - allow dynamic routes for any campaign ID
+// Required for static export - cannot use dynamicParams: true with static export
 // Must be synchronous for Next.js 15.5.4 + static export
-export const dynamicParams = true;
-export const generateStaticParams = (): Array<{ id: string }> => {
-  // Return empty array to allow dynamic routes - campaigns loaded client-side
-  return [];
-};
+export const dynamicParams = false;
+export function generateStaticParams(): Array<{ id: string }> {
+  // Return at least one placeholder path for static export
+  // Client-side routing will handle actual campaign IDs
+  return [{ id: 'placeholder' }];
+}
 
 interface PageProps {
   params: { id: string };
