@@ -271,7 +271,7 @@ export default function WorldClient({ worldId }: WorldClientProps) {
                       if (!res.ok) throw new Error(await res.text());
                       await res.json();
                       setStatus('World NPC created');
-                      setNpcForm({ ...npcForm, nameHint: '', keyword1: '', keyword2: '', keyword3: '', equipment: '' });
+                      setNpcForm({ ...npcForm, prompt: '', level: 0, race: 'random', temperament: 'random', equipment: 'random', locationId: '' });
                       loadWorldNpcs();
                       setActiveTab('npcs');
                     } catch (e: unknown) {
@@ -290,10 +290,7 @@ export default function WorldClient({ worldId }: WorldClientProps) {
                       const res = await fetch('/api/generate-world-npc', {
                         method: 'POST',
                         headers: { 'content-type': 'application/json' },
-                        body: JSON.stringify({
-                          worldId,
-                          ruleset: 'DND5E_2024'
-                        })
+                        body: JSON.stringify({ worldId, ruleset: 'DND5E_2024' })
                       });
                       if (!res.ok) throw new Error(await res.text());
                       await res.json();

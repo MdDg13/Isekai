@@ -39,11 +39,6 @@ jobs:
         run: |
           mkdir -p deployment-logs
           npm run build 2>&1 | tee deployment-logs/build-$(date +%Y%m%d-%H%M%S).log
-          # Ensure static export directory exists (Next.js 'output: export' should create it, but be explicit)
-          if [ ! -d out ]; then
-            echo "out/ not found after build; running next export explicitly"
-            npx next export -o out
-          fi
         continue-on-error: false
 
       - name: Inspect export directory
