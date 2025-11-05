@@ -408,3 +408,10 @@ Validation loops
 
 Reference: Cursor autonomy tips adapted from Builder.io article on Cursor best practices.
 
+### Communication Loop Principles (Do-Then-Say)
+- Perform the stated action immediately in the same turn. If waiting is required (CI/network), state the wait duration and perform a timed retry with pasted output.
+- Prefer concrete evidence over speculation: paste the last error lines or summarize exact messages.
+- End each message with exactly one explicit next action (or one precise question if blocked).
+- Include run identifiers (commit SHA/run number) when referencing CI activity.
+- If an external UI is required and cannot be scripted, ask for the single missing datum (URL/error snippet) and pause.
+

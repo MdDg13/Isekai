@@ -43,7 +43,7 @@ while ($elapsed -lt $WaitForDeployment) {
     if ($summaryPath) { $summaries = $summaryPath }
     
     if ($summaries) {
-        $summaryContent = (& git show "$LogsBranch:$summaries" 2>$null)
+        $summaryContent = (& git show "${LogsBranch}:$summaries" 2>$null)
         if ($summaryContent -match $CommitSha.Substring(0,7)) {
             $foundLog = $true
             $msg = "Logs found for commit $($CommitSha.Substring(0,7)) (" + $elapsed + "s elapsed)"
@@ -62,7 +62,7 @@ if ($foundLog -or $logs) {
     if ($logs) {
         Write-Host "File: $($logs)" -ForegroundColor Yellow
         
-        $logContent = (& git show "$LogsBranch:$logs" 2>$null)
+        $logContent = (& git show "${LogsBranch}:$logs" 2>$null)
         
         # Check build result
         if ($logContent -match 'Build error occurred|Failed|Error.*build') {
@@ -82,7 +82,15 @@ if ($foundLog -or $logs) {
     
     if ($summaries) {
         Write-Host "`n=== DEPLOYMENT SUMMARY ===" -ForegroundColor Cyan
-        (& git show "$LogsBranch:$summaries" 2>$null)
+        (& git show "${LogsBranch}:$summaries" 2>$null)
+    }
+
+    # Try to show Wrangler deploy log if present
+    $wrangler = (& git ls-tree -r --name-only $LogsBranch -- deployment-logs/ 2>$null) | Where-Object { $_ -like "deployment-logs/wrangler-deploy-*.log" } | Sort-Object | Select-Object -Last 1
+    if ($wrangler) {
+        Write-Host "`n=== WRANGLER DEPLOY LOG (tail) ===" -ForegroundColor Cyan
+        $wcontent = (& git show "${LogsBranch}:$wrangler" 2>$null)
+        ($wcontent -split "`n" | Select-Object -Last 40) -join "`n"
     }
 } else {
     Write-Host "`n[WARN] No logs found yet for commit $($CommitSha.Substring(0,7))" -ForegroundColor Yellow
