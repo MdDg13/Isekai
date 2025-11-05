@@ -62,7 +62,7 @@ jobs:
           
           # Use wrangler directly for more reliable publishing
           npx wrangler@latest pages deploy out \
-            --project-name="isekai-f2i" \
+            --project-name="isekai" \
             --commit-dirty=true \
             2>&1 | tee deployment-logs/wrangler-deploy-${{ github.sha }}.log
           
@@ -82,9 +82,9 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          echo "Fetching latest deployment for project 'isekai-f2i'..."
+          echo "Fetching latest deployment for project 'isekai'..."
           curl -s -X GET \
-            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/isekai-f2i/deployments" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/isekai/deployments" \
             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
             -H "Content-Type: application/json" \
             | jq '.result[0] | {id, url, environment, created_on, stage}' \
