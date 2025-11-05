@@ -3,6 +3,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { useMemo, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import BuildBadge from "@/components/BuildBadge";
 
 interface WorldClientProps {
   worldId: string;
@@ -99,7 +100,10 @@ export default function WorldClient({ worldId }: WorldClientProps) {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between mb-2">
             <Link href="/" className="text-xs text-gray-400 hover:text-gray-300">← Back to Worlds</Link>
-            <button onClick={loadWorldNpcs} className="text-xs text-gray-400 hover:text-gray-300">Refresh</button>
+            <div className="flex items-center gap-3">
+              <BuildBadge />
+              <button onClick={loadWorldNpcs} className="text-xs text-gray-400 hover:text-gray-300">Refresh</button>
+            </div>
           </div>
           <h1 className="text-xl sm:text-2xl font-medium">{world.name}</h1>
           <p className="text-xs text-gray-400 mt-1">World-level content (shared across all campaigns)</p>

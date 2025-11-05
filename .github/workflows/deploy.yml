@@ -28,6 +28,11 @@ jobs:
       - name: Install dependencies
         run: npm ci
         continue-on-error: false
+
+      - name: Set build environment variables
+        run: |
+          echo "NEXT_PUBLIC_BUILD_VERSION=$(jq -r .version package.json)-${GITHUB_SHA::7}" >> $GITHUB_ENV
+          echo "NEXT_PUBLIC_BUILD_TIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_ENV
       
       - name: Build project
         id: build
@@ -62,7 +67,7 @@ jobs:
           
           # Use wrangler directly for more reliable publishing
           npx wrangler@latest pages deploy out \
-            --project-name="isekai" \
+            --project-name="isekai-f2i" \
             --commit-dirty=true \
             2>&1 | tee deployment-logs/wrangler-deploy-${{ github.sha }}.log
           
@@ -82,9 +87,9 @@ jobs:
           CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID }}
         run: |
-          echo "Fetching latest deployment for project 'isekai'..."
+          echo "Fetching latest deployment for project 'isekai-f2i'..."
           curl -s -X GET \
-            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/isekai/deployments" \
+            "https://api.cloudflare.com/client/v4/accounts/$CLOUDFLARE_ACCOUNT_ID/pages/projects/isekai-f2i/deployments" \
             -H "Authorization: Bearer $CLOUDFLARE_API_TOKEN" \
             -H "Content-Type: application/json" \
             | jq '.result[0] | {id, url, environment, created_on, stage}' \
