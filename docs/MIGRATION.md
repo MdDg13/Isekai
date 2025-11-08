@@ -48,7 +48,7 @@ npm run build
 ## Account Access Required
 - **GitHub**: alexpeck@hotmail.com (already connected)
 - **Supabase**: Project at xblkaezmfdhchndhkjsv.supabase.co
-- **Cloudflare**: Pages project "isekai-f2i"
+- **Cloudflare**: Pages project "isekai" (domain: isekai-f2i.pages.dev)
 
 ## What's Already Configured
 - ✅ GitHub repository with all code

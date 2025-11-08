@@ -22,6 +22,11 @@ Isekai is a D&D world-building app built with Next.js + Supabase. It's a PWA tha
 - **Tables**: campaigns, campaign_members, entities, edges, sessions, revisions
 - **RPC Functions**: create_campaign_with_dm, create_entity (pending)
 
+## Cloudflare Pages
+- **Project Name**: `isekai` (used in API calls and deployment commands)
+- **Domain**: `isekai-f2i.pages.dev` (the actual site URL)
+- **Note**: Use project name `isekai` in all API calls and deployment commands, not the domain.
+
 ## Environment Variables Needed
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://xblkaezmfdhchndhkjsv.supabase.co

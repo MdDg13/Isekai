@@ -119,6 +119,7 @@ docs/                    # Project documentation
 - Use Cloudflare Pages Functions for API routes (not Next.js API routes)
 - Environment variables must be set in Cloudflare Pages dashboard
 - Deployments are triggered by GitHub Actions only (Pages Git integration disabled). Logs are committed to a `deployment-logs` branch.
+- **Project Naming**: Project name is `isekai` (used in API calls and wrangler deploy). Domain is `isekai-f2i.pages.dev`. Always use project name `isekai` in deployment commands, not the domain.
 
 #### GitHub Actions Workflow
 - Single deployer of record. Enable with repo var `ENABLE_PAGES_ACTION=true`.
