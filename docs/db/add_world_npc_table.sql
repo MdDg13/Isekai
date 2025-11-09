@@ -7,6 +7,22 @@ do $$ begin
 exception when duplicate_object then null;
 end $$;
 
+-- Create world_location table first (required dependency for world_npc)
+create table if not exists public.world_location (
+  id uuid primary key default gen_random_uuid(),
+  world_id uuid not null references public.world(id) on delete cascade,
+  name text not null,
+  description text,
+  region text,
+  coordinates jsonb, -- {lat, lng} or {x, y} for map positioning
+  visibility public.visibility not null default 'public',
+  created_at timestamptz default now(),
+  created_by uuid
+);
+
+-- Enable RLS on world_location
+alter table public.world_location enable row level security;
+
 -- Create world_npc table
 create table if not exists public.world_npc (
   id uuid primary key default gen_random_uuid(),
@@ -29,6 +45,15 @@ create table if not exists public.world_npc (
 
 -- Enable RLS
 alter table public.world_npc enable row level security;
+
+-- Basic RLS policies for world_location
+drop policy if exists world_location_read on public.world_location;
+create policy world_location_read on public.world_location for select
+  using (true); -- Allow read for now, can be refined later
+
+drop policy if exists world_location_write on public.world_location;
+create policy world_location_write on public.world_location for all
+  using (true); -- Allow write for now, can be refined later
 
 -- Helper functions for RLS (create if they don't exist)
 create or replace function public.is_dm(c_id uuid, u_id uuid)
