@@ -18,6 +18,7 @@ export default function Home() {
 
   const [email, setEmail] = useState("");
   const [status, setStatus] = useState<string>("");
+  const [isLoading, setIsLoading] = useState(false);
   const [user, setUser] = useState<{ id: string; email?: string } | null>(null);
   const [worlds, setWorlds] = useState<Array<{ id: string; name: string; slug: string; campaigns?: Array<{ id: string; name: string; world_id: string }> }>>([]);
   const [newWorldName, setNewWorldName] = useState("");
@@ -160,14 +161,40 @@ export default function Home() {
   };
 
   const onSignIn = async () => {
-    if (!supabase) return;
+    if (!supabase) {
+      setStatus("Error: Supabase configuration is missing. Please check environment variables.");
+      console.error("Supabase client is null - check NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY");
+      return;
+    }
     
+    if (!email || !email.includes('@')) {
+      setStatus("Please enter a valid email address.");
+      return;
+    }
+    
+    if (isLoading) return; // Prevent double-clicks
+    
+    setIsLoading(true);
     setStatus("Sending magic link...");
-    const { error } = await supabase.auth.signInWithOtp({
-      email,
-      options: { emailRedirectTo: window.location.origin },
-    });
-    setStatus(error ? `Error: ${error.message}` : "Check your email for a magic link.");
+    
+    try {
+      const { error } = await supabase.auth.signInWithOtp({
+        email: email.trim(),
+        options: { emailRedirectTo: window.location.origin },
+      });
+      
+      if (error) {
+        setStatus(`Error: ${error.message}`);
+        console.error("Sign-in error:", error);
+      } else {
+        setStatus("Check your email for a magic link.");
+      }
+    } catch (err) {
+      setStatus(`Error: ${err instanceof Error ? err.message : 'Failed to send magic link'}`);
+      console.error("Sign-in exception:", err);
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const onSignOut = async () => {
@@ -353,9 +380,10 @@ export default function Home() {
             />
             <button
               onClick={onSignIn}
-              className="mt-3 w-full rounded-md bg-blue-600 px-4 py-3 text-sm font-medium text-white hover:bg-blue-700 active:bg-blue-800 transition-colors touch-manipulation"
+              disabled={isLoading || !email.trim()}
+              className="mt-3 w-full rounded-md bg-blue-600 px-4 py-3 text-sm font-medium text-white hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors touch-manipulation"
             >
-              Send magic link
+              {isLoading ? "Sending..." : "Send magic link"}
             </button>
             {status && <p className="mt-2 text-sm text-gray-300">{status}</p>}
           </div>
