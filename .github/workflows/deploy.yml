@@ -33,11 +33,18 @@ jobs:
         run: |
           echo "NEXT_PUBLIC_BUILD_VERSION=$(jq -r .version package.json)-${GITHUB_SHA::7}" >> $GITHUB_ENV
           echo "NEXT_PUBLIC_BUILD_TIME=$(date -u +'%Y-%m-%dT%H:%M:%SZ')" >> $GITHUB_ENV
+          echo "Build version: $(jq -r .version package.json)-${GITHUB_SHA::7}"
+          echo "Build time: $(date -u +'%Y-%m-%dT%H:%M:%SZ')"
       
       - name: Build project
         id: build
+        env:
+          NEXT_PUBLIC_BUILD_VERSION: ${{ env.NEXT_PUBLIC_BUILD_VERSION }}
+          NEXT_PUBLIC_BUILD_TIME: ${{ env.NEXT_PUBLIC_BUILD_TIME }}
         run: |
           mkdir -p deployment-logs
+          echo "Building with NEXT_PUBLIC_BUILD_VERSION=$NEXT_PUBLIC_BUILD_VERSION"
+          echo "Building with NEXT_PUBLIC_BUILD_TIME=$NEXT_PUBLIC_BUILD_TIME"
           npm run build 2>&1 | tee deployment-logs/build-$(date +%Y%m%d-%H%M%S).log
         continue-on-error: false
       
