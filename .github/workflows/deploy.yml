@@ -40,7 +40,7 @@ jobs:
           mkdir -p deployment-logs
           npm run build 2>&1 | tee deployment-logs/build-$(date +%Y%m%d-%H%M%S).log
         continue-on-error: false
-
+      
       - name: Inspect export directory
         run: |
           echo "PWD=$(pwd)"
