@@ -50,10 +50,13 @@ returns boolean language sql stable as $$
 $$;
 
 -- RLS policies (matching rls_v2.sql)
-create policy if not exists world_npc_read on public.world_npc for select
+-- Drop policies if they exist, then create them
+drop policy if exists world_npc_read on public.world_npc;
+create policy world_npc_read on public.world_npc for select
   using (public.has_world_access(world_id, auth.uid()));
 
-create policy if not exists world_npc_write on public.world_npc for all
+drop policy if exists world_npc_write on public.world_npc;
+create policy world_npc_write on public.world_npc for all
   using (
     exists(
       select 1 from public.campaign c
