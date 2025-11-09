@@ -41,10 +41,19 @@ jobs:
         env:
           NEXT_PUBLIC_BUILD_VERSION: ${{ env.NEXT_PUBLIC_BUILD_VERSION }}
           NEXT_PUBLIC_BUILD_TIME: ${{ env.NEXT_PUBLIC_BUILD_TIME }}
+          NEXT_PUBLIC_SUPABASE_URL: ${{ vars.NEXT_PUBLIC_SUPABASE_URL || secrets.NEXT_PUBLIC_SUPABASE_URL }}
+          NEXT_PUBLIC_SUPABASE_ANON_KEY: ${{ vars.NEXT_PUBLIC_SUPABASE_ANON_KEY || secrets.NEXT_PUBLIC_SUPABASE_ANON_KEY }}
         run: |
           mkdir -p deployment-logs
           echo "Building with NEXT_PUBLIC_BUILD_VERSION=$NEXT_PUBLIC_BUILD_VERSION"
           echo "Building with NEXT_PUBLIC_BUILD_TIME=$NEXT_PUBLIC_BUILD_TIME"
+          if [ -z "$NEXT_PUBLIC_SUPABASE_URL" ] || [ -z "$NEXT_PUBLIC_SUPABASE_ANON_KEY" ]; then
+            echo "WARNING: Supabase environment variables not set in GitHub repository variables/secrets"
+            echo "These must be set for the build to work correctly"
+          else
+            echo "Supabase URL configured: ${NEXT_PUBLIC_SUPABASE_URL:0:30}..."
+            echo "Supabase key configured: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:0:30}..."
+          fi
           npm run build 2>&1 | tee deployment-logs/build-$(date +%Y%m%d-%H%M%S).log
         continue-on-error: false
       
