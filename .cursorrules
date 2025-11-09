@@ -297,6 +297,12 @@ When working with Cursor AI:
   - Git hooks waiting for input
   - File system locks or anti-virus scanning
   - Network timeouts (push/pull/fetch)
+- **REQUIRED**: Git editor MUST be set globally to `:` to prevent hangs:
+  ```powershell
+  git config --global core.editor :
+  ```
+  This prevents Git from trying to open any editor (including Cursor.exe), which can cause hangs.
+  **Verify**: Run `git config --global core.editor` - it should return `:`.
 - **Inside Cursor terminal (MANDATORY)**: Do NOT use `Start-Job` for git and do NOT chain with `&&`. Use these direct, non-interactive patterns:
   ```powershell
   # Change directory first
@@ -307,6 +313,7 @@ When working with Cursor AI:
   $env:GIT_TERMINAL_PROMPT='0'; cmd /c git pull --rebase origin main --no-edit
   $env:GIT_TERMINAL_PROMPT='0'; cmd /c git push origin main
   ```
+  **Note**: Even with global editor set to `:`, always set `$env:GIT_EDITOR=':'` before git commands as a safety measure.
 
 - **Timeout wrapper (when running outside Cursor or in scripts)**: Always set environment variables AND use timeout protection:
   ```powershell
@@ -331,7 +338,7 @@ When working with Cursor AI:
   $env:GIT_TERMINAL_PROMPT='0'; cmd /c git pull --rebase origin main --no-edit
   ```
 - **Why --no-verify**: Skips pre-commit hooks that might wait for input
-- **Why GIT_EDITOR=:** : Prevents Git from opening editor (even with -m flag)
+- **Why GIT_EDITOR=:** : Prevents Git from opening editor (even with -m flag). **CRITICAL**: Also set globally with `git config --global core.editor :` to prevent hangs even if env var isn't set.
 - **Why GIT_TERMINAL_PROMPT=0**: Prevents credential prompts
 - **Why --rebase --no-edit**: Prevents merge conflict prompts
 - **Timeout Rules**: 
@@ -341,6 +348,7 @@ When working with Cursor AI:
 - **Never use**: `git commit` without `-m` flag, `git push` without env vars, `git pull` without `--rebase --no-edit`
 - **Always use**: Environment variables, `--no-verify` for commits, `--rebase --no-edit` for pulls
 - **Preferred**: Use `scripts/safe-git.ps1` wrapper script when available (use its `-Direct` switch inside Cursor)
+- **Setup Check**: On new machines or after git updates, verify editor is set: `git config --global core.editor` should return `:`. If not, run `git config --global core.editor :`
 
 ### 15. Special Considerations
 
