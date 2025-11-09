@@ -7,6 +7,7 @@ on:
 jobs:
   pre-pr:
     runs-on: ubuntu-latest
+    if: github.event_name == 'pull_request'
     steps:
       - uses: actions/checkout@v4
       - uses: actions/setup-node@v4
@@ -29,21 +30,37 @@ jobs:
   e2e:
     runs-on: ubuntu-latest
     needs: build
-    if: ${{ secrets.E2E_BYPASS_TOKEN != '' }}
     env:
       E2E_BYPASS_TOKEN: ${{ secrets.E2E_BYPASS_TOKEN }}
     steps:
+      - name: Check if E2E token exists
+        id: check-token
+        run: |
+          if [ -z "${{ secrets.E2E_BYPASS_TOKEN }}" ]; then
+            echo "E2E_BYPASS_TOKEN not set, skipping E2E tests"
+            echo "skip=true" >> $GITHUB_OUTPUT
+          else
+            echo "E2E_BYPASS_TOKEN is set, running E2E tests"
+            echo "skip=false" >> $GITHUB_OUTPUT
+          fi
       - uses: actions/checkout@v4
+        if: steps.check-token.outputs.skip == 'false'
       - uses: actions/setup-node@v4
+        if: steps.check-token.outputs.skip == 'false'
         with:
           node-version: '20'
       - run: npm ci --no-fund --no-audit
+        if: steps.check-token.outputs.skip == 'false'
       - run: npm run build
+        if: steps.check-token.outputs.skip == 'false'
       - name: Install Playwright Browsers
+        if: steps.check-token.outputs.skip == 'false'
         run: npx playwright install --with-deps
       - name: Serve static build
+        if: steps.check-token.outputs.skip == 'false'
         run: npx http-server out -p 4173 &
       - name: Run E2E tests
+        if: steps.check-token.outputs.skip == 'false'
         env:
           BASE_URL: http://localhost:4173
         run: npx playwright test
