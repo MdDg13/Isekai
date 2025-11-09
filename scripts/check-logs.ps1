@@ -3,8 +3,8 @@
 
 param(
     [string]$CommitSha = "",
-    [int]$WaitForDeployment = 45,  # Wait 45s for deployment (30-40s typical + buffer)
-    [int]$CheckInterval = 5,  # Check every 5 seconds
+    [int]$WaitForDeployment = 120,  # Wait 120s for deployment (builds are 60-90s + buffer)
+    [int]$CheckInterval = 10,  # Check every 10 seconds
     [string]$LogsBranch = "origin/deployment-logs"  # Git ref where CI pushes logs
 )
 
@@ -16,7 +16,7 @@ if ([string]::IsNullOrEmpty($CommitSha)) {
 
 Write-Host "=== Log Checker (Actions-only) ===" -ForegroundColor Cyan
 Write-Host "Monitoring commit: $($CommitSha.Substring(0,7))" -ForegroundColor Yellow
-Write-Host "Waiting for deployment (max ${WaitForDeployment}s)..." -ForegroundColor Yellow
+Write-Host "Waiting for deployment (max ${WaitForDeployment}s - builds typically take 60-90s)..." -ForegroundColor Yellow
 
 $elapsed = 0
 $foundLog = $false

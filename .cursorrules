@@ -141,7 +141,14 @@ docs/                    # Project documentation
 NEXT_PUBLIC_SUPABASE_URL=https://xblkaezmfdhchndhkjsv.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key>
 
-# Cloudflare Pages (set in dashboard)
+# GitHub Repository Variables (REQUIRED for static export builds)
+# Set in: Settings → Secrets and variables → Actions → Variables
+NEXT_PUBLIC_SUPABASE_URL=https://xblkaezmfdhchndhkjsv.supabase.co
+NEXT_PUBLIC_SUPABASE_ANON_KEY=<anon-key>
+# These MUST be set in GitHub repository variables because static export
+# requires NEXT_PUBLIC_* variables at BUILD TIME, not just runtime.
+
+# Cloudflare Pages (set in dashboard - for runtime reference)
 NEXT_PUBLIC_SUPABASE_URL
 NEXT_PUBLIC_SUPABASE_ANON_KEY
 SUPABASE_SERVICE_ROLE_KEY  # For server-side operations
@@ -153,6 +160,7 @@ CLOUDFLARE_API_TOKEN       # For GitHub Actions deployment
 - Never commit `.env.local` (already in `.gitignore`)
 - Use `NEXT_PUBLIC_` prefix for client-accessible variables
 - Service role key should only be used server-side (Cloudflare Functions)
+- **CRITICAL for static export**: `NEXT_PUBLIC_*` variables MUST be set in GitHub repository variables (Settings → Secrets and variables → Actions → Variables) because they're needed at BUILD TIME, not just runtime
 
 ### 8. Git Workflow
 

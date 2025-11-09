@@ -19,6 +19,8 @@ npm install
 ```
 
 ### 4. Environment Variables
+
+#### Local Development
 Create `.env.local` file in project root:
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://xblkaezmfdhchndhkjsv.supabase.co
@@ -30,6 +32,21 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=[get from Supabase dashboard]
 2. Select your project
 3. Go to Settings → API
 4. Copy "Project URL" and "anon public" key
+
+#### GitHub Repository Variables (REQUIRED for deployments)
+**CRITICAL**: For static export, `NEXT_PUBLIC_*` variables must be set in GitHub repository variables because they're needed at BUILD TIME.
+
+1. Go to: `https://github.com/MdDg13/Isekai/settings/variables/actions`
+2. Click "New repository variable"
+3. Add:
+   - Name: `NEXT_PUBLIC_SUPABASE_URL`
+   - Value: `https://xblkaezmfdhchndhkjsv.supabase.co`
+4. Click "New repository variable" again
+5. Add:
+   - Name: `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+   - Value: (copy from Supabase dashboard - the "anon public" key)
+
+**Why repository variables?** Since these are `NEXT_PUBLIC_*` variables (embedded in client bundle), they can be stored as repository variables (not secrets). They're required at build time for static export to work correctly.
 
 ### 5. Test Setup
 ```bash

@@ -28,10 +28,21 @@ Isekai is a D&D world-building app built with Next.js + Supabase. It's a PWA tha
 - **Note**: Use project name `isekai` in all API calls and deployment commands, not the domain.
 
 ## Environment Variables Needed
+
+### Local Development (.env.local)
 ```env
 NEXT_PUBLIC_SUPABASE_URL=https://xblkaezmfdhchndhkjsv.supabase.co
 NEXT_PUBLIC_SUPABASE_ANON_KEY=[get from Supabase dashboard]
 ```
+
+### GitHub Repository Variables (REQUIRED for deployments)
+**CRITICAL**: For static export, `NEXT_PUBLIC_*` variables MUST be set in GitHub repository variables because they're needed at BUILD TIME.
+
+Set in: `https://github.com/MdDg13/Isekai/settings/variables/actions`
+- `NEXT_PUBLIC_SUPABASE_URL`: `https://xblkaezmfdhchndhkjsv.supabase.co`
+- `NEXT_PUBLIC_SUPABASE_ANON_KEY`: [anon public key from Supabase dashboard]
+
+These are required at build time for static export to work correctly.
 
 ## Current Issue
 The `create_entity` RPC function needs to be added to Supabase. The client code calls:
