@@ -90,6 +90,16 @@ The following custom types must be created:
 1. Apply RLS policies: Run `docs/db/rls.sql` in SQL Editor
 2. (Optional) Seed initial data: Run `docs/db/seed_campaigns.sql` in SQL Editor
 
+## Quick Fix: Missing world_npc Table
+
+If you get the error "Could not find the table 'public.world_npc'", run this quick fix:
+
+1. Go to Supabase SQL Editor
+2. Copy and paste the contents of `docs/db/add_world_npc_table.sql`
+3. Click **Run** to create the table
+
+This will create the `world_npc` table and basic RLS policies.
+
 ## Verify Setup
 
 After applying the schema, verify tables exist:
@@ -102,4 +112,9 @@ ORDER BY table_name;
 ```
 
 You should see all the tables listed above.
+
+To verify world_npc specifically:
+```sql
+SELECT COUNT(*) FROM public.world_npc;
+```
 
