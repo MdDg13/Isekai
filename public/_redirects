@@ -5,3 +5,6 @@
 # Rewrite all /world/* to /world/world/ so static export can handle it
 /world/* /world/world/ 200
 
+# Rewrite all /world/*/npc/* to /world/world/npc/npc/ so static export can handle it
+/world/*/npc/* /world/world/npc/npc/ 200
+

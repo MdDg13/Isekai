@@ -13,14 +13,30 @@ export default function NPCRouteClient({ placeholderWorldId, placeholderNpcId }:
   const pathname = usePathname();
   
   const worldId = useMemo(() => {
-    const match = pathname?.match(/\/world\/([^/]+)/);
-    return match ? match[1] : placeholderWorldId;
+    if (pathname) {
+      const match = pathname.match(/\/world\/([^\/]+)/);
+      if (match && match[1] && match[1] !== 'world') return match[1];
+    }
+    return placeholderWorldId !== 'world' ? placeholderWorldId : '';
   }, [pathname, placeholderWorldId]);
   
   const npcId = useMemo(() => {
-    const match = pathname?.match(/\/npc\/([^/]+)/);
-    return match ? match[1] : placeholderNpcId;
+    if (pathname) {
+      const match = pathname.match(/\/npc\/([^\/]+)/);
+      if (match && match[1] && match[1] !== 'npc') return match[1];
+    }
+    return placeholderNpcId !== 'npc' ? placeholderNpcId : '';
   }, [pathname, placeholderNpcId]);
+
+  if (!worldId || !npcId) {
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-gray-400">NPC not found</p>
+        </div>
+      </div>
+    );
+  }
 
   return <NPCDetailPage worldId={worldId} npcId={npcId} />;
 }
