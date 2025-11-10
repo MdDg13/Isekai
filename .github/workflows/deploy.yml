@@ -105,16 +105,28 @@ jobs:
           CLOUDFLARE_ACCOUNT_ID: ${{ secrets.CLOUDFLARE_ACCOUNT_ID || vars.CLOUDFLARE_ACCOUNT_ID }}
         run: |
           echo "Publishing to Cloudflare Pages project 'isekai' (domain: isekai-f2i.pages.dev)..."
+          mkdir -p deployment-logs
+          
           if [ ! -d out ] || [ -z "$(ls -A out)" ]; then
-            echo "ERROR: out/ directory is empty or missing"
+            echo "ERROR: out/ directory is empty or missing" | tee deployment-logs/wrangler-deploy-${{ github.sha }}.log
             exit 1
           fi
           
           # Use wrangler directly for more reliable publishing
+          set +e  # Don't exit on error immediately
           npx wrangler@latest pages deploy out \
             --project-name="isekai" \
             --commit-dirty=true \
             2>&1 | tee deployment-logs/wrangler-deploy-${{ github.sha }}.log
+          WRANGLER_EXIT_CODE=${PIPESTATUS[0]}
+          set -e  # Re-enable exit on error
+          
+          if [ $WRANGLER_EXIT_CODE -ne 0 ]; then
+            echo "ERROR: Wrangler deploy failed with exit code $WRANGLER_EXIT_CODE" | tee -a deployment-logs/wrangler-deploy-${{ github.sha }}.log
+            echo "Full wrangler output:" | tee -a deployment-logs/wrangler-deploy-${{ github.sha }}.log
+            cat deployment-logs/wrangler-deploy-${{ github.sha }}.log | tee -a deployment-logs/wrangler-deploy-${{ github.sha }}.log
+            exit $WRANGLER_EXIT_CODE
+          fi
           
           # Extract deployment URL from wrangler output
           DEPLOY_URL=$(grep -oP 'https://[^\.]+\.pages\.dev' deployment-logs/wrangler-deploy-${{ github.sha }}.log | head -1 || echo "")
@@ -123,6 +135,8 @@ jobs:
             echo "Deployment successful: $DEPLOY_URL"
           else
             echo "WARNING: Could not extract deployment URL from wrangler output"
+            echo "Wrangler output:" | tee -a deployment-logs/wrangler-deploy-${{ github.sha }}.log
+            cat deployment-logs/wrangler-deploy-${{ github.sha }}.log | tee -a deployment-logs/wrangler-deploy-${{ github.sha }}.log
           fi
         continue-on-error: true
       

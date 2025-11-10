@@ -142,6 +142,7 @@ export default function NPCDetailPage({ worldId, npcId }: NPCDetailPageProps) {
             {/* Image Placeholder */}
             <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-8 text-center">
               {npc.image_url ? (
+                // eslint-disable-next-line @next/next/no-img-element
                 <img src={npc.image_url} alt={npc.name} className="w-full h-auto rounded-lg" />
               ) : (
                 <div className="w-full aspect-square bg-gray-800 rounded-lg flex items-center justify-center">

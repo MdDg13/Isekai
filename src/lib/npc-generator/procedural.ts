@@ -3,7 +3,7 @@
  * Generates diverse, logical NPCs using weighted tables and procedural logic
  */
 
-import { npcTables, type NPCTables, type Background, type NPCClass } from './tables';
+import { npcTables, type Background, type NPCClass } from './tables';
 
 export interface GenerateNPCOptions {
   nameHint?: string;
@@ -236,7 +236,7 @@ function generateStats(npcClass: NPCClass, level: number): { str: number; dex: n
  */
 function generateEquipment(npcClass: NPCClass, background: Background, level: number): string {
   // Start with class equipment
-  let equipment = npcClass.equipment.slice();
+  const equipment = npcClass.equipment.slice();
   
   // Add background equipment
   equipment.push(...background.equipment);
@@ -341,7 +341,7 @@ export function generateNPC(options: GenerateNPCOptions = {}): GeneratedNPC {
     level = 0,
     background: specifiedBackground,
     temperament = 'neutral',
-    fullyRandom = false
+    fullyRandom: _fullyRandom = false
   } = options;
 
   // Select race
