@@ -34,15 +34,21 @@ export default function WorldClient({ worldId }: WorldClientProps) {
   const [status, setStatus] = useState<string>("");
   const [activeTab, setActiveTab] = useState<'npc-generator' | 'npcs' | 'locations' | 'items'>('npc-generator');
 
-  // NPC generator form state (simplified: primary prompt + level + optional dropdowns)
+  // NPC generator form state
   const [npcForm, setNpcForm] = useState({
-    prompt: '',
+    nameHint: '',
     level: 0,
     race: 'random',
+    class: 'random',
+    background: 'random',
     temperament: 'random',
-    equipment: 'random',
     locationId: '',
   });
+  
+  // Table view state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [sortBy, setSortBy] = useState<'name' | 'level' | 'race' | 'created_at'>('created_at');
+  const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
 
   const loadWorld = useCallback(async () => {
     if (!supabase) return;
@@ -169,16 +175,16 @@ export default function WorldClient({ worldId }: WorldClientProps) {
               
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1.5">Prompt (description or keywords)</label>
+                  <label className="block text-xs text-gray-400 mb-1.5">Name Hint (optional)</label>
                   <input
                     className="w-full rounded-md border border-gray-700 bg-gray-900/50 p-2.5 text-sm outline-none focus:border-blue-600 transition-colors"
-                    value={npcForm.prompt}
-                    onChange={e => setNpcForm({ ...npcForm, prompt: e.target.value })}
-                    placeholder="e.g., grizzled dwarven blacksmith, blunt but kind"
+                    value={npcForm.nameHint}
+                    onChange={e => setNpcForm({ ...npcForm, nameHint: e.target.value })}
+                    placeholder="e.g., Aldric Blackwood"
                   />
                 </div>
 
-                <div className="grid gap-4 sm:grid-cols-3">
+                <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
                   <div>
                     <label className="block text-xs text-gray-400 mb-1.5">Level</label>
                     <input
@@ -209,6 +215,52 @@ export default function WorldClient({ worldId }: WorldClientProps) {
                     </select>
                   </div>
                   <div>
+                    <label className="block text-xs text-gray-400 mb-1.5">Class</label>
+                    <select
+                      className="w-full rounded-md border border-gray-700 bg-gray-900/50 p-2.5 text-sm outline-none focus:border-blue-600 transition-colors"
+                      value={npcForm.class}
+                      onChange={e => setNpcForm({ ...npcForm, class: e.target.value })}
+                    >
+                      <option value="random">Random</option>
+                      <option value="Commoner">Commoner</option>
+                      <option value="Guard">Guard</option>
+                      <option value="Merchant">Merchant</option>
+                      <option value="Scholar">Scholar</option>
+                      <option value="Warrior">Warrior</option>
+                      <option value="Noble">Noble</option>
+                      <option value="Spellcaster">Spellcaster</option>
+                      <option value="Rogue">Rogue</option>
+                      <option value="Ranger">Ranger</option>
+                      <option value="Cleric">Cleric</option>
+                    </select>
+                  </div>
+                  <div>
+                    <label className="block text-xs text-gray-400 mb-1.5">Background</label>
+                    <select
+                      className="w-full rounded-md border border-gray-700 bg-gray-900/50 p-2.5 text-sm outline-none focus:border-blue-600 transition-colors"
+                      value={npcForm.background}
+                      onChange={e => setNpcForm({ ...npcForm, background: e.target.value })}
+                    >
+                      <option value="random">Random</option>
+                      <option value="Acolyte">Acolyte</option>
+                      <option value="Criminal">Criminal</option>
+                      <option value="Folk Hero">Folk Hero</option>
+                      <option value="Hermit">Hermit</option>
+                      <option value="Noble">Noble</option>
+                      <option value="Sage">Sage</option>
+                      <option value="Soldier">Soldier</option>
+                      <option value="Entertainer">Entertainer</option>
+                      <option value="Guild Artisan">Guild Artisan</option>
+                      <option value="Outlander">Outlander</option>
+                      <option value="Sailor">Sailor</option>
+                      <option value="Charlatan">Charlatan</option>
+                      <option value="Urchin">Urchin</option>
+                    </select>
+                  </div>
+                </div>
+
+                <div className="grid gap-4 sm:grid-cols-2">
+                  <div>
                     <label className="block text-xs text-gray-400 mb-1.5">Temperament</label>
                     <select
                       className="w-full rounded-md border border-gray-700 bg-gray-900/50 p-2.5 text-sm outline-none focus:border-blue-600 transition-colors"
@@ -221,22 +273,7 @@ export default function WorldClient({ worldId }: WorldClientProps) {
                       <option value="aggressive">Aggressive</option>
                       <option value="stoic">Stoic</option>
                       <option value="cheerful">Cheerful</option>
-                    </select>
-                  </div>
-                </div>
-
-                <div className="grid gap-4 sm:grid-cols-3">
-                  <div>
-                    <label className="block text-xs text-gray-400 mb-1.5">Equipment</label>
-                    <select
-                      className="w-full rounded-md border border-gray-700 bg-gray-900/50 p-2.5 text-sm outline-none focus:border-blue-600 transition-colors"
-                      value={npcForm.equipment}
-                      onChange={e => setNpcForm({ ...npcForm, equipment: e.target.value })}
-                    >
-                      <option value="random">Random</option>
-                      <option value="sword">Sword</option>
-                      <option value="staff">Staff</option>
-                      <option value="bow">Bow</option>
+                      <option value="neutral">Neutral</option>
                     </select>
                   </div>
                   <div>
@@ -259,19 +296,23 @@ export default function WorldClient({ worldId }: WorldClientProps) {
                       const res = await fetch('/api/generate-world-npc', {
                         method: 'POST',
                         headers: { 'content-type': 'application/json' },
-                        body: JSON.stringify({
-                          worldId,
-                          nameHint: npcForm.prompt || undefined,
-                          ruleset: 'DND5E_2024',
-                          locationId: npcForm.locationId || undefined,
-                          level: Number.isFinite(npcForm.level) ? npcForm.level : 0,
-                          tags: [npcForm.race !== 'random' ? npcForm.race : '', npcForm.temperament !== 'random' ? npcForm.temperament : '', npcForm.equipment !== 'random' ? npcForm.equipment : ''].filter(Boolean),
-                        })
+                      body: JSON.stringify({
+                        worldId,
+                        nameHint: npcForm.nameHint || undefined,
+                        ruleset: 'DND5E_2024',
+                        locationId: npcForm.locationId || undefined,
+                        level: Number.isFinite(npcForm.level) ? npcForm.level : 0,
+                        race: npcForm.race !== 'random' ? npcForm.race : undefined,
+                        class: npcForm.class !== 'random' ? npcForm.class : undefined,
+                        background: npcForm.background !== 'random' ? npcForm.background : undefined,
+                        temperament: npcForm.temperament !== 'random' ? npcForm.temperament : undefined,
+                        fullyRandom: npcForm.nameHint === '' && npcForm.race === 'random' && npcForm.class === 'random' && npcForm.background === 'random' && npcForm.temperament === 'random',
+                      })
                       });
                       if (!res.ok) throw new Error(await res.text());
                       await res.json();
                       setStatus('World NPC created');
-                      setNpcForm({ ...npcForm, prompt: '', level: 0, race: 'random', temperament: 'random', equipment: 'random', locationId: '' });
+                      setNpcForm({ nameHint: '', level: 0, race: 'random', class: 'random', background: 'random', temperament: 'random', locationId: '' });
                       loadWorldNpcs();
                       setActiveTab('npcs');
                     } catch (e: unknown) {
@@ -290,7 +331,7 @@ export default function WorldClient({ worldId }: WorldClientProps) {
                       const res = await fetch('/api/generate-world-npc', {
                         method: 'POST',
                         headers: { 'content-type': 'application/json' },
-                        body: JSON.stringify({ worldId, ruleset: 'DND5E_2024' })
+                        body: JSON.stringify({ worldId, ruleset: 'DND5E_2024', fullyRandom: true })
                       });
                       if (!res.ok) throw new Error(await res.text());
                       await res.json();
@@ -328,40 +369,124 @@ export default function WorldClient({ worldId }: WorldClientProps) {
                 <p className="text-gray-400">No world NPCs yet. Generate your first NPC using the NPC Generator tab.</p>
               </div>
             ) : (
-              <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
-                {worldNpcs.map(n => {
-                  const traits = n.traits as { race?: string; temperament?: string; keywords?: string[] } | undefined;
-                  const stats = n.stats as { level?: number; abilities?: Record<string, number> } | undefined;
-                  return (
-                    <div key={n.id} className="rounded-lg border border-gray-800 bg-gray-900/50 p-4 hover:bg-gray-900/70 transition-colors">
-                      <div className="flex items-start justify-between mb-2">
-                        <h3 className="font-medium text-base">{n.name}</h3>
-                        {stats?.level && (
-                          <span className="text-xs bg-blue-600 text-white px-2 py-1 rounded">Lv {stats.level}</span>
-                        )}
-                      </div>
-                      {traits?.race && (
-                        <p className="text-xs text-gray-400 mb-2">
-                          {traits.race} {traits.temperament ? `• ${traits.temperament}` : ''}
-                        </p>
-                      )}
-                      {n.bio && (
-                        <p className="text-sm text-gray-300 mt-2 line-clamp-3">{n.bio}</p>
-                      )}
-                      {traits?.keywords && traits.keywords.length > 0 && (
-                        <div className="flex flex-wrap gap-1 mt-3">
-                          {traits.keywords.slice(0, 3).map((kw, i) => (
-                            <span key={i} className="text-xs bg-gray-800 text-gray-300 px-2 py-0.5 rounded">
-                              {kw}
-                            </span>
-                          ))}
-                        </div>
-                      )}
-                      <p className="text-xs text-gray-500 mt-3">Created {new Date(n.created_at).toLocaleDateString()}</p>
-                    </div>
-                  );
-                })}
-              </div>
+              <>
+                {/* Search and Sort Controls */}
+                <div className="flex flex-col sm:flex-row gap-4">
+                  <div className="flex-1">
+                    <input
+                      type="text"
+                      placeholder="Search NPCs by name, race, class..."
+                      className="w-full rounded-md border border-gray-700 bg-gray-900/50 p-2.5 text-sm outline-none focus:border-blue-600 transition-colors"
+                      value={searchQuery}
+                      onChange={e => setSearchQuery(e.target.value)}
+                    />
+                  </div>
+                  <div className="flex gap-2">
+                    <select
+                      className="rounded-md border border-gray-700 bg-gray-900/50 p-2.5 text-sm outline-none focus:border-blue-600 transition-colors"
+                      value={sortBy}
+                      onChange={e => setSortBy(e.target.value as typeof sortBy)}
+                    >
+                      <option value="created_at">Created</option>
+                      <option value="name">Name</option>
+                      <option value="level">Level</option>
+                      <option value="race">Race</option>
+                    </select>
+                    <button
+                      onClick={() => setSortOrder(sortOrder === 'asc' ? 'desc' : 'asc')}
+                      className="rounded-md border border-gray-700 bg-gray-900/50 px-3 py-2.5 text-sm hover:bg-gray-800 transition-colors"
+                    >
+                      {sortOrder === 'asc' ? '↑' : '↓'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* Table */}
+                <div className="rounded-lg border border-gray-800 bg-gray-900/50 overflow-hidden">
+                  <div className="overflow-x-auto">
+                    <table className="w-full">
+                      <thead className="bg-gray-800/50">
+                        <tr>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Name</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Race</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Class</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Level</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Bio</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Created</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Actions</th>
+                        </tr>
+                      </thead>
+                      <tbody className="divide-y divide-gray-800">
+                        {worldNpcs
+                          .filter(n => {
+                            if (!searchQuery) return true;
+                            const query = searchQuery.toLowerCase();
+                            const traits = n.traits as { race?: string; class?: string; background?: string } | undefined;
+                            const stats = n.stats as { level?: number } | undefined;
+                            return (
+                              n.name.toLowerCase().includes(query) ||
+                              traits?.race?.toLowerCase().includes(query) ||
+                              traits?.class?.toLowerCase().includes(query) ||
+                              traits?.background?.toLowerCase().includes(query) ||
+                              n.bio?.toLowerCase().includes(query) ||
+                              stats?.level?.toString().includes(query)
+                            );
+                          })
+                          .sort((a, b) => {
+                            let aVal: string | number = '';
+                            let bVal: string | number = '';
+                            
+                            if (sortBy === 'name') {
+                              aVal = a.name;
+                              bVal = b.name;
+                            } else if (sortBy === 'level') {
+                              const aStats = a.stats as { level?: number } | undefined;
+                              const bStats = b.stats as { level?: number } | undefined;
+                              aVal = aStats?.level ?? 0;
+                              bVal = bStats?.level ?? 0;
+                            } else if (sortBy === 'race') {
+                              const aTraits = a.traits as { race?: string } | undefined;
+                              const bTraits = b.traits as { race?: string } | undefined;
+                              aVal = aTraits?.race ?? '';
+                              bVal = bTraits?.race ?? '';
+                            } else {
+                              aVal = new Date(a.created_at).getTime();
+                              bVal = new Date(b.created_at).getTime();
+                            }
+                            
+                            if (sortOrder === 'asc') {
+                              return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+                            } else {
+                              return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+                            }
+                          })
+                          .map(n => {
+                            const traits = n.traits as { race?: string; class?: string; background?: string; temperament?: string } | undefined;
+                            const stats = n.stats as { level?: number } | undefined;
+                            return (
+                              <tr key={n.id} className="hover:bg-gray-800/30 transition-colors">
+                                <td className="px-4 py-3 text-sm font-medium">{n.name}</td>
+                                <td className="px-4 py-3 text-sm text-gray-300">{traits?.race || '-'}</td>
+                                <td className="px-4 py-3 text-sm text-gray-300">{traits?.class || '-'}</td>
+                                <td className="px-4 py-3 text-sm text-gray-300">{stats?.level ?? 0}</td>
+                                <td className="px-4 py-3 text-sm text-gray-400 max-w-xs truncate">{n.bio || '-'}</td>
+                                <td className="px-4 py-3 text-xs text-gray-500">{new Date(n.created_at).toLocaleDateString()}</td>
+                                <td className="px-4 py-3">
+                                  <Link
+                                    href={`/world/${worldId}/npc/${n.id}`}
+                                    className="text-blue-400 hover:text-blue-300 text-sm underline"
+                                  >
+                                    View
+                                  </Link>
+                                </td>
+                              </tr>
+                            );
+                          })}
+                      </tbody>
+                    </table>
+                  </div>
+                </div>
+              </>
             )}
           </div>
         )}

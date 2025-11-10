@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { runWorkersAIText } from '../_lib/ai';
+import { generateNPC, type GenerateNPCOptions } from '../_lib/npc-procedural';
 
 interface GenerateWorldNpcBody {
   worldId: string;
@@ -8,6 +9,11 @@ interface GenerateWorldNpcBody {
   ruleset?: string;
   locationId?: string;
   level?: number;
+  race?: string;
+  class?: string;
+  background?: string;
+  temperament?: string;
+  fullyRandom?: boolean;
 }
 
 export const onRequest: PagesFunction = async (context) => {
@@ -70,18 +76,37 @@ export const onRequest: PagesFunction = async (context) => {
     });
   }
 
-  // Generate world NPC draft using Workers AI if configured; fallback to lightweight randomizer
+  // Parse tags for race, class, temperament
+  const raceFromTags = body.tags?.find(t => ['elf', 'dwarf', 'human', 'halfling', 'orc', 'tiefling', 'dragonborn', 'gnome'].includes(t.toLowerCase()));
+  const temperamentFromTags = body.tags?.find(t => ['aggressive', 'friendly', 'cautious', 'reckless', 'stoic', 'cheerful', 'neutral'].includes(t.toLowerCase()));
+  const classFromTags = body.tags?.find(t => ['commoner', 'guard', 'noble', 'merchant', 'scholar', 'warrior', 'spellcaster', 'rogue', 'ranger', 'cleric'].includes(t.toLowerCase()));
+
+  // Generate base NPC procedurally (always)
+  const proceduralOptions: GenerateNPCOptions = {
+    nameHint: body.nameHint,
+    race: body.race || raceFromTags,
+    class: body.class || classFromTags,
+    level: body.level ?? 0,
+    background: body.background,
+    temperament: body.temperament || temperamentFromTags || 'neutral',
+    fullyRandom: body.fullyRandom ?? false
+  };
+
+  let npcDraft = generateNPC(proceduralOptions);
+
+  // Optionally enhance with AI if enabled
   const modelEnabled = (env.WORKERS_AI_ENABLE as string | undefined)?.toLowerCase() === 'true';
-  let npcDraft: any;
   if (modelEnabled) {
-    const userPromptParts = [
-      body.nameHint ? `User prompt: ${body.nameHint}` : '',
-      body.tags && body.tags.length ? `Tags: ${body.tags.join(', ')}` : '',
-      body.level != null ? `Desired level: ${body.level}` : '',
-    ].filter(Boolean);
-    const system = 'You are a TTRPG content generator. Return ONLY JSON matching the schema with no extra text.';
-    const prompt = `Generate a D&D 5e NPC as compact JSON with keys: name (string), bio (string), backstory (string), traits { race, temperament, keywords[] }, stats { level, abilities { str,dex,con,int,wis,cha }, equipment }, image_url (null), voice_id (null). ${userPromptParts.join(' ')}.`;
     try {
+      const system = 'You are a TTRPG content generator. Enhance the given NPC with creative details while maintaining the core structure. Return ONLY JSON matching the schema with no extra text.';
+      const prompt = `Enhance this D&D 5e NPC with more creative and detailed content. Base NPC: ${JSON.stringify({
+        name: npcDraft.name,
+        bio: npcDraft.bio,
+        backstory: npcDraft.backstory,
+        traits: npcDraft.traits,
+        stats: npcDraft.stats
+      })}. Return enhanced JSON with keys: name (string), bio (string), backstory (string), traits { race, temperament, personalityTraits[], ideal, bond, flaw, background, class, keywords[] }, stats { level, abilities { str,dex,con,int,wis,cha }, equipment }. Make the content more vivid and original while keeping the same structure.`;
+      
       const output = await runWorkersAIText(
         {
           CLOUDFLARE_API_TOKEN: env.CLOUDFLARE_API_TOKEN as string | undefined,
@@ -89,53 +114,42 @@ export const onRequest: PagesFunction = async (context) => {
           WORKERS_AI_MODEL: (env.WORKERS_AI_MODEL as string | undefined) || undefined,
         },
         prompt,
-        { system, maxTokens: 700 }
+        { system, maxTokens: 1000, temperature: 0.8 }
       );
+
       // Try to extract JSON
       const jsonStart = output.indexOf('{');
       const jsonEnd = output.lastIndexOf('}');
       const maybe = jsonStart >= 0 && jsonEnd > jsonStart ? output.slice(jsonStart, jsonEnd + 1) : output;
-      npcDraft = JSON.parse(maybe);
-      npcDraft.ruleset = body.ruleset ?? 'DND5E_2024';
-      npcDraft.location_id = body.locationId ?? null;
-      npcDraft.affiliations = npcDraft.affiliations ?? [];
-      npcDraft.relationships = npcDraft.relationships ?? {};
-      npcDraft.connections = npcDraft.connections ?? [];
+      const aiEnhanced = JSON.parse(maybe);
+      
+      // Merge AI enhancements with procedural base (AI can enhance but not replace core structure)
+      if (aiEnhanced.name) npcDraft.name = aiEnhanced.name;
+      if (aiEnhanced.bio) npcDraft.bio = aiEnhanced.bio;
+      if (aiEnhanced.backstory) npcDraft.backstory = aiEnhanced.backstory;
+      if (aiEnhanced.traits) {
+        npcDraft.traits = { ...npcDraft.traits, ...aiEnhanced.traits };
+      }
+      if (aiEnhanced.stats) {
+        npcDraft.stats = { ...npcDraft.stats, ...aiEnhanced.stats };
+      }
     } catch (err) {
-      // Fall back to local generation
-      npcDraft = null;
+      // If AI fails, use procedural base (no degradation)
+      console.error('AI enhancement failed, using procedural base:', err);
     }
   }
-  if (!npcDraft) {
-    const race = body.tags?.find(t => t && ['elf', 'dwarf', 'human', 'halfling', 'orc', 'tiefling', 'dragonborn', 'gnome'].includes(t.toLowerCase())) || 'human';
-    const temperament = body.tags?.find(t => t && ['aggressive', 'friendly', 'cautious', 'reckless', 'stoic', 'cheerful'].includes(t.toLowerCase())) || 'neutral';
-    const keywords = body.tags?.filter(t => t && !['elf', 'dwarf', 'human', 'halfling', 'orc', 'tiefling', 'dragonborn', 'gnome', 'aggressive', 'friendly', 'cautious', 'reckless', 'stoic', 'cheerful'].includes(t.toLowerCase())).slice(0, 3) || [];
-    const name = body.nameHint || `${race.charAt(0).toUpperCase() + race.slice(1)} ${['Thorn', 'Grim', 'Bright', 'Swift', 'Iron', 'Storm'].sort(() => Math.random() - 0.5)[0]}`;
-    const level = typeof body.level === 'number' ? body.level : 0;
-    const statRoll = () => 8 + Math.floor(Math.random() * 5);
-    npcDraft = {
-      name,
-      bio: `A ${temperament} ${race} ${keywords.length > 0 ? `known for ${keywords.join(', ')}` : 'with a mysterious past'}.`,
-      backstory: `Born in ${['a small village', 'the capital', 'a remote outpost', 'the wilderness'][Math.floor(Math.random() * 4)]}, this ${race} has lived a life marked by ${keywords[0] || 'uncertainty'}. ${keywords[1] ? `They are ${keywords[1]}.` : ''} ${keywords[2] ? `Their ${keywords[2]} defines much of who they are.` : ''}`,
-      traits: {
-        race,
-        temperament,
-        keywords: keywords.slice(0, 3),
-      },
-      stats: {
-        level,
-        abilities: { str: statRoll(), dex: statRoll(), con: statRoll(), int: statRoll(), wis: statRoll(), cha: statRoll() },
-        equipment: body.tags?.find(t => t?.toLowerCase().includes('sword') || t?.toLowerCase().includes('staff') || t?.toLowerCase().includes('bow')) || 'basic gear',
-      },
-      image_url: null,
-      voice_id: null,
-      ruleset: body.ruleset ?? 'DND5E_2024',
-      location_id: body.locationId ?? null,
-      affiliations: [],
-      relationships: {},
-      connections: [],
-    };
-  }
+
+  // Add metadata
+  npcDraft = {
+    ...npcDraft,
+    image_url: null,
+    voice_id: null,
+    ruleset: body.ruleset ?? 'DND5E_2024',
+    location_id: body.locationId ?? null,
+    affiliations: [],
+    relationships: {},
+    connections: []
+  } as any;
 
   const { data: outRow, error: outErr } = await supabase
     .from('generation_output')
@@ -164,10 +178,10 @@ export const onRequest: PagesFunction = async (context) => {
       backstory: npcDraft.backstory,
       traits: npcDraft.traits,
       stats: npcDraft.stats,
-      location_id: npcDraft.location_id,
-      affiliations: npcDraft.affiliations,
-      relationships: npcDraft.relationships,
-      connections: npcDraft.connections,
+      location_id: (npcDraft as any).location_id ?? null,
+      affiliations: (npcDraft as any).affiliations ?? [],
+      relationships: (npcDraft as any).relationships ?? {},
+      connections: (npcDraft as any).connections ?? [],
       visibility: 'public',
     })
     .select()
