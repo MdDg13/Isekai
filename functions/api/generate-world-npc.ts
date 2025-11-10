@@ -92,7 +92,7 @@ export const onRequest: PagesFunction = async (context) => {
     fullyRandom: body.fullyRandom ?? false
   };
 
-  let npcDraft = generateNPC(proceduralOptions);
+  const npcDraft = generateNPC(proceduralOptions);
 
   // Optionally enhance with AI if enabled
   const modelEnabled = (env.WORKERS_AI_ENABLE as string | undefined)?.toLowerCase() === 'true';
