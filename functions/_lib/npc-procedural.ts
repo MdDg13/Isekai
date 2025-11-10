@@ -206,20 +206,35 @@ function generateStats(npcClass: NPCClass, level: number): { str: number; dex: n
   const rollStat = () => 8 + Math.floor(Math.random() * 8);
 
   // Set base stats
-  Object.keys(baseStats).forEach(stat => {
-    baseStats[stat] = rollStat();
-  });
+  const baseStats: { str: number; dex: number; con: number; int: number; wis: number; cha: number } = {
+    str: rollStat(),
+    dex: rollStat(),
+    con: rollStat(),
+    int: rollStat(),
+    wis: rollStat(),
+    cha: rollStat()
+  };
 
   // Boost stats based on class priorities
   npcClass.statPriorities.forEach(stat => {
-    baseStats[stat] = Math.max(baseStats[stat], 13 + Math.floor(Math.random() * 3));
+    if (stat === 'str') baseStats.str = Math.max(baseStats.str, 13 + Math.floor(Math.random() * 3));
+    if (stat === 'dex') baseStats.dex = Math.max(baseStats.dex, 13 + Math.floor(Math.random() * 3));
+    if (stat === 'con') baseStats.con = Math.max(baseStats.con, 13 + Math.floor(Math.random() * 3));
+    if (stat === 'int') baseStats.int = Math.max(baseStats.int, 13 + Math.floor(Math.random() * 3));
+    if (stat === 'wis') baseStats.wis = Math.max(baseStats.wis, 13 + Math.floor(Math.random() * 3));
+    if (stat === 'cha') baseStats.cha = Math.max(baseStats.cha, 13 + Math.floor(Math.random() * 3));
   });
 
   // Level-based improvements (every 4 levels, +1 to primary stat)
   const levelBonus = Math.floor(level / 4);
   if (npcClass.statPriorities.length > 0) {
     const primaryStat = npcClass.statPriorities[0];
-    baseStats[primaryStat] += levelBonus;
+    if (primaryStat === 'str') baseStats.str += levelBonus;
+    if (primaryStat === 'dex') baseStats.dex += levelBonus;
+    if (primaryStat === 'con') baseStats.con += levelBonus;
+    if (primaryStat === 'int') baseStats.int += levelBonus;
+    if (primaryStat === 'wis') baseStats.wis += levelBonus;
+    if (primaryStat === 'cha') baseStats.cha += levelBonus;
   }
 
   return baseStats;
