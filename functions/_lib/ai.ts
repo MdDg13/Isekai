@@ -43,7 +43,7 @@ export async function runWorkersAIText(env: WorkersAIEnv, prompt: string, option
     const text = await res.text();
     throw new Error(`Workers AI request failed: ${res.status} ${text}`);
   }
-  const json = await res.json() as any;
+  const json = await res.json() as { result?: { response?: string; output_text?: string } };
   // Common Workers AI response shape: { result: { response: string } } or { result: { output_text: string } }
   const content = json?.result?.response ?? json?.result?.output_text ?? '';
   if (typeof content !== 'string' || content.trim().length === 0) {

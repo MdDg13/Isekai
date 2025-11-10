@@ -155,7 +155,7 @@ export const onRequest: PagesFunction = async (context) => {
     .from('generation_output')
     .insert({
       request_id: reqRow.id,
-      content: npcDraft,
+      content: finalNpc,
       status: 'draft',
     })
     .select()
@@ -173,15 +173,15 @@ export const onRequest: PagesFunction = async (context) => {
     .from('world_npc')
     .insert({
       world_id: body.worldId,
-      name: npcDraft.name,
-      bio: npcDraft.bio,
-      backstory: npcDraft.backstory,
-      traits: npcDraft.traits,
-      stats: npcDraft.stats,
-      location_id: (npcDraft as any).location_id ?? null,
-      affiliations: (npcDraft as any).affiliations ?? [],
-      relationships: (npcDraft as any).relationships ?? {},
-      connections: (npcDraft as any).connections ?? [],
+      name: finalNpc.name,
+      bio: finalNpc.bio,
+      backstory: finalNpc.backstory,
+      traits: finalNpc.traits,
+      stats: finalNpc.stats,
+      location_id: finalNpc.location_id ?? null,
+      affiliations: finalNpc.affiliations ?? [],
+      relationships: finalNpc.relationships ?? {},
+      connections: finalNpc.connections ?? [],
       visibility: 'public',
     })
     .select()

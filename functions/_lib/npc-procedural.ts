@@ -350,7 +350,7 @@ export function generateNPC(options: GenerateNPCOptions = {}): GeneratedNPC {
     level = 0,
     background: specifiedBackground,
     temperament = 'neutral',
-    fullyRandom = false
+    fullyRandom: _fullyRandom = false
   } = options;
 
   // Select race
