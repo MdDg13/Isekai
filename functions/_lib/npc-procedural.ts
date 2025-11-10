@@ -192,8 +192,8 @@ function selectBackground(npcClass: NPCClass, specifiedBackground?: string): Bac
 /**
  * Generate stats based on class and level
  */
-function generateStats(npcClass: NPCClass, level: number): Record<string, number> {
-  const baseStats: Record<string, number> = {
+function generateStats(npcClass: NPCClass, level: number): { str: number; dex: number; con: number; int: number; wis: number; cha: number } {
+  const baseStats: { str: number; dex: number; con: number; int: number; wis: number; cha: number } = {
     str: 10,
     dex: 10,
     con: 10,
