@@ -1,6 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { runWorkersAIText } from '../_lib/ai';
-import { generateNPC, type GenerateNPCOptions } from '../_lib/npc-procedural';
+import { generateNPC, type GenerateNPCOptions, type GeneratedNPC } from '../_lib/npc-procedural';
 
 interface GenerateWorldNpcBody {
   worldId: string;
@@ -139,8 +139,18 @@ export const onRequest: PagesFunction = async (context) => {
     }
   }
 
-  // Add metadata
-  npcDraft = {
+  // Add metadata (extend GeneratedNPC with additional fields)
+  interface ExtendedNPC extends GeneratedNPC {
+    image_url: null;
+    voice_id: null;
+    ruleset: string;
+    location_id: string | null;
+    affiliations: unknown[];
+    relationships: Record<string, unknown>;
+    connections: unknown[];
+  }
+  
+  const finalNpc: ExtendedNPC = {
     ...npcDraft,
     image_url: null,
     voice_id: null,
@@ -149,7 +159,7 @@ export const onRequest: PagesFunction = async (context) => {
     affiliations: [],
     relationships: {},
     connections: []
-  } as any;
+  };
 
   const { data: outRow, error: outErr } = await supabase
     .from('generation_output')
