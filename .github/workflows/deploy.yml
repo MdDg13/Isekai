@@ -55,6 +55,24 @@ jobs:
             echo "Supabase key configured: ${NEXT_PUBLIC_SUPABASE_ANON_KEY:0:30}..."
           fi
           npm run build 2>&1 | tee deployment-logs/build-$(date +%Y%m%d-%H%M%S).log
+          BUILD_EXIT_CODE=${PIPESTATUS[0]}
+          if [ $BUILD_EXIT_CODE -ne 0 ]; then
+            echo "ERROR: Build failed with exit code $BUILD_EXIT_CODE"
+            exit $BUILD_EXIT_CODE
+          fi
+          # Verify out/ directory was created
+          if [ ! -d out ] || [ -z "$(ls -A out)" ]; then
+            echo "ERROR: Build succeeded but out/ directory is empty or missing"
+            echo "Attempting to create out/ directory manually..."
+            mkdir -p out
+            # Try next export as fallback
+            npx next export -o out 2>&1 | tee deployment-logs/export-fallback-$(date +%Y%m%d-%H%M%S).log || true
+            if [ ! -d out ] || [ -z "$(ls -A out)" ]; then
+              echo "ERROR: Failed to create out/ directory"
+              exit 1
+            fi
+          fi
+          echo "Build successful - out/ directory created"
         continue-on-error: false
       
       - name: Inspect export directory
