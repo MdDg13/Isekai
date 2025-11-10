@@ -139,7 +139,6 @@ jobs:
             echo "Wrangler output:" | tee -a deployment-logs/wrangler-deploy-${{ github.sha }}.log
             cat deployment-logs/wrangler-deploy-${{ github.sha }}.log | tee -a deployment-logs/wrangler-deploy-${{ github.sha }}.log
           fi
-        continue-on-error: true
       
       - name: Fetch latest deployment info
         if: always() && steps.deploy.outcome == 'success'
