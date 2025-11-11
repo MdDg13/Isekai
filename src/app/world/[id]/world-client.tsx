@@ -479,6 +479,24 @@ export default function WorldClient({ worldId }: WorldClientProps) {
                       cha?: number;
                     };
                     equipment?: string;
+                    combat?: {
+                      hitpoints?: number;
+                      maxHitpoints?: number;
+                      armorClass?: number;
+                      speed?: number;
+                      weapons?: Array<{
+                        name?: string;
+                        type?: string;
+                        damage?: string;
+                        damageType?: string;
+                        toHit?: number;
+                        damageBonus?: number;
+                        range?: string;
+                      }>;
+                      damageResistances?: string[];
+                      damageImmunities?: string[];
+                      conditionImmunities?: string[];
+                    };
                   } | undefined;
                   
                   return (
@@ -558,7 +576,7 @@ export default function WorldClient({ worldId }: WorldClientProps) {
                               <h2 className="text-lg font-medium mb-3">Stats</h2>
                               <p className="text-gray-300 mb-2">Level: {stats?.level ?? 0}</p>
                               {stats?.abilities && (
-                                <div className="grid grid-cols-2 gap-2 text-sm text-gray-300">
+                                <div className="grid grid-cols-2 gap-2 text-sm text-gray-300 mb-3">
                                   <span>STR: {stats.abilities.str ?? '-'}</span>
                                   <span>DEX: {stats.abilities.dex ?? '-'}</span>
                                   <span>CON: {stats.abilities.con ?? '-'}</span>
@@ -567,7 +585,81 @@ export default function WorldClient({ worldId }: WorldClientProps) {
                                   <span>CHA: {stats.abilities.cha ?? '-'}</span>
                                 </div>
                               )}
-                              {stats?.equipment && <p className="text-gray-300 mt-3">Equipment: {stats.equipment}</p>}
+                              {stats?.equipment && <p className="text-gray-300 text-sm mb-3">Equipment: {stats.equipment}</p>}
+                            </div>
+                            
+                            {/* Combat Stats */}
+                            <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-4">
+                              <h2 className="text-lg font-medium mb-3">Combat</h2>
+                              <div className="space-y-2 text-sm">
+                                {stats?.combat?.hitpoints !== undefined && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-400">HP:</span>
+                                    <span className="text-gray-300">
+                                      {stats.combat.hitpoints}
+                                      {stats.combat.maxHitpoints !== undefined && ` / ${stats.combat.maxHitpoints}`}
+                                    </span>
+                                  </div>
+                                )}
+                                {stats?.combat?.armorClass !== undefined && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-400">AC:</span>
+                                    <span className="text-gray-300">{stats.combat.armorClass}</span>
+                                  </div>
+                                )}
+                                {stats?.combat?.speed !== undefined && (
+                                  <div className="flex justify-between">
+                                    <span className="text-gray-400">Speed:</span>
+                                    <span className="text-gray-300">{stats.combat.speed} ft</span>
+                                  </div>
+                                )}
+                                {stats?.combat?.weapons && stats.combat.weapons.length > 0 && (
+                                  <div className="mt-3">
+                                    <p className="text-gray-400 mb-2 font-medium">Weapons:</p>
+                                    <div className="space-y-2">
+                                      {stats.combat.weapons.map((weapon, i) => (
+                                        <div key={i} className="border-l-2 border-gray-700 pl-2">
+                                          <p className="text-gray-300 font-medium">{weapon.name || 'Unnamed Weapon'}</p>
+                                          {weapon.type && <p className="text-gray-400 text-xs">{weapon.type}</p>}
+                                          <div className="text-gray-300 text-xs mt-1">
+                                            {weapon.toHit !== undefined && (
+                                              <span>To Hit: {weapon.toHit >= 0 ? '+' : ''}{weapon.toHit}</span>
+                                            )}
+                                            {weapon.damage && (
+                                              <span className="ml-2">
+                                                Damage: {weapon.damage}
+                                                {weapon.damageBonus !== undefined && (
+                                                  <span> {weapon.damageBonus >= 0 ? '+' : ''}{weapon.damageBonus}</span>
+                                                )}
+                                                {weapon.damageType && <span> {weapon.damageType}</span>}
+                                              </span>
+                                            )}
+                                            {weapon.range && <span className="ml-2">Range: {weapon.range}</span>}
+                                          </div>
+                                        </div>
+                                      ))}
+                                    </div>
+                                  </div>
+                                )}
+                                {stats?.combat?.damageResistances && stats.combat.damageResistances.length > 0 && (
+                                  <div className="mt-3">
+                                    <p className="text-gray-400 mb-1 text-xs">Resistances:</p>
+                                    <p className="text-gray-300 text-xs">{stats.combat.damageResistances.join(', ')}</p>
+                                  </div>
+                                )}
+                                {stats?.combat?.damageImmunities && stats.combat.damageImmunities.length > 0 && (
+                                  <div className="mt-2">
+                                    <p className="text-gray-400 mb-1 text-xs">Immunities:</p>
+                                    <p className="text-gray-300 text-xs">{stats.combat.damageImmunities.join(', ')}</p>
+                                  </div>
+                                )}
+                                {stats?.combat?.conditionImmunities && stats.combat.conditionImmunities.length > 0 && (
+                                  <div className="mt-2">
+                                    <p className="text-gray-400 mb-1 text-xs">Condition Immunities:</p>
+                                    <p className="text-gray-300 text-xs">{stats.combat.conditionImmunities.join(', ')}</p>
+                                  </div>
+                                )}
+                              </div>
                             </div>
                             
                             {/* Traits */}
@@ -663,6 +755,22 @@ export default function WorldClient({ worldId }: WorldClientProps) {
                     >
                       {sortOrder === 'asc' ? '↑' : '↓'}
                     </button>
+                    <button
+                      onClick={() => {
+                        if (worldNpcs.length > 0) {
+                          if (viewMode === 'list') {
+                            setSelectedNpcId(worldNpcs[0].id);
+                            setViewMode('detail');
+                          } else {
+                            setViewMode('list');
+                            setSelectedNpcId(null);
+                          }
+                        }
+                      }}
+                      className="rounded-md border border-gray-700 bg-gray-900/50 px-3 py-2.5 text-sm hover:bg-gray-800 transition-colors"
+                    >
+                      {viewMode === 'list' ? 'Details View' : 'List View'}
+                    </button>
                   </div>
                 </div>
 
@@ -721,8 +829,6 @@ export default function WorldClient({ worldId }: WorldClientProps) {
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Race</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Class</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Level</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Bio</th>
-                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Created</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Actions</th>
                         </tr>
                       </thead>
@@ -796,8 +902,6 @@ export default function WorldClient({ worldId }: WorldClientProps) {
                                 <td className="px-4 py-3 text-sm text-gray-300">{traits?.race || '-'}</td>
                                 <td className="px-4 py-3 text-sm text-gray-300">{traits?.class || '-'}</td>
                                 <td className="px-4 py-3 text-sm text-gray-300">{stats?.level ?? 0}</td>
-                                <td className="px-4 py-3 text-sm text-gray-400 max-w-xs truncate">{n.bio || '-'}</td>
-                                <td className="px-4 py-3 text-xs text-gray-500">{new Date(n.created_at).toLocaleDateString()}</td>
                                 <td className="px-4 py-3">
                                   <button
                                     onClick={e => {
