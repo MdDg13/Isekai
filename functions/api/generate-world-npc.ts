@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { runWorkersAIText } from '../_lib/ai';
+import { runWorkersAIText, runWorkersAIJSON } from '../_lib/ai';
 import { generateNPC, type GenerateNPCOptions, type GeneratedNPC } from '../_lib/npc-procedural';
 
 interface GenerateWorldNpcBody {
@@ -98,41 +98,108 @@ export const onRequest: PagesFunction = async (context) => {
   const modelEnabled = (env.WORKERS_AI_ENABLE as string | undefined)?.toLowerCase() === 'true';
   if (modelEnabled) {
     try {
-      const system = 'You are a TTRPG content generator. Enhance the given NPC with creative details while maintaining the core structure. Return ONLY JSON matching the schema with no extra text.';
-      const prompt = `Enhance this D&D 5e NPC with more creative and detailed content. Base NPC: ${JSON.stringify({
-        name: npcDraft.name,
-        bio: npcDraft.bio,
-        backstory: npcDraft.backstory,
-        traits: npcDraft.traits,
-        stats: npcDraft.stats
-      })}. Return enhanced JSON with keys: name (string), bio (string), backstory (string), traits { race, temperament, personalityTraits[], ideal, bond, flaw, background, class, keywords[] }, stats { level, abilities { str,dex,con,int,wis,cha }, equipment }. Make the content more vivid and original while keeping the same structure.`;
-      
-      const output = await runWorkersAIText(
+      const intentParts: string[] = [];
+      if (body.nameHint) intentParts.push(`nameHint="${body.nameHint}"`);
+      if (body.class) intentParts.push(`class=${body.class}`);
+      if (body.race) intentParts.push(`race=${body.race}`);
+      if (body.background) intentParts.push(`background=${body.background}`);
+      if (body.temperament) intentParts.push(`temperament=${body.temperament}`);
+      if (body.tags && body.tags.length) intentParts.push(`tags=${body.tags.join(', ')}`);
+      const intent = intentParts.length ? `User intent: ${intentParts.join(' | ')}.` : 'User intent: none specified.';
+
+      // Step 1: Enhancement with strict schema + examples
+      type Enhanced = {
+        name: string;
+        bio: string;
+        backstory: string;
+        traits: {
+          race?: string; temperament?: string; personalityTraits?: string[]; ideal?: string; bond?: string; flaw?: string;
+          background?: string; class?: string; keywords?: string[];
+        };
+        stats: {
+          level?: number;
+          abilities?: { str?: number; dex?: number; con?: number; int?: number; wis?: number; cha?: number };
+          equipment?: string;
+          combat?: {
+            hitpoints?: number; maxHitpoints?: number; armorClass?: number; speed?: number;
+            weapons?: Array<{ name?: string; type?: string; damage?: string; damageType?: string; toHit?: number; damageBonus?: number; range?: string; }>;
+            damageResistances?: string[]; damageImmunities?: string[]; conditionImmunities?: string[];
+          };
+        };
+      };
+
+      const enhancePrompt =
+`You are improving a D&D 5e NPC so it is creative, coherent, and immediately usable by a DM.
+${intent}
+Rules:
+- Respect all explicit user constraints (class, race, background, temperament, name hints). Do not change them.
+- Keep content concise but evocative; avoid generic filler.
+- Align bio/backstory with the specified class/race and setting-neutral fantasy tone.
+- Prefer concrete, game-usable hooks over vague traits.
+
+Return JSON matching the Enhanced schema only.
+Base NPC JSON:
+${JSON.stringify(npcDraft)}`;
+
+      const aiEnhanced = await runWorkersAIJSON<Enhanced>(
         {
           CLOUDFLARE_API_TOKEN: env.CLOUDFLARE_API_TOKEN as string | undefined,
           CLOUDFLARE_ACCOUNT_ID: env.CLOUDFLARE_ACCOUNT_ID as string | undefined,
           WORKERS_AI_MODEL: (env.WORKERS_AI_MODEL as string | undefined) || undefined,
         },
-        prompt,
-        { system, maxTokens: 1000, temperature: 0.8 }
+        enhancePrompt,
+        { maxTokens: 1200, temperature: 0.5 }
       );
 
-      // Try to extract JSON
-      const jsonStart = output.indexOf('{');
-      const jsonEnd = output.lastIndexOf('}');
-      const maybe = jsonStart >= 0 && jsonEnd > jsonStart ? output.slice(jsonStart, jsonEnd + 1) : output;
-      const aiEnhanced = JSON.parse(maybe);
-      
-      // Merge AI enhancements with procedural base (AI can enhance but not replace core structure)
-      if (aiEnhanced.name) npcDraft.name = aiEnhanced.name;
-      if (aiEnhanced.bio) npcDraft.bio = aiEnhanced.bio;
-      if (aiEnhanced.backstory) npcDraft.backstory = aiEnhanced.backstory;
-      if (aiEnhanced.traits) {
-        npcDraft.traits = { ...npcDraft.traits, ...aiEnhanced.traits };
+      // Step 2: Self-critique and targeted edits
+      type Critique = {
+        issues: string[];
+        edits: Partial<Enhanced>;
+      };
+      const critiquePrompt =
+`Critique the NPC for:
+- Adherence to constraints (${intent}).
+- Clarity and DM usability (hooks, motivations, conflicts).
+- Creativity and uniqueness.
+Provide JSON: { "issues": string[], "edits": Partial<Enhanced> }.
+Only include edits that materially improve adherence/quality; keep structure.`;
+
+      const critique = await runWorkersAIJSON<Critique>(
+        {
+          CLOUDFLARE_API_TOKEN: env.CLOUDFLARE_API_TOKEN as string | undefined,
+          CLOUDFLARE_ACCOUNT_ID: env.CLOUDFLARE_ACCOUNT_ID as string | undefined,
+          WORKERS_AI_MODEL: (env.WORKERS_AI_MODEL as string | undefined) || undefined,
+        },
+        `Current NPC:\n${JSON.stringify(aiEnhanced)}\n\n${critiquePrompt}`,
+        { maxTokens: 800, temperature: 0.3 }
+      );
+
+      const mergedAfterCritique: Enhanced = {
+        ...aiEnhanced,
+        ...critique.edits,
+        traits: { ...(aiEnhanced.traits || {}), ...(critique.edits?.traits || {}) },
+        stats: { ...(aiEnhanced.stats || {}), ...(critique.edits?.stats || {}) },
+      };
+
+      // Enforce explicit constraints (final guardrails)
+      if (body.class) {
+        mergedAfterCritique.traits = { ...(mergedAfterCritique.traits || {}), class: body.class };
       }
-      if (aiEnhanced.stats) {
-        npcDraft.stats = { ...npcDraft.stats, ...aiEnhanced.stats };
+      if (body.race) {
+        mergedAfterCritique.traits = { ...(mergedAfterCritique.traits || {}), race: body.race };
       }
+      if (body.background) {
+        mergedAfterCritique.traits = { ...(mergedAfterCritique.traits || {}), background: body.background };
+      }
+      if (!mergedAfterCritique.stats) mergedAfterCritique.stats = {};
+      if (!mergedAfterCritique.stats.combat) mergedAfterCritique.stats.combat = {};
+
+      // Merge back into draft
+      if (mergedAfterCritique.name) npcDraft.name = mergedAfterCritique.name;
+      if (mergedAfterCritique.bio) npcDraft.bio = mergedAfterCritique.bio;
+      if (mergedAfterCritique.backstory) npcDraft.backstory = mergedAfterCritique.backstory;
+      npcDraft.traits = { ...npcDraft.traits, ...(mergedAfterCritique.traits || {}) };
+      npcDraft.stats = { ...npcDraft.stats, ...(mergedAfterCritique.stats || {}) };
     } catch (err) {
       // If AI fails, use procedural base (no degradation)
       console.error('AI enhancement failed, using procedural base:', err);

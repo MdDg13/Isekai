@@ -52,6 +52,45 @@ export async function runWorkersAIText(env: WorkersAIEnv, prompt: string, option
   return content;
 }
 
+/**
+ * Convenience helper to request STRICT JSON output.
+ * Adds a strong system instruction and trims to the outermost JSON object/array.
+ */
+export async function runWorkersAIJSON<T = unknown>(
+  env: WorkersAIEnv,
+  prompt: string,
+  options: TextGenOptions = {}
+): Promise<T> {
+  const strictSystem =
+    (options.system ? options.system + '\n' : '') +
+    'You must output ONLY valid JSON. No prose. No code fences. Do not explain.';
+
+  const text = await runWorkersAIText(env, prompt, {
+    ...options,
+    system: strictSystem,
+    temperature: options.temperature ?? 0.4,
+  });
+
+  // Extract JSON (robust to stray characters)
+  const firstBrace = text.indexOf('{');
+  const firstBracket = text.indexOf('[');
+  let start = -1;
+  if (firstBrace >= 0 && firstBracket >= 0) {
+    start = Math.min(firstBrace, firstBracket);
+  } else {
+    start = Math.max(firstBrace, firstBracket);
+  }
+  const lastBrace = text.lastIndexOf('}');
+  const lastBracket = text.lastIndexOf(']');
+  const end = Math.max(lastBrace, lastBracket);
+  const slice = start >= 0 && end > start ? text.slice(start, end + 1) : text;
+  try {
+    return JSON.parse(slice) as T;
+  } catch (e) {
+    throw new Error('Failed to parse JSON from Workers AI response');
+  }
+}
+
 /** Future hooks for image/voice generation (not implemented yet). */
 export type NotImplemented = never;
 
