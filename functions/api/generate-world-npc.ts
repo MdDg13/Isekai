@@ -200,6 +200,38 @@ Only include edits that materially improve adherence/quality; keep structure.`;
       if (mergedAfterCritique.backstory) npcDraft.backstory = mergedAfterCritique.backstory;
       npcDraft.traits = { ...npcDraft.traits, ...(mergedAfterCritique.traits || {}) };
       npcDraft.stats = { ...npcDraft.stats, ...(mergedAfterCritique.stats || {}) };
+
+      // Step 3: Style normalization (third-person, coherent, concrete hooks)
+      type StyleEdit = { bio?: string; backstory?: string };
+      const stylePrompt =
+`Rewrite the NPC's bio and backstory to be:
+- Third-person perspective only (never "I", "me", or "my").
+- Grammatically correct, varied sentence structure, and vivid but concise.
+- Coherent: motivations and history should connect logically.
+- Concrete: replace vague references (e.g., "a punishment") with specific, setting-neutral details.
+Return JSON with optionally: { "bio": string, "backstory": string }.
+Do not change race/class/background facts.
+
+Current NPC:
+${JSON.stringify({
+  name: npcDraft.name,
+  bio: npcDraft.bio,
+  backstory: npcDraft.backstory,
+  traits: npcDraft.traits,
+})}`;
+
+      const styleEdits = await runWorkersAIJSON<StyleEdit>(
+        {
+          CLOUDFLARE_API_TOKEN: env.CLOUDFLARE_API_TOKEN as string | undefined,
+          CLOUDFLARE_ACCOUNT_ID: env.CLOUDFLARE_ACCOUNT_ID as string | undefined,
+          WORKERS_AI_MODEL: (env.WORKERS_AI_MODEL as string | undefined) || undefined,
+        },
+        stylePrompt,
+        { maxTokens: 800, temperature: 0.3 }
+      );
+
+      if (styleEdits?.bio) npcDraft.bio = styleEdits.bio;
+      if (styleEdits?.backstory) npcDraft.backstory = styleEdits.backstory;
     } catch (err) {
       // If AI fails, use procedural base (no degradation)
       console.error('AI enhancement failed, using procedural base:', err);
@@ -246,6 +278,61 @@ Only include edits that materially improve adherence/quality; keep structure.`;
   }
 
   // Materialize a world_npc row
+  // Fill in basic combat stats if missing
+  function abilityMod(score?: number): number {
+    if (typeof score !== 'number') return 0;
+    return Math.floor((score - 10) / 2);
+  }
+
+  type StatsShape = NonNullable<GeneratedNPC['stats']> & {
+    combat?: {
+      hitpoints?: number; maxHitpoints?: number; armorClass?: number; speed?: number;
+      weapons?: Array<{ name?: string; type?: string; damage?: string; damageType?: string; toHit?: number; damageBonus?: number; range?: string; }>;
+    };
+  };
+
+  const statsObj = (finalNpc.stats || {}) as StatsShape;
+  const abilities = statsObj.abilities || {};
+  const dexMod = abilityMod(abilities.dex);
+  const conMod = abilityMod(abilities.con);
+  const lvl = typeof statsObj.level === 'number' && statsObj.level >= 0 ? statsObj.level : 0;
+
+  if (!statsObj.combat) statsObj.combat = {};
+  if (statsObj.combat.hitpoints === undefined) {
+    const baseHP = 6 + conMod; // simple baseline
+    statsObj.combat.hitpoints = Math.max(1, baseHP + Math.max(0, lvl) * 5);
+    statsObj.combat.maxHitpoints = statsObj.combat.hitpoints;
+  }
+  if (statsObj.combat.armorClass === undefined) {
+    const eq = (statsObj.equipment || '').toLowerCase();
+    let ac = 10 + dexMod;
+    if (eq.includes('leather armor')) ac = 11 + dexMod;
+    if (eq.includes('studded leather')) ac = 12 + dexMod;
+    if (eq.includes('chain shirt')) ac = 13 + Math.min(2, dexMod);
+    if (eq.includes('chain mail')) ac = 16; // no dex mod
+    statsObj.combat.armorClass = ac;
+  }
+  if (!statsObj.combat.weapons || statsObj.combat.weapons.length === 0) {
+    const eq = (statsObj.equipment || '').toLowerCase();
+    const weapons: NonNullable<StatsShape['combat']>['weapons'] = [];
+    const toHit = dexMod >= abilityMod(abilities.str) ? dexMod : abilityMod(abilities.str);
+
+    if (eq.includes('longbow')) {
+      weapons.push({ name: 'Longbow', type: 'ranged', damage: '1d8', damageType: 'piercing', toHit, damageBonus: dexMod, range: '150/600' });
+    }
+    if (eq.includes('shortsword')) {
+      weapons.push({ name: 'Shortsword', type: 'melee', damage: '1d6', damageType: 'piercing', toHit, damageBonus: dexMod, range: '5' });
+    }
+    if (eq.includes('longsword')) {
+      weapons.push({ name: 'Longsword', type: 'melee', damage: '1d8', damageType: 'slashing', toHit: abilityMod(abilities.str), damageBonus: abilityMod(abilities.str), range: '5' });
+    }
+
+    if (weapons.length === 0) {
+      weapons.push({ name: 'Dagger', type: 'melee', damage: '1d4', damageType: 'piercing', toHit, damageBonus: dexMod, range: '5/20/60' });
+    }
+    statsObj.combat.weapons = weapons;
+  }
+
   const { data: npcRow, error: npcErr } = await supabase
     .from('world_npc')
     .insert({
@@ -254,7 +341,7 @@ Only include edits that materially improve adherence/quality; keep structure.`;
       bio: finalNpc.bio,
       backstory: finalNpc.backstory,
       traits: finalNpc.traits,
-      stats: finalNpc.stats,
+      stats: { ...finalNpc.stats, combat: statsObj.combat },
       location_id: finalNpc.location_id ?? null,
       affiliations: finalNpc.affiliations ?? [],
       relationships: finalNpc.relationships ?? {},
