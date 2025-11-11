@@ -343,14 +343,14 @@ function generateBio(
  * Main generation function
  */
 export function generateNPC(options: GenerateNPCOptions = {}): GeneratedNPC {
+  // fullyRandom is accepted in options but not used in generation logic
   const {
     nameHint,
     race: specifiedRace,
     class: specifiedClass,
     level = 0,
     background: specifiedBackground,
-    temperament = 'neutral',
-    fullyRandom: _fullyRandom = false
+    temperament = 'neutral'
   } = options;
 
   // Select race
