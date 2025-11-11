@@ -3,7 +3,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { useMemo, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import BuildBadge from "@/components/BuildBadge";
 
 interface WorldClientProps {
@@ -11,7 +10,6 @@ interface WorldClientProps {
 }
 
 export default function WorldClient({ worldId }: WorldClientProps) {
-  const router = useRouter();
   const supabase = useMemo(() => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -65,6 +63,11 @@ export default function WorldClient({ worldId }: WorldClientProps) {
   const [sortBy, setSortBy] = useState<'name' | 'level' | 'race' | 'created_at'>('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
   const [selectedNpcs, setSelectedNpcs] = useState<Set<string>>(new Set());
+  
+  // Detail view state
+  const [viewMode, setViewMode] = useState<'list' | 'detail'>('list');
+  const [selectedNpcId, setSelectedNpcId] = useState<string | null>(null);
+  const [selectedNpc, setSelectedNpc] = useState<typeof worldNpcs[0] | null>(null);
 
   const loadWorld = useCallback(async () => {
     if (!supabase) return;
@@ -103,6 +106,16 @@ export default function WorldClient({ worldId }: WorldClientProps) {
     loadWorld();
     loadWorldNpcs();
   }, [supabase, worldId, loadWorld, loadWorldNpcs]);
+  
+  // Update selected NPC when ID changes
+  useEffect(() => {
+    if (selectedNpcId && worldNpcs.length > 0) {
+      const npc = worldNpcs.find(n => n.id === selectedNpcId);
+      setSelectedNpc(npc || null);
+    } else {
+      setSelectedNpc(null);
+    }
+  }, [selectedNpcId, worldNpcs]);
 
   if (!world) {
     return (
@@ -400,6 +413,226 @@ export default function WorldClient({ worldId }: WorldClientProps) {
               <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-8 text-center">
                 <p className="text-gray-400">No world NPCs yet. Generate your first NPC using the NPC Generator tab.</p>
               </div>
+            ) : viewMode === 'detail' && selectedNpc ? (
+              <>
+                {/* Detail View */}
+                {(() => {
+                  const filtered = worldNpcs.filter(n => {
+                    if (!searchQuery) return true;
+                    const query = searchQuery.toLowerCase();
+                    const traits = n.traits as { race?: string; class?: string; background?: string } | undefined;
+                    const stats = n.stats as { level?: number } | undefined;
+                    return (
+                      n.name.toLowerCase().includes(query) ||
+                      traits?.race?.toLowerCase().includes(query) ||
+                      traits?.class?.toLowerCase().includes(query) ||
+                      traits?.background?.toLowerCase().includes(query) ||
+                      n.bio?.toLowerCase().includes(query) ||
+                      stats?.level?.toString().includes(query)
+                    );
+                  }).sort((a, b) => {
+                    let aVal: string | number = '';
+                    let bVal: string | number = '';
+                    if (sortBy === 'name') {
+                      aVal = a.name;
+                      bVal = b.name;
+                    } else if (sortBy === 'level') {
+                      const aStats = a.stats as { level?: number } | undefined;
+                      const bStats = b.stats as { level?: number } | undefined;
+                      aVal = aStats?.level ?? 0;
+                      bVal = bStats?.level ?? 0;
+                    } else if (sortBy === 'race') {
+                      const aTraits = a.traits as { race?: string } | undefined;
+                      const bTraits = b.traits as { race?: string } | undefined;
+                      aVal = aTraits?.race ?? '';
+                      bVal = bTraits?.race ?? '';
+                    } else {
+                      aVal = new Date(a.created_at).getTime();
+                      bVal = new Date(b.created_at).getTime();
+                    }
+                    if (sortOrder === 'asc') {
+                      return aVal > bVal ? 1 : aVal < bVal ? -1 : 0;
+                    } else {
+                      return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
+                    }
+                  });
+                  const currentIndex = filtered.findIndex(n => n.id === selectedNpcId);
+                  const traits = selectedNpc.traits as {
+                    race?: string;
+                    class?: string;
+                    background?: string;
+                    temperament?: string;
+                    personalityTraits?: string[];
+                    ideal?: string;
+                    bond?: string;
+                    flaw?: string;
+                    keywords?: string[];
+                  } | undefined;
+                  const stats = selectedNpc.stats as {
+                    level?: number;
+                    abilities?: {
+                      str?: number;
+                      dex?: number;
+                      con?: number;
+                      int?: number;
+                      wis?: number;
+                      cha?: number;
+                    };
+                    equipment?: string;
+                  } | undefined;
+                  
+                  return (
+                    <>
+                      <div className="flex items-center justify-between mb-4">
+                        <button
+                          onClick={() => {
+                            setViewMode('list');
+                            setSelectedNpcId(null);
+                          }}
+                          className="text-blue-400 hover:text-blue-300 text-sm underline"
+                        >
+                          ← Back to List
+                        </button>
+                        <div className="flex items-center gap-2">
+                          <button
+                            onClick={() => {
+                              if (currentIndex > 0) {
+                                setSelectedNpcId(filtered[currentIndex - 1].id);
+                              }
+                            }}
+                            disabled={currentIndex === 0}
+                            className="px-3 py-1.5 rounded-md border border-gray-700 bg-gray-900/50 text-sm hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          >
+                            ← Previous
+                          </button>
+                          <span className="text-sm text-gray-400">
+                            {currentIndex + 1} / {filtered.length}
+                          </span>
+                          <button
+                            onClick={() => {
+                              if (currentIndex < filtered.length - 1) {
+                                setSelectedNpcId(filtered[currentIndex + 1].id);
+                              }
+                            }}
+                            disabled={currentIndex === filtered.length - 1}
+                            className="px-3 py-1.5 rounded-md border border-gray-700 bg-gray-900/50 text-sm hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+                          >
+                            Next →
+                          </button>
+                        </div>
+                      </div>
+                      
+                      {/* NPC Detail Content */}
+                      <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-6">
+                        <div className="grid gap-6 lg:grid-cols-3">
+                          {/* Main Content */}
+                          <div className="lg:col-span-2 space-y-6">
+                            <div>
+                              <h1 className="text-2xl sm:text-3xl font-display mb-2">{selectedNpc.name}</h1>
+                              {traits?.race && traits?.class && (
+                                <p className="text-sm text-gray-400">
+                                  {traits.race} {traits.class} {stats?.level ? `• Level ${stats.level}` : ''}
+                                </p>
+                              )}
+                            </div>
+                            
+                            {selectedNpc.bio && (
+                              <div>
+                                <h2 className="text-lg font-medium mb-2">Bio</h2>
+                                <p className="text-gray-300">{selectedNpc.bio}</p>
+                              </div>
+                            )}
+                            
+                            {selectedNpc.backstory && (
+                              <div>
+                                <h2 className="text-lg font-medium mb-2">Backstory</h2>
+                                <p className="text-gray-300 whitespace-pre-wrap">{selectedNpc.backstory}</p>
+                              </div>
+                            )}
+                          </div>
+                          
+                          {/* Sidebar */}
+                          <div className="lg:col-span-1 space-y-6">
+                            {/* Stats */}
+                            <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-4">
+                              <h2 className="text-lg font-medium mb-3">Stats</h2>
+                              <p className="text-gray-300 mb-2">Level: {stats?.level ?? 0}</p>
+                              {stats?.abilities && (
+                                <div className="grid grid-cols-2 gap-2 text-sm text-gray-300">
+                                  <span>STR: {stats.abilities.str ?? '-'}</span>
+                                  <span>DEX: {stats.abilities.dex ?? '-'}</span>
+                                  <span>CON: {stats.abilities.con ?? '-'}</span>
+                                  <span>INT: {stats.abilities.int ?? '-'}</span>
+                                  <span>WIS: {stats.abilities.wis ?? '-'}</span>
+                                  <span>CHA: {stats.abilities.cha ?? '-'}</span>
+                                </div>
+                              )}
+                              {stats?.equipment && <p className="text-gray-300 mt-3">Equipment: {stats.equipment}</p>}
+                            </div>
+                            
+                            {/* Traits */}
+                            <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-4">
+                              <h2 className="text-lg font-medium mb-3">Traits</h2>
+                              <p className="text-gray-300 mb-2">Race: {traits?.race || '-'}</p>
+                              <p className="text-gray-300 mb-2">Class: {traits?.class || '-'}</p>
+                              <p className="text-gray-300 mb-2">Background: {traits?.background || '-'}</p>
+                              <p className="text-gray-300 mb-2">Temperament: {traits?.temperament || '-'}</p>
+                              {traits?.personalityTraits && traits.personalityTraits.length > 0 && (
+                                <div className="mb-2">
+                                  <p className="text-gray-300 font-medium">Personality Traits:</p>
+                                  <ul className="list-disc list-inside text-gray-400 text-sm">
+                                    {traits.personalityTraits.map((t, i) => <li key={i}>{t}</li>)}
+                                  </ul>
+                                </div>
+                              )}
+                              {traits?.ideal && <p className="text-gray-300 mb-2">Ideal: {traits.ideal}</p>}
+                              {traits?.bond && <p className="text-gray-300 mb-2">Bond: {traits.bond}</p>}
+                              {traits?.flaw && <p className="text-gray-300 mb-2">Flaw: {traits.flaw}</p>}
+                              {traits?.keywords && traits.keywords.length > 0 && (
+                                <div className="mt-3 flex flex-wrap gap-1">
+                                  {traits.keywords.map((kw, i) => (
+                                    <span key={i} className="text-xs bg-gray-800 text-gray-300 px-2 py-0.5 rounded">
+                                      {kw}
+                                    </span>
+                                  ))}
+                                </div>
+                              )}
+                            </div>
+                            
+                            <div className="flex gap-2">
+                              <button
+                                onClick={async () => {
+                                  if (!supabase || !selectedNpc) return;
+                                  if (!confirm(`Delete ${selectedNpc.name}? This cannot be undone.`)) return;
+                                  try {
+                                    const { error } = await supabase
+                                      .from('world_npc')
+                                      .delete()
+                                      .eq('id', selectedNpc.id);
+                                    if (error) throw error;
+                                    setStatus(`${selectedNpc.name} deleted`);
+                                    setViewMode('list');
+                                    setSelectedNpcId(null);
+                                    loadWorldNpcs();
+                                  } catch (e: unknown) {
+                                    const message = e instanceof Error ? e.message : String(e);
+                                    setStatus(`Delete failed: ${message}`);
+                                  }
+                                }}
+                                className="flex-1 px-4 py-2 rounded-md bg-red-600 text-sm font-medium text-white hover:bg-red-700 active:bg-red-800 transition-colors"
+                              >
+                                Delete NPC
+                              </button>
+                            </div>
+                            
+                            <p className="text-xs text-gray-500">Created: {new Date(selectedNpc.created_at).toLocaleString()}</p>
+                          </div>
+                        </div>
+                      </div>
+                    </>
+                  );
+                })()}
+              </>
             ) : (
               <>
                 {/* Search and Sort Controls */}
@@ -569,7 +802,8 @@ export default function WorldClient({ worldId }: WorldClientProps) {
                                   <button
                                     onClick={e => {
                                       e.stopPropagation();
-                                      router.push(`/world/${worldId}/npc/${n.id}?worldId=${worldId}&npcId=${n.id}`);
+                                      setSelectedNpcId(n.id);
+                                      setViewMode('detail');
                                     }}
                                     className="text-blue-400 hover:text-blue-300 text-sm underline cursor-pointer"
                                   >
