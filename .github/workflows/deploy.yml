@@ -113,19 +113,31 @@ jobs:
             exit 1
           fi
           
+          # Verify environment variables are set
+          if [ -z "$CLOUDFLARE_API_TOKEN" ]; then
+            echo "ERROR: CLOUDFLARE_API_TOKEN is not set" | tee deployment-logs/wrangler-deploy-${{ github.sha }}.log
+            exit 1
+          fi
+          if [ -z "$CLOUDFLARE_ACCOUNT_ID" ]; then
+            echo "ERROR: CLOUDFLARE_ACCOUNT_ID is not set" | tee deployment-logs/wrangler-deploy-${{ github.sha }}.log
+            exit 1
+          fi
+          
           # Use wrangler directly for more reliable publishing
           set +e  # Don't exit on error immediately
+          echo "Running wrangler pages deploy..." | tee deployment-logs/wrangler-deploy-${{ github.sha }}.log
           npx wrangler@latest pages deploy out \
             --project-name="isekai" \
             --commit-dirty=true \
-            2>&1 | tee deployment-logs/wrangler-deploy-${{ github.sha }}.log
+            2>&1 | tee -a deployment-logs/wrangler-deploy-${{ github.sha }}.log
           WRANGLER_EXIT_CODE=${PIPESTATUS[0]}
           set -e  # Re-enable exit on error
           
           if [ $WRANGLER_EXIT_CODE -ne 0 ]; then
             echo "ERROR: Wrangler deploy failed with exit code $WRANGLER_EXIT_CODE" | tee -a deployment-logs/wrangler-deploy-${{ github.sha }}.log
-            echo "Full wrangler output:" | tee -a deployment-logs/wrangler-deploy-${{ github.sha }}.log
+            echo "=== Full wrangler output ===" | tee -a deployment-logs/wrangler-deploy-${{ github.sha }}.log
             cat deployment-logs/wrangler-deploy-${{ github.sha }}.log | tee -a deployment-logs/wrangler-deploy-${{ github.sha }}.log
+            echo "=== End wrangler output ===" | tee -a deployment-logs/wrangler-deploy-${{ github.sha }}.log
             exit $WRANGLER_EXIT_CODE
           fi
           
