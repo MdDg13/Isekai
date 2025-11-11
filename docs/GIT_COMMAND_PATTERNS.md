@@ -142,14 +142,24 @@ cmd /c git add -A
 cmd /c git status
 ```
 
+### Template: Git Log
+```powershell
+# Pattern 1: Use --no-pager flag
+cmd /c git --no-pager log --oneline -N
+
+# Pattern 2: Set git config to disable pager globally (one-time setup)
+cmd /c git config --global core.pager ""
+cmd /c git log --oneline -N
+```
+
 ## Failure Log
 
 ### 2025-11-10: Git log command hang
-- **Command**: `git log --oneline --all -20`
-- **Issue**: Command was interrupted/hung
-- **Root Cause**: Unknown (possibly output buffering)
-- **Solution**: Add timeout or use `cmd /c` wrapper
-- **Status**: Needs verification
+- **Command**: `cmd /c git log --oneline --all -30`
+- **Issue**: Command hung/was interrupted
+- **Root Cause**: Git trying to open a pager (less/more) for output
+- **Solution**: Use `--no-pager` flag: `cmd /c git --no-pager log --oneline -N`
+- **Status**: ✅ Fixed - pattern updated
 
 ## Success Log
 

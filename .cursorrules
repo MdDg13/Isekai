@@ -323,7 +323,7 @@ When working with Cursor AI:
   cmd /c git status
   
   # Git Log (ALWAYS use this exact pattern):
-  cmd /c git log --oneline -N
+  cmd /c git --no-pager log --oneline -N
   ```
 
 - **CRITICAL RULES**:

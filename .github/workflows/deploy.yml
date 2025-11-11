@@ -130,14 +130,15 @@ jobs:
           fi
           
           # Extract deployment URL from wrangler output
-          DEPLOY_URL=$(grep -oP 'https://[^\.]+\.pages\.dev' deployment-logs/wrangler-deploy-${{ github.sha }}.log | head -1 || echo "")
+          # Use sed instead of grep -oP for better compatibility
+          DEPLOY_URL=$(grep -o 'https://[^[:space:]]*\.pages\.dev' deployment-logs/wrangler-deploy-${{ github.sha }}.log | head -1 || echo "")
           if [ -n "$DEPLOY_URL" ]; then
             echo "deployment_url=$DEPLOY_URL" >> $GITHUB_OUTPUT
             echo "Deployment successful: $DEPLOY_URL"
           else
             echo "WARNING: Could not extract deployment URL from wrangler output"
-            echo "Wrangler output:" | tee -a deployment-logs/wrangler-deploy-${{ github.sha }}.log
-            cat deployment-logs/wrangler-deploy-${{ github.sha }}.log | tee -a deployment-logs/wrangler-deploy-${{ github.sha }}.log
+            echo "Checking wrangler output for deployment info..."
+            tail -20 deployment-logs/wrangler-deploy-${{ github.sha }}.log
           fi
       
       - name: Fetch latest deployment info
