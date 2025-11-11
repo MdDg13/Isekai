@@ -88,9 +88,20 @@ if ($foundLog -or $logs) {
     # Try to show Wrangler deploy log if present
     $wrangler = (& git ls-tree -r --name-only $LogsBranch -- deployment-logs/ 2>$null) | Where-Object { $_ -like "deployment-logs/wrangler-deploy-*.log" } | Sort-Object | Select-Object -Last 1
     if ($wrangler) {
-        Write-Host "`n=== WRANGLER DEPLOY LOG (tail) ===" -ForegroundColor Cyan
+        Write-Host "`n=== WRANGLER DEPLOY LOG ===" -ForegroundColor Cyan
         $wcontent = (& git show "${LogsBranch}:$wrangler" 2>$null)
-        ($wcontent -split "`n" | Select-Object -Last 40) -join "`n"
+        
+        # Check for errors
+        if ($wcontent -match 'ERROR|Build failed|✘') {
+            Write-Host "`n[FAIL] DEPLOYMENT FAILED" -ForegroundColor Red
+            Write-Host "`n=== ERROR DETAILS ===" -ForegroundColor Red
+            $wcontent | Select-String -Pattern "ERROR|Error|Build failed|✘" -Context 2,5 | ForEach-Object { Write-Host $_.Line -ForegroundColor Red }
+        } elseif ($wcontent -match 'Deployment successful|Successfully deployed') {
+            Write-Host "`n[OK] DEPLOYMENT SUCCEEDED" -ForegroundColor Green
+        }
+        
+        Write-Host "`n=== FULL WRANGLER LOG (last 50 lines) ===" -ForegroundColor Cyan
+        ($wcontent -split "`n" | Select-Object -Last 50) -join "`n"
     }
 } else {
     Write-Host "`n[WARN] No logs found yet for commit $($CommitSha.Substring(0,7))" -ForegroundColor Yellow

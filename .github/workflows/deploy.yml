@@ -183,6 +183,14 @@ jobs:
           if [ -f deployment-logs/deployment-info-${{ github.sha }}.json ]; then
             echo "- **Deployment Info**: $(cat deployment-logs/deployment-info-${{ github.sha }}.json)" >> deployment-logs/summary-${{ github.sha }}.md
           fi
+          # Always include wrangler log excerpt in summary if it exists
+          if [ -f deployment-logs/wrangler-deploy-${{ github.sha }}.log ]; then
+            echo "" >> deployment-logs/summary-${{ github.sha }}.md
+            echo "### Wrangler Deploy Log (last 30 lines)" >> deployment-logs/summary-${{ github.sha }}.md
+            echo "\`\`\`" >> deployment-logs/summary-${{ github.sha }}.md
+            tail -30 deployment-logs/wrangler-deploy-${{ github.sha }}.log >> deployment-logs/summary-${{ github.sha }}.md || echo "Log file empty or unreadable" >> deployment-logs/summary-${{ github.sha }}.md
+            echo "\`\`\`" >> deployment-logs/summary-${{ github.sha }}.md
+          fi
       
       - name: Commit deployment logs to branch
         if: always()
