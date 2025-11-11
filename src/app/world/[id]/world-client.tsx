@@ -3,6 +3,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { useMemo, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import BuildBadge from "@/components/BuildBadge";
 
 interface WorldClientProps {
@@ -10,6 +11,7 @@ interface WorldClientProps {
 }
 
 export default function WorldClient({ worldId }: WorldClientProps) {
+  const router = useRouter();
   const supabase = useMemo(() => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -44,7 +46,19 @@ export default function WorldClient({ worldId }: WorldClientProps) {
     temperament: 'random',
     locationId: '',
   });
-  const [stayOnGenerator, setStayOnGenerator] = useState(false);
+  const [stayOnGenerator, setStayOnGenerator] = useState(() => {
+    if (typeof window !== 'undefined') {
+      const saved = localStorage.getItem('npc-generator-stay-on-screen');
+      return saved === 'true';
+    }
+    return false;
+  });
+  
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      localStorage.setItem('npc-generator-stay-on-screen', String(stayOnGenerator));
+    }
+  }, [stayOnGenerator]);
   
   // Table view state
   const [searchQuery, setSearchQuery] = useState('');
@@ -552,13 +566,15 @@ export default function WorldClient({ worldId }: WorldClientProps) {
                                 <td className="px-4 py-3 text-sm text-gray-400 max-w-xs truncate">{n.bio || '-'}</td>
                                 <td className="px-4 py-3 text-xs text-gray-500">{new Date(n.created_at).toLocaleDateString()}</td>
                                 <td className="px-4 py-3">
-                                  <Link
-                                    href={`/world/${worldId}/npc/${n.id}`}
-                                    className="text-blue-400 hover:text-blue-300 text-sm underline"
-                                    onClick={e => e.stopPropagation()}
+                                  <button
+                                    onClick={e => {
+                                      e.stopPropagation();
+                                      router.push(`/world/${worldId}/npc/${n.id}?worldId=${worldId}&npcId=${n.id}`);
+                                    }}
+                                    className="text-blue-400 hover:text-blue-300 text-sm underline cursor-pointer"
                                   >
                                     View
-                                  </Link>
+                                  </button>
                                 </td>
                               </tr>
                             );
