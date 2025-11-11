@@ -303,51 +303,64 @@ When working with Cursor AI:
   ```
   This prevents Git from trying to open any editor (including Cursor.exe), which can cause hangs.
   **Verify**: Run `git config --global core.editor` - it should return `:`.
-- **Inside Cursor terminal (MANDATORY)**: Do NOT use `Start-Job` for git and do NOT chain with `&&`. Use these direct, non-interactive patterns:
-  ```powershell
-  # Change directory first
-  Set-Location -Path 'C:\\Users\\Alex\\Projects\\App Development\\Isekai'
-
-  # Commit / Pull / Push
-  $env:GIT_EDITOR=':'; $env:GIT_TERMINAL_PROMPT='0'; cmd /c git commit -m 'message' --no-verify
-  $env:GIT_TERMINAL_PROMPT='0'; cmd /c git pull --rebase origin main --no-edit
-  $env:GIT_TERMINAL_PROMPT='0'; cmd /c git push origin main
-  ```
-  **Note**: Even with global editor set to `:`, always set `$env:GIT_EDITOR=':'` before git commands as a safety measure.
-
-- **Timeout wrapper (when running outside Cursor or in scripts)**: Always set environment variables AND use timeout protection:
-  ```powershell
-  # For git commit (ALWAYS use this exact pattern):
-  $env:GIT_EDITOR=':'; $env:GIT_TERMINAL_PROMPT='0'; $timeout = 15; $job = Start-Job { cmd /c git commit -m 'message' --no-verify 2>&1 }; if ($job | Wait-Job -Timeout $timeout) { Receive-Job $job; Remove-Job $job } else { Stop-Job $job; Remove-Job $job; Write-Host "ERROR: Git commit timed out" }
+- **MANDATORY PATTERNS (Inside Cursor Terminal)**:
+  **ALWAYS use these exact patterns. Do NOT deviate.**
   
-  # For git push (ALWAYS use this exact pattern):
-  $env:GIT_TERMINAL_PROMPT='0'; $timeout = 30; $job = Start-Job { cmd /c git push origin main 2>&1 }; if ($job | Wait-Job -Timeout $timeout) { Receive-Job $job; Remove-Job $job } else { Stop-Job $job; Remove-Job $job; Write-Host "ERROR: Git push timed out" }
-  
-  # For git pull/fetch (ALWAYS use this exact pattern):
-  $env:GIT_TERMINAL_PROMPT='0'; $timeout = 30; $job = Start-Job { cmd /c git pull --rebase origin main --no-edit 2>&1 }; if ($job | Wait-Job -Timeout $timeout) { Receive-Job $job; Remove-Job $job } else { Stop-Job $job; Remove-Job $job; Write-Host "ERROR: Git pull timed out" }
-  ```
-- **Simplified Pattern** (if timeout wrapper fails, use direct with env vars):
   ```powershell
-  # For git commit:
-  $env:GIT_EDITOR=':'; $env:GIT_TERMINAL_PROMPT='0'; cmd /c git commit -m 'message' --no-verify
+  # Git Commit (ALWAYS use this exact pattern):
+  $env:GIT_EDITOR=':'; $env:GIT_TERMINAL_PROMPT='0'; cmd /c git commit -m 'YOUR_MESSAGE' --no-verify
   
-  # For git push:
+  # Git Push (ALWAYS use this exact pattern):
   $env:GIT_TERMINAL_PROMPT='0'; cmd /c git push origin main
   
-  # For git pull:
+  # Git Pull (ALWAYS use this exact pattern):
   $env:GIT_TERMINAL_PROMPT='0'; cmd /c git pull --rebase origin main --no-edit
+  
+  # Git Add (ALWAYS use this exact pattern):
+  cmd /c git add -A
+  
+  # Git Status (ALWAYS use this exact pattern):
+  cmd /c git status
+  
+  # Git Log (ALWAYS use this exact pattern):
+  cmd /c git log --oneline -N
   ```
-- **Why --no-verify**: Skips pre-commit hooks that might wait for input
-- **Why GIT_EDITOR=:** : Prevents Git from opening editor (even with -m flag). **CRITICAL**: Also set globally with `git config --global core.editor :` to prevent hangs even if env var isn't set.
-- **Why GIT_TERMINAL_PROMPT=0**: Prevents credential prompts
-- **Why --rebase --no-edit**: Prevents merge conflict prompts
-- **Timeout Rules**: 
-  - If git commit hangs >15 seconds, cancel and retry
-  - If git push/pull hangs >30 seconds, cancel and retry
-  - Always use timeout wrapper for network operations
-- **Never use**: `git commit` without `-m` flag, `git push` without env vars, `git pull` without `--rebase --no-edit`
-- **Always use**: Environment variables, `--no-verify` for commits, `--rebase --no-edit` for pulls
-- **Preferred**: Use `scripts/safe-git.ps1` wrapper script when available (use its `-Direct` switch inside Cursor)
+
+- **CRITICAL RULES**:
+  - ❌ **NEVER** use `&&` operator (PowerShell doesn't support it - causes syntax errors)
+  - ❌ **NEVER** use `Start-Job` for git commands inside Cursor terminal (can deadlock)
+  - ❌ **NEVER** chain git commands with pipes directly (use `cmd /c` first, then pipe)
+  - ❌ **NEVER** use `git commit` without `-m` flag
+  - ❌ **NEVER** use `git push` without `GIT_TERMINAL_PROMPT='0'`
+  - ❌ **NEVER** use `git pull` without `--rebase --no-edit`
+  - ✅ **ALWAYS** use `cmd /c` wrapper for git commands
+  - ✅ **ALWAYS** set `GIT_EDITOR=':'` before commit operations
+  - ✅ **ALWAYS** set `GIT_TERMINAL_PROMPT='0'` before network operations (push/pull/fetch)
+  - ✅ **ALWAYS** use `--no-verify` for commits
+  - ✅ **ALWAYS** use `--rebase --no-edit` for pulls
+
+- **Why These Patterns Work**:
+  - `cmd /c` bypasses PowerShell execution issues and provides proper command context
+  - `GIT_EDITOR=':'` prevents Git from opening editor (even with `-m` flag)
+  - `GIT_TERMINAL_PROMPT='0'` prevents credential prompts
+  - `--no-verify` skips pre-commit hooks that might wait for input
+  - `--rebase --no-edit` prevents merge commit prompts and editor opening
+
+- **Pattern Validation**:
+  Before running any git command, validate the pattern using:
+  ```powershell
+  .\scripts\validate-git-pattern.ps1 -Command "commit" -Args @("-m", "message")
+  ```
+  See `docs/GIT_COMMAND_PATTERNS.md` for complete pattern reference.
+
+- **Failure Learning System**:
+  When a git command fails or hangs:
+  1. Document the exact command in `docs/GIT_COMMAND_PATTERNS.md` under "Failure Log"
+  2. Identify the root cause
+  3. Add the failing pattern to "❌ FAILING PATTERNS" section
+  4. Update the rules here with the correct pattern
+  5. Test the fix and add to "✅ WORKING PATTERNS" section
+
 - **Setup Check**: On new machines or after git updates, verify editor is set: `git config --global core.editor` should return `:`. If not, run `git config --global core.editor :`
 
 ### 15. Special Considerations
