@@ -3,6 +3,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { useMemo, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import BuildBadge from "@/components/BuildBadge";
 
 interface NPCDetailPageProps {
@@ -11,6 +12,7 @@ interface NPCDetailPageProps {
 }
 
 export default function NPCDetailPage({ worldId, npcId }: NPCDetailPageProps) {
+  const router = useRouter();
   const supabase = useMemo(() => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -34,6 +36,7 @@ export default function NPCDetailPage({ worldId, npcId }: NPCDetailPageProps) {
   } | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [deleting, setDeleting] = useState(false);
 
   const loadNPC = useCallback(async () => {
     if (!supabase || !npcId) return;
@@ -60,6 +63,30 @@ export default function NPCDetailPage({ worldId, npcId }: NPCDetailPageProps) {
   useEffect(() => {
     loadNPC();
   }, [loadNPC]);
+
+  const handleDelete = useCallback(async () => {
+    if (!supabase || !npc) return;
+    if (!confirm(`Delete ${npc.name}? This cannot be undone.`)) return;
+    
+    setDeleting(true);
+    try {
+      const { error: deleteError } = await supabase
+        .from('world_npc')
+        .delete()
+        .eq('id', npcId)
+        .eq('world_id', worldId);
+      
+      if (deleteError) {
+        throw deleteError;
+      }
+      
+      router.push(`/world/${worldId}`);
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
+      setError(`Failed to delete NPC: ${message}`);
+      setDeleting(false);
+    }
+  }, [supabase, npc, npcId, worldId, router]);
 
   if (loading) {
     return (
@@ -129,7 +156,16 @@ export default function NPCDetailPage({ worldId, npcId }: NPCDetailPageProps) {
                 )}
               </div>
             </div>
-            <BuildBadge />
+            <div className="flex items-center gap-3">
+              <button
+                onClick={handleDelete}
+                disabled={deleting}
+                className="px-4 py-2 rounded-md bg-red-600 text-sm font-medium text-white hover:bg-red-700 active:bg-red-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {deleting ? 'Deleting...' : 'Delete NPC'}
+              </button>
+              <BuildBadge />
+            </div>
           </div>
         </div>
       </header>

@@ -44,11 +44,13 @@ export default function WorldClient({ worldId }: WorldClientProps) {
     temperament: 'random',
     locationId: '',
   });
+  const [stayOnGenerator, setStayOnGenerator] = useState(false);
   
   // Table view state
   const [searchQuery, setSearchQuery] = useState('');
   const [sortBy, setSortBy] = useState<'name' | 'level' | 'race' | 'created_at'>('created_at');
   const [sortOrder, setSortOrder] = useState<'asc' | 'desc'>('desc');
+  const [selectedNpcs, setSelectedNpcs] = useState<Set<string>>(new Set());
 
   const loadWorld = useCallback(async () => {
     if (!supabase) return;
@@ -288,6 +290,18 @@ export default function WorldClient({ worldId }: WorldClientProps) {
                 </div>
               </div>
 
+              <div className="flex items-center gap-3 mt-4">
+                <label className="flex items-center gap-2 text-sm text-gray-300 cursor-pointer">
+                  <input
+                    type="checkbox"
+                    checked={stayOnGenerator}
+                    onChange={e => setStayOnGenerator(e.target.checked)}
+                    className="w-4 h-4 rounded border-gray-700 bg-gray-900 text-blue-600 focus:ring-blue-600 focus:ring-offset-gray-900"
+                  />
+                  <span>Stay on generation screen after creating NPC</span>
+                </label>
+              </div>
+
               <div className="flex flex-col sm:flex-row gap-3 mt-6">
                 <button
                   onClick={async () => {
@@ -314,7 +328,9 @@ export default function WorldClient({ worldId }: WorldClientProps) {
                       setStatus('World NPC created');
                       setNpcForm({ nameHint: '', level: 0, race: 'random', class: 'random', background: 'random', temperament: 'random', locationId: '' });
                       loadWorldNpcs();
-                      setActiveTab('npcs');
+                      if (!stayOnGenerator) {
+                        setActiveTab('npcs');
+                      }
                     } catch (e: unknown) {
                       const message = e instanceof Error ? e.message : String(e);
                       setStatus(`NPC generation failed: ${message}`);
@@ -337,7 +353,9 @@ export default function WorldClient({ worldId }: WorldClientProps) {
                       await res.json();
                       setStatus('Random world NPC created');
                       loadWorldNpcs();
-                      setActiveTab('npcs');
+                      if (!stayOnGenerator) {
+                        setActiveTab('npcs');
+                      }
                     } catch (e: unknown) {
                       const message = e instanceof Error ? e.message : String(e);
                       setStatus(`Random generation failed: ${message}`);
@@ -401,12 +419,57 @@ export default function WorldClient({ worldId }: WorldClientProps) {
                   </div>
                 </div>
 
+                {/* Selection Actions */}
+                {selectedNpcs.size > 0 && (
+                  <div className="flex items-center justify-between p-4 rounded-lg border border-gray-800 bg-gray-900/50 mb-4">
+                    <span className="text-sm text-gray-300">
+                      {selectedNpcs.size} NPC{selectedNpcs.size !== 1 ? 's' : ''} selected
+                    </span>
+                    <button
+                      onClick={async () => {
+                        if (!supabase) return;
+                        if (!confirm(`Delete ${selectedNpcs.size} NPC${selectedNpcs.size !== 1 ? 's' : ''}? This cannot be undone.`)) return;
+                        setStatus('Deleting NPCs...');
+                        try {
+                          const deletePromises = Array.from(selectedNpcs).map(id =>
+                            supabase.from('world_npc').delete().eq('id', id)
+                          );
+                          await Promise.all(deletePromises);
+                          setStatus(`${selectedNpcs.size} NPC${selectedNpcs.size !== 1 ? 's' : ''} deleted`);
+                          setSelectedNpcs(new Set());
+                          loadWorldNpcs();
+                        } catch (e: unknown) {
+                          const message = e instanceof Error ? e.message : String(e);
+                          setStatus(`Delete failed: ${message}`);
+                        }
+                      }}
+                      className="px-4 py-2 rounded-md bg-red-600 text-sm font-medium text-white hover:bg-red-700 active:bg-red-800 transition-colors"
+                    >
+                      Delete Selected
+                    </button>
+                  </div>
+                )}
+
                 {/* Table */}
                 <div className="rounded-lg border border-gray-800 bg-gray-900/50 overflow-hidden">
                   <div className="overflow-x-auto">
                     <table className="w-full">
                       <thead className="bg-gray-800/50">
                         <tr>
+                          <th className="px-4 py-3 text-left">
+                            <input
+                              type="checkbox"
+                              checked={selectedNpcs.size > 0 && selectedNpcs.size === worldNpcs.length}
+                              onChange={e => {
+                                if (e.target.checked) {
+                                  setSelectedNpcs(new Set(worldNpcs.map(n => n.id)));
+                                } else {
+                                  setSelectedNpcs(new Set());
+                                }
+                              }}
+                              className="w-4 h-4 rounded border-gray-700 bg-gray-900 text-blue-600 focus:ring-blue-600 focus:ring-offset-gray-900"
+                            />
+                          </th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Name</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Race</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Class</th>
@@ -465,6 +528,23 @@ export default function WorldClient({ worldId }: WorldClientProps) {
                             const stats = n.stats as { level?: number } | undefined;
                             return (
                               <tr key={n.id} className="hover:bg-gray-800/30 transition-colors">
+                                <td className="px-4 py-3">
+                                  <input
+                                    type="checkbox"
+                                    checked={selectedNpcs.has(n.id)}
+                                    onChange={e => {
+                                      const newSelected = new Set(selectedNpcs);
+                                      if (e.target.checked) {
+                                        newSelected.add(n.id);
+                                      } else {
+                                        newSelected.delete(n.id);
+                                      }
+                                      setSelectedNpcs(newSelected);
+                                    }}
+                                    onClick={e => e.stopPropagation()}
+                                    className="w-4 h-4 rounded border-gray-700 bg-gray-900 text-blue-600 focus:ring-blue-600 focus:ring-offset-gray-900"
+                                  />
+                                </td>
                                 <td className="px-4 py-3 text-sm font-medium">{n.name}</td>
                                 <td className="px-4 py-3 text-sm text-gray-300">{traits?.race || '-'}</td>
                                 <td className="px-4 py-3 text-sm text-gray-300">{traits?.class || '-'}</td>
@@ -475,6 +555,7 @@ export default function WorldClient({ worldId }: WorldClientProps) {
                                   <Link
                                     href={`/world/${worldId}/npc/${n.id}`}
                                     className="text-blue-400 hover:text-blue-300 text-sm underline"
+                                    onClick={e => e.stopPropagation()}
                                   >
                                     View
                                   </Link>
