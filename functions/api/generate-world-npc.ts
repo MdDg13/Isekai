@@ -204,21 +204,42 @@ Only include edits that materially improve adherence/quality; keep structure.`;
       // Step 3: Style normalization (third-person, coherent, concrete hooks)
       type StyleEdit = { bio?: string; backstory?: string };
       const stylePrompt =
-`Rewrite the NPC's bio and backstory to be:
-- Third-person perspective only (never "I", "me", or "my").
-- Grammatically correct, varied sentence structure, and vivid but concise.
-- Coherent: motivations and history should connect logically.
-- Concrete: replace vague references (e.g., "a punishment") with specific, setting-neutral details.
-Return JSON with optionally: { "bio": string, "backstory": string }.
-Do not change race/class/background facts.
+`CRITICAL: Fix grammar, specificity, and coherence issues in this NPC's bio and backstory.
 
-Current NPC:
-${JSON.stringify({
-  name: npcDraft.name,
-  bio: npcDraft.bio,
-  backstory: npcDraft.backstory,
-  traits: npcDraft.traits,
-})}`;
+Current text:
+Bio: "${mergedAfterCritique.bio || ''}"
+Backstory: "${mergedAfterCritique.backstory || ''}"
+
+REQUIRED FIXES:
+1. GRAMMAR: Use ONLY third person ("they/their/them"). Remove ALL instances of "I", "me", "my", "I am", "I will", "I have", etc. Replace with "they are", "they have", "they learned", etc.
+2. SPECIFICITY: Replace vague references with concrete details:
+   - "a punishment" → "exiled from their homeland for stealing a noble's signet ring"
+   - "an event" → "the day their mentor was assassinated by rival guild members"
+   - "something" → specific action or object
+3. COHERENCE: Ensure all elements connect logically:
+   - If ideal is "knowledge", show HOW it connects to their bond/flaw/backstory
+   - If bond mentions "protect the temple", explain WHY (e.g., "they were raised there after being orphaned")
+   - Make relationships EXPLICIT, not implied
+4. QUALITY: Fix broken sentences, incomplete thoughts, and repetitive phrases.
+
+Return JSON: { "bio": string, "backstory": string } with corrected text.
+Do not change race/class/background/level facts.
+
+Current NPC traits (for context):
+${JSON.stringify(mergedAfterCritique.traits || {})}
+
+EXAMPLES OF GOOD vs BAD:
+
+BAD: "A neutral tiefling ranger known for ranger and humble."
+GOOD: "A humble tiefling ranger who patrols the borderlands, known for their unwavering dedication to protecting travelers from bandits."
+
+BAD: "Their life was marked by a punishment, which shaped who they are today. They are driven by knowledge, and i will do anything to protect the temple where i served."
+GOOD: "Their life was marked by exile from their homeland after they exposed corruption in the merchant's guild. This experience taught them that knowledge is power, and they now protect the temple library where they found refuge, ensuring its ancient texts remain safe from those who would misuse them."
+
+BAD: "As a ranger, they have learned to i am well known for my work, and i always make sure everyone knows it."
+GOOD: "As a ranger, they have learned to track their quarry through any terrain, and their reputation for never abandoning a hunt has spread throughout the borderlands."
+
+Now fix the bio and backstory following these examples.`;
 
       const styleEdits = await runWorkersAIJSON<StyleEdit>(
         {
