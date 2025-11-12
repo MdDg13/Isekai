@@ -7,26 +7,30 @@ param(
 )
 
 # Try to load from .env.local if env vars not set
-if (-not $env:NEXT_PUBLIC_SUPABASE_URL -or -not $env:NEXT_PUBLIC_SUPABASE_ANON_KEY) {
-    $envFile = Join-Path $PSScriptRoot "..\.env.local"
-    if (Test-Path $envFile) {
-        Get-Content $envFile | ForEach-Object {
-            if ($_ -match '^\s*([^#][^=]+)=(.*)$') {
-                $key = $matches[1].Trim()
-                $value = $matches[2].Trim()
-                if (-not (Get-Variable -Name $key -ErrorAction SilentlyContinue)) {
-                    Set-Item -Path "env:$key" -Value $value
-                }
+$envFile = Join-Path $PSScriptRoot "..\.env.local"
+if (Test-Path $envFile) {
+    Get-Content $envFile | ForEach-Object {
+        if ($_ -match '^\s*([^#][^=]+)=(.*)$') {
+            $key = $matches[1].Trim()
+            $value = $matches[2].Trim()
+            if (-not (Get-Variable -Name $key -ErrorAction SilentlyContinue)) {
+                Set-Item -Path "env:$key" -Value $value
             }
         }
     }
 }
 
 $supabaseUrl = $env:NEXT_PUBLIC_SUPABASE_URL
-$supabaseKey = $env:NEXT_PUBLIC_SUPABASE_ANON_KEY
+# Use service role key to bypass RLS for analysis
+$supabaseKey = $env:SUPABASE_SERVICE_ROLE_KEY
+if (-not $supabaseKey) {
+    # Fallback to anon key if service role not available
+    $supabaseKey = $env:NEXT_PUBLIC_SUPABASE_ANON_KEY
+    Write-Host "WARNING: Using anon key - RLS may block access. Set SUPABASE_SERVICE_ROLE_KEY for full access." -ForegroundColor Yellow
+}
 
 if (-not $supabaseUrl -or -not $supabaseKey) {
-    Write-Host "ERROR: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY must be set" -ForegroundColor Red
+    Write-Host "ERROR: NEXT_PUBLIC_SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY (or NEXT_PUBLIC_SUPABASE_ANON_KEY) must be set" -ForegroundColor Red
     Write-Host "Set them in environment or create .env.local file in project root" -ForegroundColor Yellow
     exit 1
 }
@@ -39,12 +43,22 @@ $headers = @{
     "Content-Type" = "application/json"
 }
 
+# Query with service role key to bypass RLS
 $url = "$supabaseUrl/rest/v1/world_npc?world_id=eq.$WorldId&select=id,name,bio,backstory,traits,stats,created_at&order=created_at.desc&limit=10"
+Write-Host "Query URL: $url" -ForegroundColor Gray
 
 try {
     $response = Invoke-RestMethod -Uri $url -Method Get -Headers $headers
 } catch {
-    Write-Host "ERROR: Failed to fetch NPCs: $_" -ForegroundColor Red
+    Write-Host "ERROR: Failed to fetch NPCs" -ForegroundColor Red
+    if ($_.Exception.Response) {
+        $reader = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
+        $responseBody = $reader.ReadToEnd()
+        Write-Host "Response: $responseBody" -ForegroundColor Red
+    } else {
+        Write-Host "Error: $_" -ForegroundColor Red
+    }
+    Write-Host "`nTIP: Add SUPABASE_SERVICE_ROLE_KEY to .env.local to bypass RLS" -ForegroundColor Yellow
     exit 1
 }
 
