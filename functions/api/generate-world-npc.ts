@@ -256,7 +256,14 @@ Now fix the bio and backstory following these examples.`;
     } catch (err) {
       // If AI fails, use procedural base (no degradation)
       console.error('AI enhancement failed, using procedural base:', err);
+      // Log the error details for debugging
+      if (err instanceof Error) {
+        console.error('Error message:', err.message);
+        console.error('Error stack:', err.stack);
+      }
     }
+  } else {
+    console.log('AI enhancement disabled (WORKERS_AI_ENABLE not set to "true")');
   }
 
   // Add metadata (extend GeneratedNPC with additional fields)

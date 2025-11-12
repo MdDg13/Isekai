@@ -1,16 +1,33 @@
 # Analyze NPC quality from Supabase
-# Requires: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY in environment
+# Reads from .env.local if environment variables not set
 
 param(
     [Parameter(Mandatory=$true)]
     [string]$WorldId
 )
 
+# Try to load from .env.local if env vars not set
+if (-not $env:NEXT_PUBLIC_SUPABASE_URL -or -not $env:NEXT_PUBLIC_SUPABASE_ANON_KEY) {
+    $envFile = Join-Path $PSScriptRoot "..\.env.local"
+    if (Test-Path $envFile) {
+        Get-Content $envFile | ForEach-Object {
+            if ($_ -match '^\s*([^#][^=]+)=(.*)$') {
+                $key = $matches[1].Trim()
+                $value = $matches[2].Trim()
+                if (-not (Get-Variable -Name $key -ErrorAction SilentlyContinue)) {
+                    Set-Item -Path "env:$key" -Value $value
+                }
+            }
+        }
+    }
+}
+
 $supabaseUrl = $env:NEXT_PUBLIC_SUPABASE_URL
 $supabaseKey = $env:NEXT_PUBLIC_SUPABASE_ANON_KEY
 
 if (-not $supabaseUrl -or -not $supabaseKey) {
     Write-Host "ERROR: NEXT_PUBLIC_SUPABASE_URL and NEXT_PUBLIC_SUPABASE_ANON_KEY must be set" -ForegroundColor Red
+    Write-Host "Set them in environment or create .env.local file in project root" -ForegroundColor Yellow
     exit 1
 }
 
@@ -43,8 +60,8 @@ foreach ($npc in $response) {
     Write-Host "  Created: $($npc.created_at)"
     
     # Grammar check
-    $bio = $npc.bio ?? ""
-    $backstory = $npc.backstory ?? ""
+    $bio = if ($npc.bio) { $npc.bio } else { "" }
+    $backstory = if ($npc.backstory) { $npc.backstory } else { "" }
     $allText = "$bio $backstory"
     
     $firstPersonIssues = @()
@@ -84,9 +101,9 @@ foreach ($npc in $response) {
     # Coherence check (basic)
     $traits = $npc.traits
     if ($traits) {
-        $ideal = $traits.ideal ?? ""
-        $bond = $traits.bond ?? ""
-        $flaw = $traits.flaw ?? ""
+        $ideal = if ($traits.ideal) { $traits.ideal } else { "" }
+        $bond = if ($traits.bond) { $traits.bond } else { "" }
+        $flaw = if ($traits.flaw) { $traits.flaw } else { "" }
         
         if ($ideal -and $bond -and $backstory) {
             # Check if ideal/bond are mentioned in backstory
@@ -104,14 +121,20 @@ foreach ($npc in $response) {
     # Stats analysis
     $stats = $npc.stats
     if ($stats) {
-        $level = $stats.level ?? 0
+        $level = if ($stats.level) { $stats.level } else { 0 }
         $abilities = $stats.abilities
-        $class = $traits.class ?? ""
+        $class = if ($traits.class) { $traits.class } else { "" }
         
         if ($abilities) {
+            $str = if ($abilities.str) { $abilities.str } else { '-' }
+            $dex = if ($abilities.dex) { $abilities.dex } else { '-' }
+            $con = if ($abilities.con) { $abilities.con } else { '-' }
+            $int = if ($abilities.int) { $abilities.int } else { '-' }
+            $wis = if ($abilities.wis) { $abilities.wis } else { '-' }
+            $cha = if ($abilities.cha) { $abilities.cha } else { '-' }
             Write-Host "  Stats: Level $level, Class: $class"
-            Write-Host "    STR: $($abilities.str ?? '-'), DEX: $($abilities.dex ?? '-'), CON: $($abilities.con ?? '-')"
-            Write-Host "    INT: $($abilities.int ?? '-'), WIS: $($abilities.wis ?? '-'), CHA: $($abilities.cha ?? '-')"
+            Write-Host "    STR: $str, DEX: $dex, CON: $con"
+            Write-Host "    INT: $int, WIS: $wis, CHA: $cha"
             
             # Check if stats make sense for class
             if ($class) {
@@ -138,11 +161,19 @@ foreach ($npc in $response) {
         # Combat stats
         $combat = $stats.combat
         if ($combat) {
-            Write-Host "  Combat: HP: $($combat.hitpoints ?? '-')/$($combat.maxHitpoints ?? '-'), AC: $($combat.armorClass ?? '-'), Speed: $($combat.speed ?? '-') ft"
+            $hp = if ($combat.hitpoints) { $combat.hitpoints } else { '-' }
+            $maxHp = if ($combat.maxHitpoints) { $combat.maxHitpoints } else { '-' }
+            $ac = if ($combat.armorClass) { $combat.armorClass } else { '-' }
+            $speed = if ($combat.speed) { $combat.speed } else { '-' }
+            Write-Host "  Combat: HP: $hp/$maxHp, AC: $ac, Speed: $speed ft"
             if ($combat.weapons -and $combat.weapons.Count -gt 0) {
                 Write-Host "  Weapons:"
                 foreach ($weapon in $combat.weapons) {
-                    Write-Host "    - $($weapon.name ?? 'Unnamed'): $($weapon.damage ?? '-') $($weapon.damageType ?? ''), To Hit: $($weapon.toHit ?? '-')"
+                    $wName = if ($weapon.name) { $weapon.name } else { 'Unnamed' }
+                    $wDamage = if ($weapon.damage) { $weapon.damage } else { '-' }
+                    $wType = if ($weapon.damageType) { $weapon.damageType } else { '' }
+                    $wToHit = if ($weapon.toHit) { $weapon.toHit } else { '-' }
+                    Write-Host "    - $wName : $wDamage $wType, To Hit: $wToHit"
                 }
             } else {
                 Write-Host "  ⚠️  No weapons defined" -ForegroundColor Yellow
