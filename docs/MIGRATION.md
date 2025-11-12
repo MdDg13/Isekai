@@ -46,6 +46,19 @@ NEXT_PUBLIC_SUPABASE_ANON_KEY=[get from Supabase dashboard]
    - Name: `NEXT_PUBLIC_SUPABASE_ANON_KEY`
    - Value: (copy from Supabase dashboard - the "anon public" key)
 
+#### Cloudflare Pages Environment Variables (REQUIRED for AI enhancement)
+**CRITICAL**: NPC generation AI enhancement requires these variables in Cloudflare Pages.
+
+1. Go to: Cloudflare Dashboard → Pages → `isekai` project → Settings → Environment Variables
+2. Add these variables:
+   - `WORKERS_AI_ENABLE`: `true` (enables AI enhancement for NPCs)
+   - `CLOUDFLARE_API_TOKEN`: (get from Cloudflare Dashboard → My Profile → API Tokens)
+   - `CLOUDFLARE_ACCOUNT_ID`: (found in Cloudflare Dashboard URL or Account Overview)
+   - `WORKERS_AI_MODEL`: `@cf/meta/llama-3.1-8b-instruct` (optional, this is the default)
+   - `SUPABASE_SERVICE_ROLE_KEY`: (get from Supabase Dashboard → Settings → API → service_role key)
+
+**Note**: Without `WORKERS_AI_ENABLE=true`, NPCs will only use procedural generation (no AI enhancement), resulting in lower quality output.
+
 **Why repository variables?** Since these are `NEXT_PUBLIC_*` variables (embedded in client bundle), they can be stored as repository variables (not secrets). They're required at build time for static export to work correctly.
 
 ### 5. Test Setup
