@@ -190,6 +190,9 @@ Only include edits that materially improve adherence/quality; keep structure.`;
       }
       if (body.race) {
         mergedAfterCritique.traits = { ...(mergedAfterCritique.traits || {}), race: body.race };
+      } else if (raceFromTags) {
+        // Also enforce race from tags if no explicit race was set
+        mergedAfterCritique.traits = { ...(mergedAfterCritique.traits || {}), race: raceFromTags };
       }
       if (body.background) {
         mergedAfterCritique.traits = { ...(mergedAfterCritique.traits || {}), background: body.background };
@@ -199,11 +202,37 @@ Only include edits that materially improve adherence/quality; keep structure.`;
 
       // Merge back into draft
       // Only use AI-generated name if it's a proper name (not the prompt text)
-      if (mergedAfterCritique.name && mergedAfterCritique.name.trim() && 
-          mergedAfterCritique.name.length < 50 && 
-          !mergedAfterCritique.name.includes(',') &&
-          mergedAfterCritique.name.split(' ').length <= 4) {
-        npcDraft.name = mergedAfterCritique.name.trim();
+      // Check for common prompt patterns that shouldn't be used as names
+      const aiName = mergedAfterCritique.name?.trim() || '';
+      const isPromptText = aiName.includes(',') || 
+                          aiName.toLowerCase().includes('training to') ||
+                          aiName.toLowerCase().includes('against') ||
+                          aiName.toLowerCase().includes('dreams of') ||
+                          aiName.toLowerCase().includes('apprentice') ||
+                          aiName.split(' ').length > 4 ||
+                          aiName.length > 50;
+      
+      if (aiName && !isPromptText && aiName.length >= 2) {
+        npcDraft.name = aiName;
+      } else if (body.nameHint && isPromptText) {
+        // If nameHint looks like prompt text, generate a proper name from it
+        const nameGenPrompt = `Generate a proper fantasy name (first and last name) inspired by this description: "${body.nameHint}". 
+Return ONLY a name in JSON format: { "name": "FirstName LastName" }.
+Examples: "shy dwarf training to become wizard" → "Thorin Spellweaver", "apprentice blacksmith" → "Gareth Forgehand"`;
+        
+        const nameGen = await runWorkersAIJSON<{ name?: string }>(
+          {
+            CLOUDFLARE_API_TOKEN: env.CLOUDFLARE_API_TOKEN as string | undefined,
+            CLOUDFLARE_ACCOUNT_ID: env.CLOUDFLARE_ACCOUNT_ID as string | undefined,
+            WORKERS_AI_MODEL: (env.WORKERS_AI_MODEL as string | undefined) || undefined,
+          },
+          nameGenPrompt,
+          { maxTokens: 50, temperature: 0.7 }
+        );
+        
+        if (nameGen?.name && nameGen.name.trim().length >= 2 && nameGen.name.length < 50) {
+          npcDraft.name = nameGen.name.trim();
+        }
       }
       if (mergedAfterCritique.bio) npcDraft.bio = mergedAfterCritique.bio;
       if (mergedAfterCritique.backstory) npcDraft.backstory = mergedAfterCritique.backstory;
@@ -276,6 +305,82 @@ Now apply ALL fixes to the bio and backstory.`;
 
       if (styleEdits?.bio) npcDraft.bio = styleEdits.bio;
       if (styleEdits?.backstory) npcDraft.backstory = styleEdits.backstory;
+
+      // Step 4: Grammar-specific pass (focus ONLY on first-person removal)
+      const grammarPrompt =
+`CRITICAL: Remove ALL first-person references. This is a grammar-only pass.
+
+Current text:
+Bio: "${npcDraft.bio || ''}"
+Backstory: "${npcDraft.backstory || ''}"
+
+TASK: Find and replace EVERY instance of:
+- "I " → "they "
+- " I " → " they "
+- " I," → " they,"
+- " I." → " they."
+- "I am" → "they are"
+- "I have" → "they have"
+- "I will" → "they will"
+- "I learned" → "they learned"
+- "I know" → "they know"
+- "I protect" → "they protect"
+- "I served" → "they served"
+- "my " → "their "
+- " me " → " them "
+- " me," → " them,"
+- " me." → " them."
+
+Return JSON: { "bio": string, "backstory": string } with ALL first-person references removed.
+Keep everything else exactly the same.`;
+
+      const grammarEdits = await runWorkersAIJSON<StyleEdit>(
+        {
+          CLOUDFLARE_API_TOKEN: env.CLOUDFLARE_API_TOKEN as string | undefined,
+          CLOUDFLARE_ACCOUNT_ID: env.CLOUDFLARE_ACCOUNT_ID as string | undefined,
+          WORKERS_AI_MODEL: (env.WORKERS_AI_MODEL as string | undefined) || undefined,
+        },
+        grammarPrompt,
+        { maxTokens: 600, temperature: 0.1 }
+      );
+
+      if (grammarEdits?.bio) npcDraft.bio = grammarEdits.bio;
+      if (grammarEdits?.backstory) npcDraft.backstory = grammarEdits.backstory;
+
+      // Step 5: Final quality check and bio sentence structure fix
+      const qualityPrompt =
+`FINAL QUALITY CHECK: Fix broken bio sentences and ensure coherence.
+
+Current text:
+Bio: "${npcDraft.bio || ''}"
+Backstory: "${npcDraft.backstory || ''}"
+
+SPECIFIC FIXES NEEDED:
+1. Fix broken bio patterns like "known for X and Y" → make complete sentences
+   - "known for noble and humble" → "a humble noble known for their dedication to their people"
+   - "known for spellcaster and pious" → "a pious spellcaster known for their devotion to ancient magic"
+   - "known for guard and opportunistic" → "a guard known for their opportunistic nature"
+
+2. Ensure bio is ONE complete, grammatically correct sentence (or two short sentences max)
+
+3. Ensure backstory flows logically and connects to traits
+
+4. Remove any remaining first-person references ("I", "me", "my")
+
+Return JSON: { "bio": string, "backstory": string } with fixes applied.`;
+
+      const qualityEdits = await runWorkersAIJSON<StyleEdit>(
+        {
+          CLOUDFLARE_API_TOKEN: env.CLOUDFLARE_API_TOKEN as string | undefined,
+          CLOUDFLARE_ACCOUNT_ID: env.CLOUDFLARE_ACCOUNT_ID as string | undefined,
+          WORKERS_AI_MODEL: (env.WORKERS_AI_MODEL as string | undefined) || undefined,
+        },
+        qualityPrompt,
+        { maxTokens: 700, temperature: 0.2 }
+      );
+
+      if (qualityEdits?.bio) npcDraft.bio = qualityEdits.bio;
+      if (qualityEdits?.backstory) npcDraft.backstory = qualityEdits.backstory;
     } catch (err) {
       // If AI fails, use procedural base (no degradation)
       console.error('AI enhancement failed, using procedural base:', err);
