@@ -1,16 +1,11 @@
 # Isekai Project TODO Status
 
-## User Tasks (Pending)
-- [ ] **Auth Methods**: Choose auth methods (email magic link + Passkeys default) and optional OAuth keys
-- [ ] **Admin Emails**: Provide initial admin DM emails to whitelist
-- [ ] **LLM API Key**: Provide LLM API key (OpenRouter/OpenAI/Anthropic) or confirm offline-only for now
-- [ ] **Android Setup**: Install Android Studio/SDK and decide app ID, app name; provide keystore or let me generate
-- [ ] **Branding**: Provide app name/slug, logo/icon assets, color palette (or say choose for me)
-- [ ] **Typography**: Approve fonts (or say choose for me)
-- [ ] **Legal**: Approve privacy policy and terms (or let me template)
-- [ ] **Domain**: Provide domain (optional) and DNS access if using custom domain now
-- [ ] **Push Notifications**: Decide on push notifications now or later; provide FCM/VAPID keys if now
-- [ ] **Seed Content**: Provide initial seed prompt, house rules, style guide preferences
+## Owner Tasks (Pending Input)
+- [ ] **Brand Identity**: Finalize logo/icon assets and typography preferences (defaults in place, waiting on confirmation)
+- [ ] **Policy Docs**: Approve privacy & terms drafts (templates pending decision)
+- [ ] **Domain**: Decide whether to map custom domain or continue using `isekai-f2i.pages.dev`
+- [ ] **Android Rollout**: Provide keystore + app id (for future Capacitor build)
+- [ ] **NPC Feedback Loop**: Supply curated prompts/examples highlighting desired tone for further tuning
 
 ## Assistant Tasks
 
@@ -21,31 +16,36 @@
 - [x] **Scaffold**: Scaffold PWA/Next.js app with Tailwind/Radix and Capacitor
 - [x] **CI/CD**: Set up GitHub Actions for Cloudflare Pages deploy (free) and bind env vars
 - [x] **Auth/Campaigns**: Switch campaign creation to SECURITY DEFINER RPC to bypass RLS edge-cases
+- [x] **World NPC UX**: Add list/detail toggle, selection, bulk delete, stay-on-generator preference
+- [x] **AI Pipeline**: Implement multi-pass Workers AI enhancement with critique, style, grammar, QA
+- [x] **Git Guardrails**: Document & enforce safe git patterns (`.cursorrules`, validation script)
+- [x] **Deployment Observability**: Improve wrangler logging + `check-logs.ps1`
 
 ### In Progress 🔄
-- [ ] **Entity CRUD**: Implement basic Entities CRUD and campaign detail page; seed graph later
+- [ ] **NPC Prompt Tuning**: Improve adherence to explicit class/race cues and combat stat completeness
 
 ### Pending 📋
-- [ ] **ML Integration**: Implement RAG + generators v1 with client embeddings + server fallback
-- [ ] **Export**: Implement PDF export and storage integration
-- [ ] **Graph UI**: Implement graph visualization (Cytoscape.js)
-- [ ] **Timeline**: Implement timeline/session history (vis-timeline)
+- [ ] **Location/Item Generation**: Port NPC pipeline to other entity types
+- [ ] **Graph UI**: Implement world/campaign relationship visualization (Cytoscape.js)
+- [ ] **Timeline**: Implement session history view (vis-timeline)
+- [ ] **Export**: Add PDF/export tooling for world briefs
 - [ ] **Android**: Set up Capacitor Android build
 - [ ] **Search**: Implement hybrid search (BM25 + vector + rerank)
+- [ ] **Passkey Auth**: Add optional passkey support alongside magic links
 
 ## Current Priority
-1. **Immediate**: Add `create_entity` RPC to Supabase
-2. **Next**: Test entity creation functionality
-3. **Then**: Implement graph visualization
-4. **After**: Add ML content generation
+1. **Immediate**: Gather feedback on keyword-driven NPC generation and adjust prompts
+2. **Next**: Generalize AI pipeline for locations/items tabs
+3. **Then**: Prototype graph visualization for entity relationships
+4. **After**: Build timeline/session history module
 
 ## Blocked Items
-- Entity creation (waiting for RPC)
-- ML features (waiting for API key decision)
-- Android app (waiting for Android Studio setup)
+- Advanced ML features (waiting on additional prompt datasets/owner guidance)
+- Android wrapper (waiting on keystore + app id)
+- Custom domain work (waiting on DNS decision)
 
 ## Notes
-- All core infrastructure is complete
-- Authentication and campaign management working
-- Ready for content generation and visualization features
-- User can continue development on new computer with just environment variables
+- Core infrastructure (auth, worlds, NPCs, deployments) is live
+- NPC generator uses Cloudflare Workers AI; ensure `WORKERS_AI_ENABLE` env var is set
+- Running `npm run analyze-npcs` surfaces AI quality issues quickly
+- Follow `.cursorrules` for all git commands to avoid Cursor terminal hangs
