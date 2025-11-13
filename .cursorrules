@@ -366,6 +366,29 @@ When working with Cursor AI:
 
 - **Setup Check**: On new machines or after git updates, verify editor is set: `git config --global core.editor` should return `:`. If not, run `git config --global core.editor :`
 
+**PowerShell Script Hang Prevention**:
+- **CRITICAL**: PowerShell scripts with `[Parameter(Mandatory=$true)]` will hang when called via `cmd /c` if parameters aren't provided correctly
+- **REQUIRED PATTERNS**:
+  ```powershell
+  # ✅ CORRECT: Use PowerShell directly with -File and parameter
+  powershell -ExecutionPolicy Bypass -File scripts/script.ps1 -ParamName value
+  
+  # ✅ CORRECT: If script is in npm script, ensure parameters are passed
+  # In package.json: "script": "powershell -ExecutionPolicy Bypass -File scripts/script.ps1 -ParamName %1"
+  
+  # ❌ WRONG: cmd /c with PowerShell script that has mandatory params
+  cmd /c powershell -ExecutionPolicy Bypass -File scripts/script.ps1 -ParamName value
+  # This can hang because cmd /c doesn't properly forward PowerShell parameter syntax
+  
+  # ❌ WRONG: Running script without required parameters
+  cmd /c npm run script-name  # If script requires params, this will prompt and hang
+  ```
+- **When Scripts Have Mandatory Parameters**:
+  - Check script signature first: `Get-Content scripts/script.ps1 | Select-String "param\|Mandatory"`
+  - If `Mandatory=$true` found, use PowerShell directly, not via `cmd /c`
+  - Consider modifying script to accept parameters from environment variables as fallback
+  - Document parameter requirements in script header
+
 ### 15. Special Considerations
 
 #### Static Export Limitations

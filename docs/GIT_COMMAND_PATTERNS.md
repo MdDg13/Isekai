@@ -178,6 +178,13 @@ cmd /c git log --oneline -N
 - **Solution**: Use `cmd /c git --no-pager diff -- src/app/world/[id]/world-client.tsx`
 - **Status**: ✅ Fixed - pattern documented
 
+### 2025-11-13: PowerShell script with mandatory parameters hang
+- **Command**: `cmd /c npm run analyze-npcs` (script has `[Parameter(Mandatory=$true)]`)
+- **Issue**: Script hung waiting for interactive parameter input
+- **Root Cause**: `cmd /c` doesn't properly forward PowerShell parameter syntax; scripts with mandatory params prompt interactively
+- **Solution**: Use PowerShell directly: `powershell -ExecutionPolicy Bypass -File scripts/script.ps1 -ParamName value`
+- **Status**: ✅ Fixed - pattern documented in `.cursorrules`
+
 ## Success Log
 
 ### 2025-11-10: Git commit success
