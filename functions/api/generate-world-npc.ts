@@ -76,10 +76,27 @@ export const onRequest: PagesFunction = async (context) => {
     });
   }
 
-  // Parse tags for race, class, temperament
-  const raceFromTags = body.tags?.find(t => ['elf', 'dwarf', 'human', 'halfling', 'orc', 'tiefling', 'dragonborn', 'gnome'].includes(t.toLowerCase()));
-  const temperamentFromTags = body.tags?.find(t => ['aggressive', 'friendly', 'cautious', 'reckless', 'stoic', 'cheerful', 'neutral'].includes(t.toLowerCase()));
-  const classFromTags = body.tags?.find(t => ['commoner', 'guard', 'noble', 'merchant', 'scholar', 'warrior', 'spellcaster', 'rogue', 'ranger', 'cleric'].includes(t.toLowerCase()));
+  // Parse tags for race, class, temperament - extract from phrases too
+  const allTagText = body.tags?.join(' ').toLowerCase() || '';
+  
+  // Extract race (check both exact matches and phrases)
+  const raceKeywords = ['elf', 'dwarf', 'human', 'halfling', 'orc', 'tiefling', 'dragonborn', 'gnome'];
+  const raceFromTags = body.tags?.find(t => raceKeywords.includes(t.toLowerCase())) ||
+    raceKeywords.find(race => allTagText.includes(race));
+  
+  // Extract class (check both exact matches and phrases like "training to become wizard")
+  const classKeywords = ['commoner', 'guard', 'noble', 'merchant', 'scholar', 'warrior', 'spellcaster', 'wizard', 'rogue', 'ranger', 'cleric', 'bard', 'sorcerer', 'paladin', 'barbarian', 'druid', 'monk', 'fighter'];
+  const classFromTags = body.tags?.find(t => classKeywords.includes(t.toLowerCase())) ||
+    classKeywords.find(cls => allTagText.includes(cls));
+  
+  // Extract temperament
+  const temperamentKeywords = ['aggressive', 'friendly', 'cautious', 'reckless', 'stoic', 'cheerful', 'neutral', 'shy', 'timid', 'reserved', 'bold', 'confident'];
+  const temperamentFromTags = body.tags?.find(t => temperamentKeywords.includes(t.toLowerCase())) ||
+    temperamentKeywords.find(temp => allTagText.includes(temp));
+  
+  // Extract conflict indicators (for backstory)
+  const conflictIndicators = ['against', 'disapprove', 'conflict', 'wishes', 'parent', 'family', 'oppose'];
+  const hasConflict = conflictIndicators.some(indicator => allTagText.includes(indicator));
 
   // Generate base NPC procedurally (always)
   const proceduralOptions: GenerateNPCOptions = {
@@ -98,14 +115,41 @@ export const onRequest: PagesFunction = async (context) => {
   const modelEnabled = (env.WORKERS_AI_ENABLE as string | undefined)?.toLowerCase() === 'true';
   if (modelEnabled) {
     try {
+      // Build explicit constraints list
+      const finalClass = body.class || classFromTags;
+      const finalRace = body.race || raceFromTags;
+      const finalTemperament = body.temperament || temperamentFromTags;
+      
       const intentParts: string[] = [];
+      const constraintParts: string[] = [];
+      
       if (body.nameHint) intentParts.push(`nameHint="${body.nameHint}"`);
-      if (body.class) intentParts.push(`class=${body.class}`);
-      if (body.race) intentParts.push(`race=${body.race}`);
-      if (body.background) intentParts.push(`background=${body.background}`);
-      if (body.temperament) intentParts.push(`temperament=${body.temperament}`);
-      if (body.tags && body.tags.length) intentParts.push(`tags=${body.tags.join(', ')}`);
+      if (finalClass) {
+        constraintParts.push(`class: ${finalClass} (REQUIRED - DO NOT CHANGE)`);
+        intentParts.push(`class=${finalClass} (MANDATORY)`);
+      }
+      if (finalRace) {
+        constraintParts.push(`race: ${finalRace} (REQUIRED - DO NOT CHANGE)`);
+        intentParts.push(`race=${finalRace} (MANDATORY)`);
+      }
+      if (body.background) {
+        constraintParts.push(`background: ${body.background} (REQUIRED - DO NOT CHANGE)`);
+        intentParts.push(`background=${body.background} (MANDATORY)`);
+      }
+      if (finalTemperament) {
+        intentParts.push(`temperament=${finalTemperament}`);
+      }
+      if (hasConflict) {
+        intentParts.push(`family conflict: REQUIRED in backstory`);
+      }
+      if (body.tags && body.tags.length) {
+        intentParts.push(`additional context: ${body.tags.join(', ')}`);
+      }
+      
       const intent = intentParts.length ? `User intent: ${intentParts.join(' | ')}.` : 'User intent: none specified.';
+      const explicitConstraints = constraintParts.length > 0 
+        ? `\n\nCRITICAL CONSTRAINTS (MANDATORY - DO NOT CHANGE):\n${constraintParts.map(c => `- ${c}`).join('\n')}\n`
+        : '';
 
       // Step 1: Enhancement with strict schema + examples
       type Enhanced = {
@@ -130,20 +174,41 @@ export const onRequest: PagesFunction = async (context) => {
 
       const enhancePrompt =
 `You are improving a D&D 5e NPC so it is creative, coherent, and immediately usable by a DM.
-${intent}
-Rules:
-- Respect all explicit user constraints (class, race, background, temperament). Do not change them.
-- If nameHint is provided, generate a PROPER NAME inspired by it (e.g., "apprentice blacksmith" → "Thorin Ironforge", not the hint text itself).
-- Keep content concise but evocative; avoid generic filler.
-- Align bio/backstory with the specified class/race and setting-neutral fantasy tone.
-- Prefer concrete, game-usable hooks over vague traits.
-- Bio must be a complete, grammatically correct sentence. Never use fragments like "known for X and Y".
-- Use ONLY third person ("they/their/them"). Never use "I", "me", "my", "I am", etc.
+${intent}${explicitConstraints}
+
+CRITICAL RULES (MUST FOLLOW):
+1. CONSTRAINT ADHERENCE (HIGHEST PRIORITY):
+   ${constraintParts.length > 0 ? constraintParts.map(c => `   - ${c}`).join('\n') : '   - No explicit constraints specified'}
+   - These constraints are MANDATORY. Do NOT change race, class, or background even if you think another choice would be more creative.
+   - If user wants "dwarf wizard", the NPC MUST be dwarf race and wizard class - no exceptions.
+
+2. NAME GENERATION:
+   - If nameHint is provided, generate a PROPER NAME inspired by it (e.g., "apprentice blacksmith" → "Thorin Ironforge", not the hint text itself).
+   - Never use prompt text or description as the NPC's name.
+
+3. CONTENT QUALITY:
+   - Keep content concise but evocative; avoid generic filler.
+   - Align bio/backstory with the specified class/race and setting-neutral fantasy tone.
+   - Prefer concrete, game-usable hooks over vague traits.
+   - Bio must be a complete, grammatically correct sentence. Never use fragments like "known for X and Y".
+   - Use ONLY third person ("they/their/them"). Never use "I", "me", "my", "I am", etc.
+
+4. FAMILY CONFLICT (if indicated):
+   ${hasConflict ? '- MUST include family/parent conflict in backstory. Explain WHY parents disapprove (tradition, honor, religion, business, etc.).' : '- No family conflict required.'}
+
+EXAMPLES OF PROPER CONSTRAINT ADHERENCE:
+- User wants "dwarf wizard" → NPC MUST be: race=dwarf, class=wizard (not "dwarf spellcaster" or "human wizard")
+- User wants "shy, against parents" → NPC MUST be: shy personality, family conflict in backstory
+- User wants "training to become wizard" → NPC MUST be: class=wizard, level=1 (apprentice)
 
 Return JSON matching the Enhanced schema only.
 Base NPC JSON:
 ${JSON.stringify(npcDraft)}`;
 
+      // Lower temperature when constraints exist (better constraint adherence)
+      const hasExplicitConstraints = !!(finalClass || finalRace || body.background);
+      const temperature = hasExplicitConstraints ? 0.3 : 0.5;
+      
       const aiEnhanced = await runWorkersAIJSON<Enhanced>(
         {
           CLOUDFLARE_API_TOKEN: env.CLOUDFLARE_API_TOKEN as string | undefined,
@@ -151,7 +216,7 @@ ${JSON.stringify(npcDraft)}`;
           WORKERS_AI_MODEL: (env.WORKERS_AI_MODEL as string | undefined) || undefined,
         },
         enhancePrompt,
-        { maxTokens: 1200, temperature: 0.5 }
+        { maxTokens: 1200, temperature }
       );
 
       // Step 2: Self-critique and targeted edits
@@ -160,10 +225,22 @@ ${JSON.stringify(npcDraft)}`;
         edits: Partial<Enhanced>;
       };
       const critiquePrompt =
-`Critique the NPC for:
-- Adherence to constraints (${intent}).
+`Critique the NPC for adherence to constraints and quality.
+
+CRITICAL CONSTRAINT CHECK (verify these first):
+${finalClass ? `- Is class exactly "${finalClass}"? (not similar, not changed - must be exact match)` : ''}
+${finalRace ? `- Is race exactly "${finalRace}"? (not similar, not changed - must be exact match)` : ''}
+${body.background ? `- Is background exactly "${body.background}"? (must be exact match)` : ''}
+${hasConflict ? `- Does backstory include family/parent conflict? (must be explicit, not implied)` : ''}
+
+QUALITY CHECKS:
 - Clarity and DM usability (hooks, motivations, conflicts).
 - Creativity and uniqueness.
+- Coherence (all elements connect logically).
+
+${intent}
+
+If constraints are NOT met, you MUST fix them in your edits.
 Provide JSON: { "issues": string[], "edits": Partial<Enhanced> }.
 Only include edits that materially improve adherence/quality; keep structure.`;
 
@@ -184,15 +261,12 @@ Only include edits that materially improve adherence/quality; keep structure.`;
         stats: { ...(aiEnhanced.stats || {}), ...(critique.edits?.stats || {}) },
       };
 
-      // Enforce explicit constraints (final guardrails)
-      if (body.class) {
-        mergedAfterCritique.traits = { ...(mergedAfterCritique.traits || {}), class: body.class };
+      // Enforce explicit constraints (final guardrails) - including tag-derived constraints
+      if (finalClass) {
+        mergedAfterCritique.traits = { ...(mergedAfterCritique.traits || {}), class: finalClass };
       }
-      if (body.race) {
-        mergedAfterCritique.traits = { ...(mergedAfterCritique.traits || {}), race: body.race };
-      } else if (raceFromTags) {
-        // Also enforce race from tags if no explicit race was set
-        mergedAfterCritique.traits = { ...(mergedAfterCritique.traits || {}), race: raceFromTags };
+      if (finalRace) {
+        mergedAfterCritique.traits = { ...(mergedAfterCritique.traits || {}), race: finalRace };
       }
       if (body.background) {
         mergedAfterCritique.traits = { ...(mergedAfterCritique.traits || {}), background: body.background };
@@ -204,19 +278,22 @@ Only include edits that materially improve adherence/quality; keep structure.`;
       // Only use AI-generated name if it's a proper name (not the prompt text)
       // Check for common prompt patterns that shouldn't be used as names
       const aiName = mergedAfterCritique.name?.trim() || '';
+      const promptText = body.nameHint || body.tags?.join(' ') || '';
       const isPromptText = aiName.includes(',') || 
                           aiName.toLowerCase().includes('training to') ||
                           aiName.toLowerCase().includes('against') ||
                           aiName.toLowerCase().includes('dreams of') ||
                           aiName.toLowerCase().includes('apprentice') ||
                           aiName.split(' ').length > 4 ||
-                          aiName.length > 50;
+                          aiName.length > 50 ||
+                          (promptText && aiName.toLowerCase().includes(promptText.toLowerCase().substring(0, 20)));
       
       if (aiName && !isPromptText && aiName.length >= 2) {
         npcDraft.name = aiName;
-      } else if (body.nameHint && isPromptText) {
-        // If nameHint looks like prompt text, generate a proper name from it
-        const nameGenPrompt = `Generate a proper fantasy name (first and last name) inspired by this description: "${body.nameHint}". 
+      } else if (promptText && isPromptText) {
+        // If nameHint or tags look like prompt text, generate a proper name from it
+        const nameSource = body.nameHint || body.tags?.filter(t => !['shy', 'dwarf', 'wizard', 'training', 'against', 'parent', 'wishes'].includes(t.toLowerCase())).join(' ') || 'fantasy character';
+        const nameGenPrompt = `Generate a proper fantasy name (first and last name) inspired by this description: "${nameSource}". 
 Return ONLY a name in JSON format: { "name": "FirstName LastName" }.
 Examples: "shy dwarf training to become wizard" → "Thorin Spellweaver", "apprentice blacksmith" → "Gareth Forgehand"`;
         
@@ -243,6 +320,11 @@ Examples: "shy dwarf training to become wizard" → "Thorin Spellweaver", "appre
       type StyleEdit = { bio?: string; backstory?: string };
       const stylePrompt =
 `CRITICAL TASK: You MUST fix all grammar, specificity, and coherence issues. This is a final quality pass.
+
+CONSTRAINT REMINDER (DO NOT CHANGE):
+${finalClass ? `- Class MUST remain "${finalClass}"` : ''}
+${finalRace ? `- Race MUST remain "${finalRace}"` : ''}
+${hasConflict ? `- Backstory MUST include family/parent conflict` : ''}
 
 Current text:
 Bio: "${mergedAfterCritique.bio || ''}"
