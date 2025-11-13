@@ -86,8 +86,9 @@ export async function runWorkersAIJSON<T = unknown>(
   const slice = start >= 0 && end > start ? text.slice(start, end + 1) : text;
   try {
     return JSON.parse(slice) as T;
-  } catch (e) {
-    throw new Error('Failed to parse JSON from Workers AI response');
+  } catch (error) {
+    const detail = error instanceof Error ? error.message : String(error);
+    throw new Error(`Failed to parse JSON from Workers AI response: ${detail}`);
   }
 }
 

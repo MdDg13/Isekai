@@ -36,11 +36,8 @@ export default function WorldClient({ worldId }: WorldClientProps) {
 
   // NPC generator form state
   const [npcForm, setNpcForm] = useState({
-    nameHint: '',
-    level: 0,
-    race: 'random',
-    class: 'random',
-    background: 'random',
+    keywords: '',
+    level: '0',
     temperament: 'random',
     locationId: '',
   });
@@ -204,87 +201,29 @@ export default function WorldClient({ worldId }: WorldClientProps) {
               
               <div className="space-y-4">
                 <div>
-                  <label className="block text-xs text-gray-400 mb-1.5">Name Hint (optional)</label>
+                  <label className="block text-xs text-gray-400 mb-1.5">Keywords (comma separated)</label>
                   <input
                     className="w-full rounded-md border border-gray-700 bg-gray-900/50 p-2.5 text-sm outline-none focus:border-blue-600 transition-colors"
-                    value={npcForm.nameHint}
-                    onChange={e => setNpcForm({ ...npcForm, nameHint: e.target.value })}
-                    placeholder="e.g., Aldric Blackwood"
+                    value={npcForm.keywords}
+                    onChange={e => setNpcForm({ ...npcForm, keywords: e.target.value })}
+                    placeholder="e.g., bard, halfling, trickster, wandering performer"
                   />
+                  <p className="mt-1 text-[11px] text-gray-500">Use keywords to hint race, class, background, role, etc.</p>
                 </div>
 
                 <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-4">
-                  <div>
+                  <div className="sm:col-span-2 lg:col-span-1">
                     <label className="block text-xs text-gray-400 mb-1.5">Level</label>
                     <input
                       type="number"
                       min={0}
                       max={20}
+                      step={1}
                       className="w-full rounded-md border border-gray-700 bg-gray-900/50 p-2.5 text-sm outline-none focus:border-blue-600 transition-colors"
                       value={npcForm.level}
-                      onChange={e => setNpcForm({ ...npcForm, level: Number(e.target.value ?? 0) })}
+                      onChange={e => setNpcForm({ ...npcForm, level: e.target.value })}
+                      inputMode="numeric"
                     />
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-400 mb-1.5">Race</label>
-                    <select
-                      className="w-full rounded-md border border-gray-700 bg-gray-900/50 p-2.5 text-sm outline-none focus:border-blue-600 transition-colors"
-                      value={npcForm.race}
-                      onChange={e => setNpcForm({ ...npcForm, race: e.target.value })}
-                    >
-                      <option value="random">Random</option>
-                      <option value="human">Human</option>
-                      <option value="elf">Elf</option>
-                      <option value="dwarf">Dwarf</option>
-                      <option value="halfling">Halfling</option>
-                      <option value="orc">Orc</option>
-                      <option value="tiefling">Tiefling</option>
-                      <option value="dragonborn">Dragonborn</option>
-                      <option value="gnome">Gnome</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-400 mb-1.5">Class</label>
-                    <select
-                      className="w-full rounded-md border border-gray-700 bg-gray-900/50 p-2.5 text-sm outline-none focus:border-blue-600 transition-colors"
-                      value={npcForm.class}
-                      onChange={e => setNpcForm({ ...npcForm, class: e.target.value })}
-                    >
-                      <option value="random">Random</option>
-                      <option value="Commoner">Commoner</option>
-                      <option value="Guard">Guard</option>
-                      <option value="Merchant">Merchant</option>
-                      <option value="Scholar">Scholar</option>
-                      <option value="Warrior">Warrior</option>
-                      <option value="Noble">Noble</option>
-                      <option value="Spellcaster">Spellcaster</option>
-                      <option value="Rogue">Rogue</option>
-                      <option value="Ranger">Ranger</option>
-                      <option value="Cleric">Cleric</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-xs text-gray-400 mb-1.5">Background</label>
-                    <select
-                      className="w-full rounded-md border border-gray-700 bg-gray-900/50 p-2.5 text-sm outline-none focus:border-blue-600 transition-colors"
-                      value={npcForm.background}
-                      onChange={e => setNpcForm({ ...npcForm, background: e.target.value })}
-                    >
-                      <option value="random">Random</option>
-                      <option value="Acolyte">Acolyte</option>
-                      <option value="Criminal">Criminal</option>
-                      <option value="Folk Hero">Folk Hero</option>
-                      <option value="Hermit">Hermit</option>
-                      <option value="Noble">Noble</option>
-                      <option value="Sage">Sage</option>
-                      <option value="Soldier">Soldier</option>
-                      <option value="Entertainer">Entertainer</option>
-                      <option value="Guild Artisan">Guild Artisan</option>
-                      <option value="Outlander">Outlander</option>
-                      <option value="Sailor">Sailor</option>
-                      <option value="Charlatan">Charlatan</option>
-                      <option value="Urchin">Urchin</option>
-                    </select>
                   </div>
                 </div>
 
@@ -334,26 +273,30 @@ export default function WorldClient({ worldId }: WorldClientProps) {
                   onClick={async () => {
                     setStatus('Generating world NPC...');
                     try {
+                      const parsedLevel = Number.parseInt(npcForm.level, 10);
+                      const safeLevel = Number.isFinite(parsedLevel) ? Math.min(Math.max(parsedLevel, 0), 20) : 0;
+                      const keywordTags = npcForm.keywords
+                        .split(/[,\\n]+/)
+                        .map(tag => tag.trim())
+                        .filter(tag => tag.length > 0);
+
                       const res = await fetch('/api/generate-world-npc', {
                         method: 'POST',
                         headers: { 'content-type': 'application/json' },
-                      body: JSON.stringify({
-                        worldId,
-                        nameHint: npcForm.nameHint || undefined,
-                        ruleset: 'DND5E_2024',
-                        locationId: npcForm.locationId || undefined,
-                        level: Number.isFinite(npcForm.level) ? npcForm.level : 0,
-                        race: npcForm.race !== 'random' ? npcForm.race : undefined,
-                        class: npcForm.class !== 'random' ? npcForm.class : undefined,
-                        background: npcForm.background !== 'random' ? npcForm.background : undefined,
-                        temperament: npcForm.temperament !== 'random' ? npcForm.temperament : undefined,
-                        fullyRandom: npcForm.nameHint === '' && npcForm.race === 'random' && npcForm.class === 'random' && npcForm.background === 'random' && npcForm.temperament === 'random',
-                      })
+                        body: JSON.stringify({
+                          worldId,
+                          ruleset: 'DND5E_2024',
+                          locationId: npcForm.locationId || undefined,
+                          level: safeLevel,
+                          temperament: npcForm.temperament !== 'random' ? npcForm.temperament : undefined,
+                          tags: keywordTags.length ? keywordTags : undefined,
+                          fullyRandom: keywordTags.length === 0 && npcForm.temperament === 'random',
+                        }),
                       });
                       if (!res.ok) throw new Error(await res.text());
                       await res.json();
                       setStatus('World NPC created');
-                      setNpcForm({ nameHint: '', level: 0, race: 'random', class: 'random', background: 'random', temperament: 'random', locationId: '' });
+                      setNpcForm({ keywords: '', level: '0', temperament: 'random', locationId: '' });
                       loadWorldNpcs();
                       if (!stayOnGenerator) {
                         setActiveTab('npcs');

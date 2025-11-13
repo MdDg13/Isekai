@@ -322,6 +322,9 @@ When working with Cursor AI:
   # Git Status (ALWAYS use this exact pattern):
   cmd /c git status
   
+  # Git Diff (ALWAYS use this exact pattern):
+  cmd /c git --no-pager diff -- path/to/file
+
   # Git Log (ALWAYS use this exact pattern):
   cmd /c git --no-pager log --oneline -N
   ```

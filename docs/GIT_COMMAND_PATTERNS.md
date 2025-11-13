@@ -53,6 +53,16 @@ cmd /c git status
 - Read-only operation
 - No network or interactive prompts
 
+### Git Diff (INSIDE Cursor Terminal)
+```powershell
+# Pattern: Disable pager explicitly to avoid hangs
+cmd /c git --no-pager diff -- path/to/file
+```
+**Why it works:**
+- `--no-pager` bypasses any pager configuration (less/more)
+- `--` guards against paths starting with dashes
+- Works consistently without hanging on long diffs
+
 ## ❌ FAILING PATTERNS (Never Use These)
 
 ### Pattern: PowerShell && operator
@@ -160,6 +170,13 @@ cmd /c git log --oneline -N
 - **Root Cause**: Git trying to open a pager (less/more) for output
 - **Solution**: Use `--no-pager` flag: `cmd /c git --no-pager log --oneline -N`
 - **Status**: ✅ Fixed - pattern updated
+
+### 2025-11-13: Git diff command hang
+- **Command**: `cmd /c git diff src/app/world/[id]/world-client.tsx`
+- **Issue**: Git spawned pager despite non-interactive terminal, leading to `Pattern not found` prompt
+- **Root Cause**: Global Git config enforces pager for diff output
+- **Solution**: Use `cmd /c git --no-pager diff -- src/app/world/[id]/world-client.tsx`
+- **Status**: ✅ Fixed - pattern documented
 
 ## Success Log
 
