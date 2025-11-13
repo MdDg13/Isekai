@@ -1,5 +1,5 @@
 import { createClient } from '@supabase/supabase-js';
-import { runWorkersAIText, runWorkersAIJSON } from '../_lib/ai';
+import { runWorkersAIJSON } from '../_lib/ai';
 import { generateNPC, type GenerateNPCOptions, type GeneratedNPC } from '../_lib/npc-procedural';
 
 interface GenerateWorldNpcBody {
@@ -132,10 +132,13 @@ export const onRequest: PagesFunction = async (context) => {
 `You are improving a D&D 5e NPC so it is creative, coherent, and immediately usable by a DM.
 ${intent}
 Rules:
-- Respect all explicit user constraints (class, race, background, temperament, name hints). Do not change them.
+- Respect all explicit user constraints (class, race, background, temperament). Do not change them.
+- If nameHint is provided, generate a PROPER NAME inspired by it (e.g., "apprentice blacksmith" → "Thorin Ironforge", not the hint text itself).
 - Keep content concise but evocative; avoid generic filler.
 - Align bio/backstory with the specified class/race and setting-neutral fantasy tone.
 - Prefer concrete, game-usable hooks over vague traits.
+- Bio must be a complete, grammatically correct sentence. Never use fragments like "known for X and Y".
+- Use ONLY third person ("they/their/them"). Never use "I", "me", "my", "I am", etc.
 
 Return JSON matching the Enhanced schema only.
 Base NPC JSON:
@@ -195,7 +198,13 @@ Only include edits that materially improve adherence/quality; keep structure.`;
       if (!mergedAfterCritique.stats.combat) mergedAfterCritique.stats.combat = {};
 
       // Merge back into draft
-      if (mergedAfterCritique.name) npcDraft.name = mergedAfterCritique.name;
+      // Only use AI-generated name if it's a proper name (not the prompt text)
+      if (mergedAfterCritique.name && mergedAfterCritique.name.trim() && 
+          mergedAfterCritique.name.length < 50 && 
+          !mergedAfterCritique.name.includes(',') &&
+          mergedAfterCritique.name.split(' ').length <= 4) {
+        npcDraft.name = mergedAfterCritique.name.trim();
+      }
       if (mergedAfterCritique.bio) npcDraft.bio = mergedAfterCritique.bio;
       if (mergedAfterCritique.backstory) npcDraft.backstory = mergedAfterCritique.backstory;
       npcDraft.traits = { ...npcDraft.traits, ...(mergedAfterCritique.traits || {}) };
@@ -204,31 +213,42 @@ Only include edits that materially improve adherence/quality; keep structure.`;
       // Step 3: Style normalization (third-person, coherent, concrete hooks)
       type StyleEdit = { bio?: string; backstory?: string };
       const stylePrompt =
-`CRITICAL: Fix grammar, specificity, and coherence issues in this NPC's bio and backstory.
+`CRITICAL TASK: You MUST fix all grammar, specificity, and coherence issues. This is a final quality pass.
 
 Current text:
 Bio: "${mergedAfterCritique.bio || ''}"
 Backstory: "${mergedAfterCritique.backstory || ''}"
 
-REQUIRED FIXES:
-1. GRAMMAR: Use ONLY third person ("they/their/them"). Remove ALL instances of "I", "me", "my", "I am", "I will", "I have", etc. Replace with "they are", "they have", "they learned", etc.
-2. SPECIFICITY: Replace vague references with concrete details:
+MANDATORY FIXES (apply ALL of these):
+
+1. GRAMMAR - THIRD PERSON ONLY:
+   - Find and replace EVERY instance of: "I", "me", "my", "I am", "I will", "I have", "I learned", "I know", "I protect", "I served"
+   - Replace with: "they", "them", "their", "they are", "they will", "they have", "they learned", "they know", "they protect", "they served"
+   - Example: "I am well known" → "they are well known", "my work" → "their work", "protect me" → "protect them"
+
+2. SENTENCE STRUCTURE:
+   - Fix broken sentences like "known for guard and opportunistic" → "known for their guard duties and opportunistic nature"
+   - Fix fragments like "known for scholar and pious" → "a pious scholar known for their devotion to ancient texts"
+   - Every sentence must be complete and grammatically correct
+
+3. SPECIFICITY - REPLACE VAGUE TERMS:
    - "a punishment" → "exiled from their homeland for stealing a noble's signet ring"
    - "an event" → "the day their mentor was assassinated by rival guild members"
    - "something" → specific action or object
-3. COHERENCE: Ensure all elements connect logically:
+   - "a thing" → concrete detail
+
+4. COHERENCE - LOGICAL CONNECTIONS:
    - If ideal is "knowledge", show HOW it connects to their bond/flaw/backstory
    - If bond mentions "protect the temple", explain WHY (e.g., "they were raised there after being orphaned")
    - Make relationships EXPLICIT, not implied
-4. QUALITY: Fix broken sentences, incomplete thoughts, and repetitive phrases.
 
-Return JSON: { "bio": string, "backstory": string } with corrected text.
+Return JSON: { "bio": string, "backstory": string } with ALL fixes applied.
 Do not change race/class/background/level facts.
 
 Current NPC traits (for context):
 ${JSON.stringify(mergedAfterCritique.traits || {})}
 
-EXAMPLES OF GOOD vs BAD:
+EXAMPLES OF FIXES:
 
 BAD: "A neutral tiefling ranger known for ranger and humble."
 GOOD: "A humble tiefling ranger who patrols the borderlands, known for their unwavering dedication to protecting travelers from bandits."
@@ -239,7 +259,10 @@ GOOD: "Their life was marked by exile from their homeland after they exposed cor
 BAD: "As a ranger, they have learned to i am well known for my work, and i always make sure everyone knows it."
 GOOD: "As a ranger, they have learned to track their quarry through any terrain, and their reputation for never abandoning a hunt has spread throughout the borderlands."
 
-Now fix the bio and backstory following these examples.`;
+BAD: "known for guard and opportunistic"
+GOOD: "a guard known for their opportunistic nature and willingness to bend rules when it serves their interests"
+
+Now apply ALL fixes to the bio and backstory.`;
 
       const styleEdits = await runWorkersAIJSON<StyleEdit>(
         {
@@ -339,6 +362,11 @@ Now fix the bio and backstory following these examples.`;
     if (eq.includes('chain shirt')) ac = 13 + Math.min(2, dexMod);
     if (eq.includes('chain mail')) ac = 16; // no dex mod
     statsObj.combat.armorClass = ac;
+  }
+  if (statsObj.combat.speed === undefined) {
+    // Default speed: 30 ft for most races, 25 ft for small races
+    const race = (finalNpc.traits?.race || '').toLowerCase();
+    statsObj.combat.speed = (race === 'halfling' || race === 'gnome' || race === 'dwarf') ? 25 : 30;
   }
   if (!statsObj.combat.weapons || statsObj.combat.weapons.length === 0) {
     const eq = (statsObj.equipment || '').toLowerCase();
