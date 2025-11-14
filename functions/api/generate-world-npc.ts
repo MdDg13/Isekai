@@ -152,10 +152,15 @@ export const onRequest: PagesFunction = async (context) => {
         : '';
 
       // Step 1: Enhancement with strict schema + examples
+      // Structured for DM usability: quick reference → summary → details
       type Enhanced = {
         name: string;
-        bio: string;
-        backstory: string;
+        bio: string; // One-line quick reference (e.g., "A shy dwarf wizard apprentice defying traditionalist parents")
+        summary: {
+          oneLiner: string; // Concise description (1 sentence)
+          keyPoints: string[]; // 3-5 bullet points for quick reference
+        };
+        backstory: string; // Detailed narrative (2-4 paragraphs)
         traits: {
           race?: string; temperament?: string; personalityTraits?: string[]; ideal?: string; bond?: string; flaw?: string;
           background?: string; class?: string; keywords?: string[];
@@ -173,35 +178,66 @@ export const onRequest: PagesFunction = async (context) => {
       };
 
       const enhancePrompt =
-`You are improving a D&D 5e NPC so it is creative, coherent, and immediately usable by a DM.
+`You are creating a cohesive, DM-friendly D&D 5e NPC. Think holistically: all elements must connect and support each other.
 ${intent}${explicitConstraints}
 
 CRITICAL RULES (MUST FOLLOW):
+
 1. CONSTRAINT ADHERENCE (HIGHEST PRIORITY):
    ${constraintParts.length > 0 ? constraintParts.map(c => `   - ${c}`).join('\n') : '   - No explicit constraints specified'}
    - These constraints are MANDATORY. Do NOT change race, class, or background even if you think another choice would be more creative.
    - If user wants "dwarf wizard", the NPC MUST be dwarf race and wizard class - no exceptions.
 
-2. NAME GENERATION:
-   - If nameHint is provided, generate a PROPER NAME inspired by it (e.g., "apprentice blacksmith" → "Thorin Ironforge", not the hint text itself).
-   - Never use prompt text or description as the NPC's name.
+2. STRUCTURED OUTPUT FORMAT (DM-FRIENDLY):
+   - **bio**: One-line quick reference (e.g., "A shy dwarf wizard apprentice defying traditionalist parents")
+   - **summary.oneLiner**: One complete sentence capturing the NPC's essence
+   - **summary.keyPoints**: 3-5 bullet points for quick reference during play:
+     * Key personality trait or behavior
+     * Primary motivation or goal
+     * Notable relationship or conflict
+     * Distinctive quirk or mannerism
+     * Role or function in the world
+   - **backstory**: 2-4 paragraphs of detailed narrative connecting all elements logically
 
-3. CONTENT QUALITY:
-   - Keep content concise but evocative; avoid generic filler.
-   - Align bio/backstory with the specified class/race and setting-neutral fantasy tone.
-   - Prefer concrete, game-usable hooks over vague traits.
-   - Bio must be a complete, grammatically correct sentence. Never use fragments like "known for X and Y".
+3. COHESION REQUIREMENTS:
+   - ALL elements must connect: personality → motivation → backstory → traits → stats
+   - If shy, show HOW it manifests (avoids eye contact, speaks quietly, hides in corners)
+   - If family conflict, explain WHY (specific reason: tradition, honor, religion, business)
+   - If wizard training, show WHERE/WHEN/HOW they're learning (secret study, mentor, location)
+   - Make relationships EXPLICIT: "their parents, who are miners, disapprove because..."
+   - Connect ideal/bond/flaw to backstory: show HOW they developed
+
+4. CONTENT QUALITY:
    - Use ONLY third person ("they/their/them"). Never use "I", "me", "my", "I am", etc.
+   - Prefer concrete, game-usable details over vague references
+   - Avoid generic filler; every detail should serve the DM
+   - Make personality traits ACTIONABLE (how DM can roleplay them)
 
-4. FAMILY CONFLICT (if indicated):
-   ${hasConflict ? '- MUST include family/parent conflict in backstory. Explain WHY parents disapprove (tradition, honor, religion, business, etc.).' : '- No family conflict required.'}
+5. NAME GENERATION:
+   - Generate a PROPER FANTASY NAME (first and last)
+   - Never use prompt text or description as the NPC's name
 
-EXAMPLES OF PROPER CONSTRAINT ADHERENCE:
-- User wants "dwarf wizard" → NPC MUST be: race=dwarf, class=wizard (not "dwarf spellcaster" or "human wizard")
-- User wants "shy, against parents" → NPC MUST be: shy personality, family conflict in backstory
-- User wants "training to become wizard" → NPC MUST be: class=wizard, level=1 (apprentice)
+6. FAMILY CONFLICT (if indicated):
+   ${hasConflict ? '- MUST include family/parent conflict in backstory. Explain WHY parents disapprove (tradition, honor, religion, business, etc.). Make it SPECIFIC and CONCRETE.' : '- No family conflict required.'}
 
-Return JSON matching the Enhanced schema only.
+EXAMPLE OF COHESIVE STRUCTURE:
+{
+  "name": "Thorin Spellweaver",
+  "bio": "A shy dwarf wizard apprentice secretly studying magic despite their miner parents' disapproval",
+  "summary": {
+    "oneLiner": "A timid dwarf who discovered an ancient spellbook in the mines and now practices magic in secret, terrified of their parents' reaction.",
+    "keyPoints": [
+      "Speaks in hushed tones and avoids direct eye contact when nervous",
+      "Desperately wants to prove magic can help miners, not replace them",
+      "Parents are traditional miners who see magic as dangerous and unnatural",
+      "Practices spells in abandoned mine shafts using crystals as foci",
+      "Carries the spellbook hidden in a false-bottomed mining satchel"
+    ]
+  },
+  "backstory": "Born into a clan of renowned miners, Thorin was expected to follow in their parents' footsteps... [detailed narrative connecting all elements]"
+}
+
+Return JSON matching the Enhanced schema. Ensure ALL elements connect cohesively.
 Base NPC JSON:
 ${JSON.stringify(npcDraft)}`;
 
@@ -311,13 +347,28 @@ Examples: "shy dwarf training to become wizard" → "Thorin Spellweaver", "appre
           npcDraft.name = nameGen.name.trim();
         }
       }
+      // Merge enhanced content back into draft
       if (mergedAfterCritique.bio) npcDraft.bio = mergedAfterCritique.bio;
       if (mergedAfterCritique.backstory) npcDraft.backstory = mergedAfterCritique.backstory;
-      npcDraft.traits = { ...npcDraft.traits, ...(mergedAfterCritique.traits || {}) };
+      // Store summary in traits for easy access (or we could add it to the schema)
+      if (mergedAfterCritique.summary) {
+        npcDraft.traits = { 
+          ...npcDraft.traits, 
+          ...(mergedAfterCritique.traits || {}),
+          summary: mergedAfterCritique.summary
+        };
+      } else {
+        npcDraft.traits = { ...npcDraft.traits, ...(mergedAfterCritique.traits || {}) };
+      }
       npcDraft.stats = { ...npcDraft.stats, ...(mergedAfterCritique.stats || {}) };
 
       // Step 3: Style normalization (third-person, coherent, concrete hooks)
-      type StyleEdit = { bio?: string; backstory?: string };
+      type StyleEdit = { 
+        bio?: string; 
+        summary?: { oneLiner?: string; keyPoints?: string[] };
+        backstory?: string;
+      };
+      const currentSummary = mergedAfterCritique.summary || { oneLiner: '', keyPoints: [] };
       const stylePrompt =
 `CRITICAL TASK: You MUST fix all grammar, specificity, and coherence issues. This is a final quality pass.
 
@@ -328,6 +379,8 @@ ${hasConflict ? `- Backstory MUST include family/parent conflict` : ''}
 
 Current text:
 Bio: "${mergedAfterCritique.bio || ''}"
+Summary one-liner: "${currentSummary.oneLiner || ''}"
+Summary key points: ${JSON.stringify(currentSummary.keyPoints || [])}
 Backstory: "${mergedAfterCritique.backstory || ''}"
 
 MANDATORY FIXES (apply ALL of these):
@@ -353,8 +406,10 @@ MANDATORY FIXES (apply ALL of these):
    - If bond mentions "protect the temple", explain WHY (e.g., "they were raised there after being orphaned")
    - Make relationships EXPLICIT, not implied
 
-Return JSON: { "bio": string, "backstory": string } with ALL fixes applied.
-Do not change race/class/background/level facts.
+Return JSON: { "bio": string, "summary": { "oneLiner": string, "keyPoints": string[] }, "backstory": string } with ALL fixes applied.
+- Ensure summary.oneLiner is one complete sentence
+- Ensure summary.keyPoints are 3-5 actionable bullet points (not vague)
+- Do not change race/class/background/level facts.
 
 Current NPC traits (for context):
 ${JSON.stringify(mergedAfterCritique.traits || {})}
@@ -387,13 +442,20 @@ Now apply ALL fixes to the bio and backstory.`;
 
       if (styleEdits?.bio) npcDraft.bio = styleEdits.bio;
       if (styleEdits?.backstory) npcDraft.backstory = styleEdits.backstory;
+      if (styleEdits?.summary) {
+        const currentTraits = npcDraft.traits as Record<string, unknown>;
+        npcDraft.traits = { ...currentTraits, summary: styleEdits.summary };
+      }
 
       // Step 4: Grammar-specific pass (focus ONLY on first-person removal)
+      const currentSummaryForGrammar = (npcDraft.traits as { summary?: { oneLiner?: string; keyPoints?: string[] } })?.summary || { oneLiner: '', keyPoints: [] };
       const grammarPrompt =
 `CRITICAL: Remove ALL first-person references. This is a grammar-only pass.
 
 Current text:
 Bio: "${npcDraft.bio || ''}"
+Summary one-liner: "${currentSummaryForGrammar.oneLiner || ''}"
+Summary key points: ${JSON.stringify(currentSummaryForGrammar.keyPoints || [])}
 Backstory: "${npcDraft.backstory || ''}"
 
 TASK: Find and replace EVERY instance of:
@@ -413,7 +475,7 @@ TASK: Find and replace EVERY instance of:
 - " me," → " them,"
 - " me." → " them."
 
-Return JSON: { "bio": string, "backstory": string } with ALL first-person references removed.
+Return JSON: { "bio": string, "summary": { "oneLiner": string, "keyPoints": string[] }, "backstory": string } with ALL first-person references removed.
 Keep everything else exactly the same.`;
 
       const grammarEdits = await runWorkersAIJSON<StyleEdit>(
@@ -428,13 +490,20 @@ Keep everything else exactly the same.`;
 
       if (grammarEdits?.bio) npcDraft.bio = grammarEdits.bio;
       if (grammarEdits?.backstory) npcDraft.backstory = grammarEdits.backstory;
+      if (grammarEdits?.summary) {
+        const currentTraits = npcDraft.traits as Record<string, unknown>;
+        npcDraft.traits = { ...currentTraits, summary: grammarEdits.summary };
+      }
 
       // Step 5: Final quality check and bio sentence structure fix
+      const currentSummaryForQuality = (npcDraft.traits as { summary?: { oneLiner?: string; keyPoints?: string[] } })?.summary || { oneLiner: '', keyPoints: [] };
       const qualityPrompt =
 `FINAL QUALITY CHECK: Fix broken bio sentences and ensure coherence.
 
 Current text:
 Bio: "${npcDraft.bio || ''}"
+Summary one-liner: "${currentSummaryForQuality.oneLiner || ''}"
+Summary key points: ${JSON.stringify(currentSummaryForQuality.keyPoints || [])}
 Backstory: "${npcDraft.backstory || ''}"
 
 SPECIFIC FIXES NEEDED:
@@ -449,7 +518,9 @@ SPECIFIC FIXES NEEDED:
 
 4. Remove any remaining first-person references ("I", "me", "my")
 
-Return JSON: { "bio": string, "backstory": string } with fixes applied.`;
+Return JSON: { "bio": string, "summary": { "oneLiner": string, "keyPoints": string[] }, "backstory": string } with fixes applied.
+- Ensure summary.oneLiner is one complete sentence
+- Ensure summary.keyPoints are 3-5 actionable, specific bullet points`;
 
       const qualityEdits = await runWorkersAIJSON<StyleEdit>(
         {
@@ -463,6 +534,10 @@ Return JSON: { "bio": string, "backstory": string } with fixes applied.`;
 
       if (qualityEdits?.bio) npcDraft.bio = qualityEdits.bio;
       if (qualityEdits?.backstory) npcDraft.backstory = qualityEdits.backstory;
+      if (qualityEdits?.summary) {
+        const currentTraits = npcDraft.traits as Record<string, unknown>;
+        npcDraft.traits = { ...currentTraits, summary: qualityEdits.summary };
+      }
     } catch (err) {
       // If AI fails, use procedural base (no degradation)
       console.error('AI enhancement failed, using procedural base:', err);

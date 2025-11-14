@@ -187,15 +187,41 @@ export default function NPCDetailPage({ worldId, npcId }: NPCDetailPageProps) {
               )}
             </div>
 
-            {/* Bio */}
+            {/* Quick Reference Bio */}
             {npc.bio && (
               <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-4 sm:p-6">
-                <h2 className="text-lg font-medium mb-3">Bio</h2>
-                <p className="text-sm text-gray-300 leading-relaxed">{npc.bio}</p>
+                <h2 className="text-lg font-medium mb-2">Quick Reference</h2>
+                <p className="text-sm text-gray-300 leading-relaxed font-medium">{npc.bio}</p>
               </div>
             )}
 
-            {/* Backstory */}
+            {/* Summary - One-liner and Key Points */}
+            {traits && (traits as { summary?: { oneLiner?: string; keyPoints?: string[] } }).summary && (
+              <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-4 sm:p-6">
+                <h2 className="text-lg font-medium mb-3">Summary</h2>
+                {(traits as { summary?: { oneLiner?: string; keyPoints?: string[] } }).summary?.oneLiner && (
+                  <p className="text-sm text-gray-300 leading-relaxed mb-4">
+                    {(traits as { summary?: { oneLiner?: string; keyPoints?: string[] } }).summary?.oneLiner}
+                  </p>
+                )}
+                {(traits as { summary?: { oneLiner?: string; keyPoints?: string[] } }).summary?.keyPoints && 
+                 (traits as { summary?: { oneLiner?: string; keyPoints?: string[] } }).summary?.keyPoints.length > 0 && (
+                  <div>
+                    <p className="text-xs text-gray-400 mb-2 uppercase tracking-wide">Key Points</p>
+                    <ul className="space-y-2">
+                      {(traits as { summary?: { oneLiner?: string; keyPoints?: string[] } }).summary?.keyPoints.map((point, i) => (
+                        <li key={i} className="text-sm text-gray-300 flex items-start">
+                          <span className="text-blue-400 mr-2">•</span>
+                          <span>{point}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+                )}
+              </div>
+            )}
+
+            {/* Backstory - Detailed Narrative */}
             {npc.backstory && (
               <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-4 sm:p-6">
                 <h2 className="text-lg font-medium mb-3">Backstory</h2>
