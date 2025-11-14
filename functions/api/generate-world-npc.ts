@@ -84,15 +84,31 @@ export const onRequest: PagesFunction = async (context) => {
   const raceFromTags = body.tags?.find(t => raceKeywords.includes(t.toLowerCase())) ||
     raceKeywords.find(race => allTagText.includes(race));
   
-  // Extract class (check both exact matches and phrases like "training to become wizard")
-  const classKeywords = ['commoner', 'guard', 'noble', 'merchant', 'scholar', 'warrior', 'spellcaster', 'wizard', 'rogue', 'ranger', 'cleric', 'bard', 'sorcerer', 'paladin', 'barbarian', 'druid', 'monk', 'fighter'];
-  const classFromTags = body.tags?.find(t => classKeywords.includes(t.toLowerCase())) ||
+  // Extract class (check both exact matches and phrases like "training to become wizard", "ex-mercenary", "turned to peace")
+  const classKeywords = ['commoner', 'guard', 'noble', 'merchant', 'scholar', 'warrior', 'spellcaster', 'wizard', 'rogue', 'ranger', 'cleric', 'bard', 'sorcerer', 'paladin', 'barbarian', 'druid', 'monk', 'fighter', 'mercenary'];
+  let classFromTags = body.tags?.find(t => classKeywords.includes(t.toLowerCase())) ||
     classKeywords.find(cls => allTagText.includes(cls));
   
+  // Special handling for ex-mercenary → monk/cleric (peace/meditation)
+  if (allTagText.includes('ex-mercenary') || allTagText.includes('former mercenary') || allTagText.includes('turned to peace') || allTagText.includes('meditation')) {
+    // Prefer monk or cleric for ex-mercenary who turned to peace
+    if (!classFromTags || classFromTags === 'mercenary' || classFromTags === 'warrior' || classFromTags === 'fighter') {
+      // Override with monk (meditation) or cleric (helping poor/defending weak)
+      if (allTagText.includes('meditation')) {
+        classFromTags = 'monk';
+      } else if (allTagText.includes('help') || allTagText.includes('defend') || allTagText.includes('poor') || allTagText.includes('weak')) {
+        classFromTags = 'cleric';
+      } else {
+        classFromTags = 'monk'; // Default to monk for peace/meditation theme
+      }
+    }
+  }
+  
   // Extract temperament
-  const temperamentKeywords = ['aggressive', 'friendly', 'cautious', 'reckless', 'stoic', 'cheerful', 'neutral', 'shy', 'timid', 'reserved', 'bold', 'confident'];
+  const temperamentKeywords = ['aggressive', 'friendly', 'cautious', 'reckless', 'stoic', 'cheerful', 'neutral', 'shy', 'timid', 'reserved', 'bold', 'confident', 'peaceful', 'calm', 'serene'];
   const temperamentFromTags = body.tags?.find(t => temperamentKeywords.includes(t.toLowerCase())) ||
-    temperamentKeywords.find(temp => allTagText.includes(temp));
+    temperamentKeywords.find(temp => allTagText.includes(temp)) ||
+    (allTagText.includes('peace') || allTagText.includes('meditation') ? 'peaceful' : undefined);
   
   // Extract conflict indicators (for backstory)
   const conflictIndicators = ['against', 'disapprove', 'conflict', 'wishes', 'parent', 'family', 'oppose'];
@@ -143,7 +159,26 @@ export const onRequest: PagesFunction = async (context) => {
         intentParts.push(`family conflict: REQUIRED in backstory`);
       }
       if (body.tags && body.tags.length) {
-        intentParts.push(`additional context: ${body.tags.join(', ')}`);
+        // Include full tag context for better interpretation
+        const tagContext = body.tags.join(', ');
+        intentParts.push(`additional context: ${tagContext}`);
+        
+        // Extract key themes from tags for explicit mention
+        if (allTagText.includes('ex-mercenary') || allTagText.includes('former mercenary')) {
+          intentParts.push(`background: ex-mercenary (soldier/mercenary past)`);
+        }
+        if (allTagText.includes('peace') || allTagText.includes('meditation')) {
+          intentParts.push(`theme: peace and meditation (calm, serene, contemplative)`);
+        }
+        if (allTagText.includes('wandering') || allTagText.includes('wander')) {
+          intentParts.push(`lifestyle: wandering/traveling`);
+        }
+        if (allTagText.includes('help') && allTagText.includes('poor')) {
+          intentParts.push(`motivation: help the poor and needy`);
+        }
+        if (allTagText.includes('defend') && allTagText.includes('weak')) {
+          intentParts.push(`motivation: defend the weak and vulnerable`);
+        }
       }
       
       const intent = intentParts.length ? `User intent: ${intentParts.join(' | ')}.` : 'User intent: none specified.';
@@ -568,83 +603,7 @@ Return JSON: { "bio": string, "summary": { "oneLiner": string, "keyPoints": stri
         npcDraft.traits = { ...currentTraits, summary: qualityEdits.summary };
       }
       
-      // Final programmatic fixes as safety net (fix common issues even if AI missed them)
-      // Fix broken bio patterns
-      if (npcDraft.bio) {
-        const traits = npcDraft.traits as { race?: string; class?: string } | undefined;
-        const race = traits?.race || '';
-        const npcClass = traits?.class || '';
-        const descriptor = npcClass || race || 'character';
-        
-        // Fix "known for X and Y" patterns (more flexible matching)
-        // Handle cases like "known for noble and brave" where adjectives might repeat class/race
-        if (npcDraft.bio.match(/\bknown for \w+ and \w+/i)) {
-          // Extract the adjectives
-          const match = npcDraft.bio.match(/\bknown for (\w+) and (\w+)/i);
-          if (match) {
-            const [, adj1, adj2] = match;
-            // Check if bio starts with "A [adj] [class/race]" pattern
-            const prefixMatch = npcDraft.bio.match(/^A \w+ \w+/i);
-            if (prefixMatch) {
-              // Use the existing structure but fix the "known for" part
-              npcDraft.bio = npcDraft.bio.replace(
-                /\bknown for \w+ and \w+\.?\s*$/i,
-                `known for their ${adj1} nature and ${adj2} demeanor.`
-              );
-            } else {
-              // Reconstruct as proper sentence
-              npcDraft.bio = npcDraft.bio.replace(
-                /\bknown for \w+ and \w+.*$/i,
-                `a ${adj2} ${descriptor} known for their ${adj1} nature and ${adj2} demeanor`
-              );
-            }
-          }
-        }
-        
-        // If bio still looks broken, try to fix it
-        if (npcDraft.bio.match(/^A \w+ \w+ known for \w+ and \w+\.?$/i)) {
-          // Already fixed or simple pattern
-        } else if (npcDraft.bio.length < 30 && npcDraft.bio.includes('known for')) {
-          // Very short bio with "known for" - likely broken
-          const match = npcDraft.bio.match(/(\w+) known for (\w+) and (\w+)/i);
-          if (match) {
-            const [, noun, adj1, adj2] = match;
-            npcDraft.bio = `A ${adj2} ${noun || descriptor} known for their ${adj1} nature and ${adj2} demeanor.`;
-          }
-        }
-      }
-      
-      // Fix first-person references programmatically
-      const fixFirstPerson = (text: string): string => {
-        return text
-          .replace(/\bi\s+suffer\b/gi, 'they suffer')
-          .replace(/\bi\s+care\s+about\b/gi, 'they care about')
-          .replace(/\bi\s+am\b/gi, 'they are')
-          .replace(/\bi\s+will\b/gi, 'they will')
-          .replace(/\bi\s+have\b/gi, 'they have')
-          .replace(/\bi\s+learned\b/gi, 'they learned')
-          .replace(/\bi\s+know\b/gi, 'they know')
-          .replace(/\bi\s+protect\b/gi, 'they protect')
-          .replace(/\bi\s+served\b/gi, 'they served')
-          .replace(/\bmy\s+/gi, 'their ')
-          .replace(/\s+me\s+/gi, ' them ')
-          .replace(/\s+me\./gi, ' them.')
-          .replace(/\s+me,/gi, ' them,');
-      };
-      
-      if (npcDraft.bio) npcDraft.bio = fixFirstPerson(npcDraft.bio);
-      if (npcDraft.backstory) npcDraft.backstory = fixFirstPerson(npcDraft.backstory);
-      
-      // Fix summary if it exists
-      const currentTraits = npcDraft.traits as { summary?: { oneLiner?: string; keyPoints?: string[] } } | undefined;
-      if (currentTraits?.summary) {
-        if (currentTraits.summary.oneLiner) {
-          currentTraits.summary.oneLiner = fixFirstPerson(currentTraits.summary.oneLiner);
-        }
-        if (currentTraits.summary.keyPoints) {
-          currentTraits.summary.keyPoints = currentTraits.summary.keyPoints.map(p => fixFirstPerson(p));
-        }
-      }
+      // Note: Programmatic fixes are applied after AI block (see below) to ensure they always run
     } catch (err) {
       // If AI fails, use procedural base (no degradation)
       console.error('AI enhancement failed, using procedural base:', err);
@@ -656,6 +615,90 @@ Return JSON: { "bio": string, "summary": { "oneLiner": string, "keyPoints": stri
     }
   } else {
     console.log('AI enhancement disabled (WORKERS_AI_ENABLE not set to "true")');
+  }
+
+  // ALWAYS ensure summary exists and apply programmatic fixes (even if AI is disabled or failed)
+  const currentTraits = npcDraft.traits as { summary?: { oneLiner?: string; keyPoints?: string[] } } | undefined;
+  if (!currentTraits?.summary || !currentTraits.summary.oneLiner || !currentTraits.summary.keyPoints || currentTraits.summary.keyPoints.length === 0) {
+    // Generate summary from bio and backstory
+    const bioText = npcDraft.bio || '';
+    const backstoryText = npcDraft.backstory || '';
+    const summary = {
+      oneLiner: bioText || 'A character in the world.',
+      keyPoints: [
+        ...(bioText ? [bioText.substring(0, 80) + (bioText.length > 80 ? '...' : '')] : []),
+        ...(backstoryText ? [backstoryText.substring(0, 100) + (backstoryText.length > 100 ? '...' : '')] : []),
+        ...(currentTraits?.race ? [`Race: ${currentTraits.race}`] : []),
+        ...(currentTraits?.class ? [`Class: ${currentTraits.class}`] : [])
+      ].slice(0, 5).filter(Boolean)
+    };
+    npcDraft.traits = { ...npcDraft.traits, summary };
+  }
+
+  // ALWAYS apply programmatic fixes (even if AI is disabled or failed)
+  // Fix broken bio patterns
+  if (npcDraft.bio) {
+    const traits = npcDraft.traits as { race?: string; class?: string } | undefined;
+    const race = traits?.race || '';
+    const npcClass = traits?.class || '';
+    const descriptor = npcClass || race || 'character';
+    
+    // Fix "known for X and Y" patterns (more flexible matching)
+    // Handle cases like "known for noble and brave" where adjectives might repeat class/race
+    if (npcDraft.bio.match(/\bknown for \w+ and \w+/i)) {
+      // Extract the adjectives
+      const match = npcDraft.bio.match(/\bknown for (\w+) and (\w+)/i);
+      if (match) {
+        const [, adj1, adj2] = match;
+        // Check if bio starts with "A [adj] [class/race]" pattern
+        const prefixMatch = npcDraft.bio.match(/^A \w+ \w+/i);
+        if (prefixMatch) {
+          // Use the existing structure but fix the "known for" part
+          npcDraft.bio = npcDraft.bio.replace(
+            /\bknown for \w+ and \w+\.?\s*$/i,
+            `known for their ${adj1} nature and ${adj2} demeanor.`
+          );
+        } else {
+          // Reconstruct as proper sentence
+          npcDraft.bio = npcDraft.bio.replace(
+            /\bknown for \w+ and \w+.*$/i,
+            `a ${adj2} ${descriptor} known for their ${adj1} nature and ${adj2} demeanor`
+          );
+        }
+      }
+    }
+  }
+  
+  // Fix first-person references programmatically
+  const fixFirstPerson = (text: string): string => {
+    return text
+      .replace(/\bi\s+suffer\b/gi, 'they suffer')
+      .replace(/\bi\s+care\s+about\b/gi, 'they care about')
+      .replace(/\bi\s+am\b/gi, 'they are')
+      .replace(/\bi\s+will\b/gi, 'they will')
+      .replace(/\bi\s+have\b/gi, 'they have')
+      .replace(/\bi\s+learned\b/gi, 'they learned')
+      .replace(/\bi\s+know\b/gi, 'they know')
+      .replace(/\bi\s+protect\b/gi, 'they protect')
+      .replace(/\bi\s+served\b/gi, 'they served')
+      .replace(/\bmy\s+/gi, 'their ')
+      .replace(/\s+me\s+/gi, ' them ')
+      .replace(/\s+me\./gi, ' them.')
+      .replace(/\s+me,/gi, ' them,');
+  };
+  
+  if (npcDraft.bio) npcDraft.bio = fixFirstPerson(npcDraft.bio);
+  if (npcDraft.backstory) npcDraft.backstory = fixFirstPerson(npcDraft.backstory);
+  
+  // Fix summary if it exists
+  const finalTraits = npcDraft.traits as { summary?: { oneLiner?: string; keyPoints?: string[] } } | undefined;
+  if (finalTraits?.summary) {
+    if (finalTraits.summary.oneLiner) {
+      finalTraits.summary.oneLiner = fixFirstPerson(finalTraits.summary.oneLiner);
+    }
+    if (finalTraits.summary.keyPoints) {
+      finalTraits.summary.keyPoints = finalTraits.summary.keyPoints.map(p => fixFirstPerson(p));
+    }
   }
 
   // Add metadata (extend GeneratedNPC with additional fields)

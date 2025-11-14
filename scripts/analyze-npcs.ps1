@@ -197,6 +197,54 @@ foreach ($npc in $response) {
         }
     }
     
+    # Check for summary field (new structured format)
+    $summary = if ($traits.summary) { $traits.summary } else { $null }
+    if ($summary) {
+        Write-Host "  ✅ Summary field present" -ForegroundColor Green
+        if ($summary.oneLiner) {
+            Write-Host "    One-liner: $($summary.oneLiner.Substring(0, [Math]::Min(80, $summary.oneLiner.Length)))..." -ForegroundColor Gray
+        }
+        if ($summary.keyPoints -and $summary.keyPoints.Count -gt 0) {
+            Write-Host "    Key points: $($summary.keyPoints.Count) items" -ForegroundColor Gray
+        }
+    } else {
+        Write-Host "  ❌ Summary field MISSING (new structured format not present)" -ForegroundColor Red
+    }
+    
+    # Check for broken bio patterns
+    $brokenBioPatterns = @()
+    if ($bio -match '\bknown for \w+ and \w+\.?\s*$') {
+        $brokenBioPatterns += "Broken 'known for X and Y' pattern"
+    }
+    if ($bio -match '\bknown for \w+ and \w+\b' -and $bio.Length -lt 50) {
+        $brokenBioPatterns += "Short bio with 'known for' pattern (likely broken)"
+    }
+    if ($brokenBioPatterns.Count -gt 0) {
+        Write-Host "  ❌ BROKEN BIO PATTERNS:" -ForegroundColor Red
+        $brokenBioPatterns | ForEach-Object { Write-Host "    - $_" -ForegroundColor Red }
+    } else {
+        Write-Host "  ✅ Bio: No broken patterns detected" -ForegroundColor Green
+    }
+    
+    # Check prompt interpretation (for ex-mercenary prompt)
+    $promptKeywords = @("mercenary", "peace", "meditation", "wandering", "help", "poor", "defend", "weak")
+    $foundKeywords = @()
+    $allTextLower = "$bio $backstory".ToLower()
+    foreach ($keyword in $promptKeywords) {
+        if ($allTextLower -match $keyword) {
+            $foundKeywords += $keyword
+        }
+    }
+    if ($foundKeywords.Count -ge 3) {
+        Write-Host "  ✅ Prompt interpretation: Found $($foundKeywords.Count)/$($promptKeywords.Count) keywords" -ForegroundColor Green
+        Write-Host "    Found: $($foundKeywords -join ', ')" -ForegroundColor Gray
+    } else {
+        Write-Host "  ⚠️  Prompt interpretation: Only found $($foundKeywords.Count)/$($promptKeywords.Count) keywords" -ForegroundColor Yellow
+        if ($foundKeywords.Count -gt 0) {
+            Write-Host "    Found: $($foundKeywords -join ', ')" -ForegroundColor Gray
+        }
+    }
+    
     # Bio/Backstory quality
     Write-Host "  Bio: $($bio.Substring(0, [Math]::Min(80, $bio.Length)))..." -ForegroundColor Gray
     Write-Host "  Backstory: $($backstory.Substring(0, [Math]::Min(100, $backstory.Length)))..." -ForegroundColor Gray
