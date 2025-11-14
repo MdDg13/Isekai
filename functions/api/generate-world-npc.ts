@@ -188,16 +188,18 @@ CRITICAL RULES (MUST FOLLOW):
    - These constraints are MANDATORY. Do NOT change race, class, or background even if you think another choice would be more creative.
    - If user wants "dwarf wizard", the NPC MUST be dwarf race and wizard class - no exceptions.
 
-2. STRUCTURED OUTPUT FORMAT (DM-FRIENDLY):
+2. STRUCTURED OUTPUT FORMAT (DM-FRIENDLY) - ALL FIELDS REQUIRED:
    - **bio**: One-line quick reference (e.g., "A shy dwarf wizard apprentice defying traditionalist parents")
-   - **summary.oneLiner**: One complete sentence capturing the NPC's essence
-   - **summary.keyPoints**: 3-5 bullet points for quick reference during play:
+   - **summary.oneLiner**: REQUIRED - One complete sentence capturing the NPC's essence (MUST be provided)
+   - **summary.keyPoints**: REQUIRED - 3-5 bullet points for quick reference during play (MUST be provided):
      * Key personality trait or behavior
      * Primary motivation or goal
      * Notable relationship or conflict
      * Distinctive quirk or mannerism
      * Role or function in the world
    - **backstory**: 2-4 paragraphs of detailed narrative connecting all elements logically
+   
+   CRITICAL: You MUST provide both summary.oneLiner and summary.keyPoints in your JSON response. Do not omit these fields.
 
 3. COHESION REQUIREMENTS:
    - ALL elements must connect: personality → motivation → backstory → traits → stats
@@ -350,16 +352,28 @@ Examples: "shy dwarf training to become wizard" → "Thorin Spellweaver", "appre
       // Merge enhanced content back into draft
       if (mergedAfterCritique.bio) npcDraft.bio = mergedAfterCritique.bio;
       if (mergedAfterCritique.backstory) npcDraft.backstory = mergedAfterCritique.backstory;
-      // Store summary in traits for easy access (or we could add it to the schema)
-      if (mergedAfterCritique.summary) {
-        npcDraft.traits = { 
-          ...npcDraft.traits, 
-          ...(mergedAfterCritique.traits || {}),
-          summary: mergedAfterCritique.summary
+      
+      // Ensure summary exists - generate from bio if AI didn't provide it
+      let finalSummary = mergedAfterCritique.summary;
+      if (!finalSummary || !finalSummary.oneLiner || !finalSummary.keyPoints || finalSummary.keyPoints.length === 0) {
+        // Fallback: generate summary from bio and backstory
+        const bioText = mergedAfterCritique.bio || npcDraft.bio || '';
+        const backstoryText = mergedAfterCritique.backstory || npcDraft.backstory || '';
+        finalSummary = {
+          oneLiner: bioText || 'A character in the world.',
+          keyPoints: [
+            bioText ? bioText.substring(0, 80) + (bioText.length > 80 ? '...' : '') : 'No description available',
+            ...(backstoryText ? [backstoryText.substring(0, 100) + (backstoryText.length > 100 ? '...' : '')] : [])
+          ].slice(0, 3)
         };
-      } else {
-        npcDraft.traits = { ...npcDraft.traits, ...(mergedAfterCritique.traits || {}) };
       }
+      
+      // Store summary in traits
+      npcDraft.traits = { 
+        ...npcDraft.traits, 
+        ...(mergedAfterCritique.traits || {}),
+        summary: finalSummary
+      };
       npcDraft.stats = { ...npcDraft.stats, ...(mergedAfterCritique.stats || {}) };
 
       // Step 3: Style normalization (third-person, coherent, concrete hooks)
@@ -506,17 +520,32 @@ Summary one-liner: "${currentSummaryForQuality.oneLiner || ''}"
 Summary key points: ${JSON.stringify(currentSummaryForQuality.keyPoints || [])}
 Backstory: "${npcDraft.backstory || ''}"
 
-SPECIFIC FIXES NEEDED:
-1. Fix broken bio patterns like "known for X and Y" → make complete sentences
+SPECIFIC FIXES NEEDED (APPLY ALL):
+
+1. FIX BROKEN BIO PATTERNS (CRITICAL):
+   - "known for noble and brave" → "a brave noble known for their unwavering courage and dedication to their people"
+   - "known for X and Y" → "a [descriptor] [class] known for [specific trait] and [specific trait]"
    - "known for noble and humble" → "a humble noble known for their dedication to their people"
    - "known for spellcaster and pious" → "a pious spellcaster known for their devotion to ancient magic"
-   - "known for guard and opportunistic" → "a guard known for their opportunistic nature"
+   - NEVER leave fragments like "known for X and Y" - ALWAYS make complete sentences
 
-2. Ensure bio is ONE complete, grammatically correct sentence (or two short sentences max)
+2. REMOVE ALL FIRST-PERSON REFERENCES (CRITICAL):
+   - "i suffer" → "they suffer"
+   - "i care about" → "they care about"
+   - "i am" → "they are"
+   - "i will" → "they will"
+   - "i have" → "they have"
+   - "my" → "their"
+   - Find and replace EVERY instance - this is a grammar error that MUST be fixed
 
-3. Ensure backstory flows logically and connects to traits
+3. ENSURE BIO IS ONE COMPLETE SENTENCE:
+   - Bio must be grammatically correct and complete
+   - No fragments, no broken patterns
 
-4. Remove any remaining first-person references ("I", "me", "my")
+4. ENSURE BACKSTORY FLOWS LOGICALLY:
+   - All sentences must connect
+   - Remove contradictions
+   - Ensure coherence with traits
 
 Return JSON: { "bio": string, "summary": { "oneLiner": string, "keyPoints": string[] }, "backstory": string } with fixes applied.
 - Ensure summary.oneLiner is one complete sentence
@@ -537,6 +566,84 @@ Return JSON: { "bio": string, "summary": { "oneLiner": string, "keyPoints": stri
       if (qualityEdits?.summary) {
         const currentTraits = npcDraft.traits as Record<string, unknown>;
         npcDraft.traits = { ...currentTraits, summary: qualityEdits.summary };
+      }
+      
+      // Final programmatic fixes as safety net (fix common issues even if AI missed them)
+      // Fix broken bio patterns
+      if (npcDraft.bio) {
+        const traits = npcDraft.traits as { race?: string; class?: string } | undefined;
+        const race = traits?.race || '';
+        const npcClass = traits?.class || '';
+        const descriptor = npcClass || race || 'character';
+        
+        // Fix "known for X and Y" patterns (more flexible matching)
+        // Handle cases like "known for noble and brave" where adjectives might repeat class/race
+        if (npcDraft.bio.match(/\bknown for \w+ and \w+/i)) {
+          // Extract the adjectives
+          const match = npcDraft.bio.match(/\bknown for (\w+) and (\w+)/i);
+          if (match) {
+            const [, adj1, adj2] = match;
+            // Check if bio starts with "A [adj] [class/race]" pattern
+            const prefixMatch = npcDraft.bio.match(/^A \w+ \w+/i);
+            if (prefixMatch) {
+              // Use the existing structure but fix the "known for" part
+              npcDraft.bio = npcDraft.bio.replace(
+                /\bknown for \w+ and \w+\.?\s*$/i,
+                `known for their ${adj1} nature and ${adj2} demeanor.`
+              );
+            } else {
+              // Reconstruct as proper sentence
+              npcDraft.bio = npcDraft.bio.replace(
+                /\bknown for \w+ and \w+.*$/i,
+                `a ${adj2} ${descriptor} known for their ${adj1} nature and ${adj2} demeanor`
+              );
+            }
+          }
+        }
+        
+        // If bio still looks broken, try to fix it
+        if (npcDraft.bio.match(/^A \w+ \w+ known for \w+ and \w+\.?$/i)) {
+          // Already fixed or simple pattern
+        } else if (npcDraft.bio.length < 30 && npcDraft.bio.includes('known for')) {
+          // Very short bio with "known for" - likely broken
+          const match = npcDraft.bio.match(/(\w+) known for (\w+) and (\w+)/i);
+          if (match) {
+            const [, noun, adj1, adj2] = match;
+            npcDraft.bio = `A ${adj2} ${noun || descriptor} known for their ${adj1} nature and ${adj2} demeanor.`;
+          }
+        }
+      }
+      
+      // Fix first-person references programmatically
+      const fixFirstPerson = (text: string): string => {
+        return text
+          .replace(/\bi\s+suffer\b/gi, 'they suffer')
+          .replace(/\bi\s+care\s+about\b/gi, 'they care about')
+          .replace(/\bi\s+am\b/gi, 'they are')
+          .replace(/\bi\s+will\b/gi, 'they will')
+          .replace(/\bi\s+have\b/gi, 'they have')
+          .replace(/\bi\s+learned\b/gi, 'they learned')
+          .replace(/\bi\s+know\b/gi, 'they know')
+          .replace(/\bi\s+protect\b/gi, 'they protect')
+          .replace(/\bi\s+served\b/gi, 'they served')
+          .replace(/\bmy\s+/gi, 'their ')
+          .replace(/\s+me\s+/gi, ' them ')
+          .replace(/\s+me\./gi, ' them.')
+          .replace(/\s+me,/gi, ' them,');
+      };
+      
+      if (npcDraft.bio) npcDraft.bio = fixFirstPerson(npcDraft.bio);
+      if (npcDraft.backstory) npcDraft.backstory = fixFirstPerson(npcDraft.backstory);
+      
+      // Fix summary if it exists
+      const currentTraits = npcDraft.traits as { summary?: { oneLiner?: string; keyPoints?: string[] } } | undefined;
+      if (currentTraits?.summary) {
+        if (currentTraits.summary.oneLiner) {
+          currentTraits.summary.oneLiner = fixFirstPerson(currentTraits.summary.oneLiner);
+        }
+        if (currentTraits.summary.keyPoints) {
+          currentTraits.summary.keyPoints = currentTraits.summary.keyPoints.map(p => fixFirstPerson(p));
+        }
       }
     } catch (err) {
       // If AI fails, use procedural base (no degradation)
