@@ -30,6 +30,16 @@ interface WorldClientProps {
   worldId: string;
 }
 
+const formatDateTime = (value: string) =>
+  new Date(value).toLocaleString(undefined, {
+    year: 'numeric',
+    month: 'short',
+    day: '2-digit',
+    hour: '2-digit',
+    minute: '2-digit',
+    timeZoneName: 'short',
+  });
+
 export default function WorldClient({ worldId }: WorldClientProps) {
   const router = useRouter();
   const supabase = useMemo(() => {
@@ -82,7 +92,7 @@ export default function WorldClient({ worldId }: WorldClientProps) {
   // Detail view state
   const [viewMode, setViewMode] = useState<'list' | 'detail'>('list');
   const [selectedNpcId, setSelectedNpcId] = useState<string | null>(null);
-  const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
+const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
 
   const loadWorld = useCallback(async () => {
     if (!supabase) return;
@@ -873,7 +883,7 @@ export default function WorldClient({ worldId }: WorldClientProps) {
                               </button>
                             </div>
                             
-                            <p className="text-xs text-gray-500">Created: {new Date(selectedNpc.created_at).toLocaleString()}</p>
+                            <p className="text-xs text-gray-500">Created: {formatDateTime(selectedNpc.created_at)}</p>
                           </div>
                         </div>
                       </div>
@@ -1059,7 +1069,7 @@ export default function WorldClient({ worldId }: WorldClientProps) {
                                 <td className="px-4 py-3 text-sm text-gray-300">{traits?.race || '-'}</td>
                                 <td className="px-4 py-3 text-sm text-gray-300">{traits?.class || '-'}</td>
                                 <td className="px-4 py-3 text-sm text-gray-300">{stats?.level ?? 0}</td>
-                                <td className="px-4 py-3 text-sm text-gray-300">{new Date(n.created_at).toLocaleString()}</td>
+                                <td className="px-4 py-3 text-sm text-gray-300">{formatDateTime(n.created_at)}</td>
                                 <td className="px-4 py-3">
                                   <button
                                     onClick={e => {

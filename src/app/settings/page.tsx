@@ -3,6 +3,7 @@
 import { useState, useEffect, useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import Link from 'next/link';
+import { useTheme } from '@/providers/theme-context';
 
 type TableType = 'spell' | 'monster' | 'item' | 'feat' | 'class' | 'subclass' | 'race';
 
@@ -26,6 +27,8 @@ export default function SettingsPage() {
     if (!url || !key) return null;
     return createClient(url, key);
   }, []);
+
+  const { theme, setTheme } = useTheme();
 
   const loadTableData = async () => {
     if (!selectedTable || !supabase) return;
@@ -327,10 +330,41 @@ export default function SettingsPage() {
           <div className="space-y-6">
             <div>
               <h2 className="text-lg font-medium mb-4">Preferences</h2>
-              <p className="text-sm text-gray-400">Application preferences (coming soon)</p>
+              <p className="text-sm text-gray-400">Customize your application experience.</p>
             </div>
             <div className="bg-gray-900 rounded-lg p-6 border border-gray-800">
-              <p className="text-gray-400">Preferences will be available here.</p>
+              <h3 className="text-base font-medium mb-3">Theme</h3>
+              <p className="text-sm text-gray-400 mb-4">
+                Choose between light and dark themes. This preference is remembered on this device.
+              </p>
+              <div className="flex flex-col sm:flex-row gap-3">
+                <label className={`flex-1 cursor-pointer rounded-lg border p-4 ${theme === 'dark' ? 'border-blue-500 bg-blue-500/10' : 'border-gray-800 bg-black/30'}`}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Dark</span>
+                    <input
+                      type="radio"
+                      name="theme"
+                      value="dark"
+                      checked={theme === 'dark'}
+                      onChange={() => setTheme('dark')}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-400 mt-2">High-contrast UI optimized for low-light play sessions.</p>
+                </label>
+                <label className={`flex-1 cursor-pointer rounded-lg border p-4 ${theme === 'light' ? 'border-blue-500 bg-blue-500/10' : 'border-gray-800 bg-black/30'}`}>
+                  <div className="flex items-center justify-between">
+                    <span className="text-sm font-medium">Light</span>
+                    <input
+                      type="radio"
+                      name="theme"
+                      value="light"
+                      checked={theme === 'light'}
+                      onChange={() => setTheme('light')}
+                    />
+                  </div>
+                  <p className="text-xs text-gray-400 mt-2">Soft, neutral palette that stays readable in bright rooms.</p>
+                </label>
+              </div>
             </div>
           </div>
         )}

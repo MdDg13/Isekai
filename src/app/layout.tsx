@@ -2,6 +2,7 @@ import type { Metadata } from "next";
 import { Inter, Unbounded } from "next/font/google";
 import "./globals.css";
 import GlobalSettingsButton from "@/components/GlobalSettingsButton";
+import { ThemeProvider } from "@/providers/theme-context";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -28,8 +29,10 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} ${unbounded.variable} antialiased`}>
-        {children}
-        <GlobalSettingsButton />
+        <ThemeProvider>
+          {children}
+          <GlobalSettingsButton />
+        </ThemeProvider>
       </body>
     </html>
   );

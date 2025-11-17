@@ -5,6 +5,7 @@ import SettingsIcon from './SettingsIcon';
 import BuildBadge from './BuildBadge';
 
 const HIDDEN_PATHS = ['/settings', '/login'];
+const MAX_WIDTH = 1200;
 
 export default function GlobalSettingsButton() {
   const pathname = usePathname();
@@ -19,8 +20,13 @@ export default function GlobalSettingsButton() {
     return null;
   }
 
+  const horizontalOffset = `max(1rem, calc((100vw - ${MAX_WIDTH}px) / 2 + 1rem))`;
+
   return (
-    <div className="fixed top-4 right-4 z-50 flex flex-col items-end gap-2 pointer-events-none">
+    <div
+      className="fixed top-4 z-50 flex flex-col items-end gap-2 pointer-events-none"
+      style={{ right: horizontalOffset }}
+    >
       <div className="pointer-events-auto">
         <SettingsIcon />
       </div>
