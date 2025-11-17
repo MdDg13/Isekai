@@ -3,7 +3,6 @@
 import { useState, useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import Link from 'next/link';
-import SettingsIcon from '@/components/SettingsIcon';
 
 interface ReferenceListItem {
   id?: string;
@@ -80,10 +79,9 @@ export default function ReferenceLibraryPage() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100 p-8">
-      <div className="max-w-7xl mx-auto">
+      <div className="w-full">
         <div className="flex items-center justify-between mb-2">
           <h1 className="text-4xl font-bold">Free5e Reference Library</h1>
-          <SettingsIcon />
         </div>
         <p className="text-gray-400 mb-8">
           Browse and search Free5e game content (Creative Commons Attribution 4.0)

@@ -3,8 +3,6 @@
 import { useState, useMemo, useEffect } from 'react';
 import { createClient } from '@supabase/supabase-js';
 import Link from 'next/link';
-import SettingsIcon from '@/components/SettingsIcon';
-
 type JsonRecord = Record<string, unknown>;
 
 interface ReferenceItem {
@@ -93,7 +91,7 @@ export default function ReferenceDetailClient({ type, id }: ReferenceDetailClien
   if (loading) {
     return (
       <div className="min-h-screen bg-gray-950 text-gray-100 p-8">
-        <div className="max-w-4xl mx-auto">
+        <div className="w-full px-4 sm:px-6">
           <p className="text-gray-400">Loading...</p>
         </div>
       </div>
@@ -103,7 +101,7 @@ export default function ReferenceDetailClient({ type, id }: ReferenceDetailClien
   if (!item) {
     return (
       <div className="min-h-screen bg-gray-950 text-gray-100 p-8">
-        <div className="max-w-4xl mx-auto">
+        <div className="w-full px-4 sm:px-6">
           <p className="text-gray-400">Item not found</p>
           <Link href="/reference" className="text-blue-400 hover:text-blue-300 mt-4 inline-block">
             ← Back to Reference Library
@@ -115,12 +113,11 @@ export default function ReferenceDetailClient({ type, id }: ReferenceDetailClien
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100 p-8">
-      <div className="max-w-4xl mx-auto">
+      <div className="w-full px-4 sm:px-6">
         <div className="flex items-center justify-between mb-4">
           <Link href="/reference" className="text-blue-400 hover:text-blue-300 inline-block">
             ← Back to Reference Library
           </Link>
-          <SettingsIcon />
         </div>
 
         <div className="flex justify-between items-start mb-8">

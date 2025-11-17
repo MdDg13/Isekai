@@ -5,7 +5,6 @@ import { useMemo, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import BuildBadge from "@/components/BuildBadge";
-import SettingsIcon from "@/components/SettingsIcon";
 
 interface NPCDetailPageProps {
   worldId: string;
@@ -148,7 +147,7 @@ export default function NPCDetailPage({ worldId, npcId }: NPCDetailPageProps) {
     <div className="min-h-screen bg-black text-white">
       {/* Header */}
       <header className="sticky top-0 z-10 bg-black/80 backdrop-blur-sm border-b border-gray-800">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
+        <div className="w-full px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link href={`/world/${worldId}`} className="text-blue-400 hover:text-blue-300 text-sm underline">
@@ -164,7 +163,6 @@ export default function NPCDetailPage({ worldId, npcId }: NPCDetailPageProps) {
               </div>
             </div>
             <div className="flex items-center gap-3">
-              <SettingsIcon />
               <button
                 onClick={handleDelete}
                 disabled={deleting}
@@ -179,7 +177,7 @@ export default function NPCDetailPage({ worldId, npcId }: NPCDetailPageProps) {
       </header>
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+      <div className="w-full px-4 sm:px-6 py-6">
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">

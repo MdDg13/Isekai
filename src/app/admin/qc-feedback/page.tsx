@@ -111,7 +111,7 @@ export default function QCFeedbackAdminPage() {
   }, {} as Record<string, number>);
 
   return (
-    <div className="container mx-auto p-6 max-w-7xl">
+    <div className="w-full p-6">
       <h1 className="text-3xl font-bold mb-6">Content Review & Corrections</h1>
 
       {/* Status Summary */}

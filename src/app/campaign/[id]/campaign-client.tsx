@@ -3,7 +3,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { useMemo, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import SettingsIcon from "@/components/SettingsIcon";
 
 interface CampaignClientProps {
   campaignId: string;
@@ -96,11 +95,10 @@ export default function CampaignClient({ campaignId }: CampaignClientProps) {
     <div className="min-h-screen bg-black text-white">
       {/* Header */}
       <header className="sticky top-0 z-10 bg-black/80 backdrop-blur-sm border-b border-gray-800">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
+        <div className="w-full px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between mb-2">
             <Link href="/" className="text-xs text-gray-400 hover:text-gray-300">← Back to Worlds</Link>
             <div className="flex items-center gap-3">
-              <SettingsIcon />
               <button onClick={loadNpcs} className="text-xs text-gray-400 hover:text-gray-300">Refresh</button>
             </div>
           </div>
@@ -111,7 +109,7 @@ export default function CampaignClient({ campaignId }: CampaignClientProps) {
 
       {/* Tabs */}
       <div className="border-b border-gray-800 bg-gray-900/30">
-        <div className="max-w-4xl mx-auto px-4 sm:px-6">
+        <div className="w-full px-4 sm:px-6">
           <div className="flex gap-1 overflow-x-auto">
             <button
               onClick={() => setActiveTab('arcs')}
@@ -168,7 +166,7 @@ export default function CampaignClient({ campaignId }: CampaignClientProps) {
       </div>
 
       {/* Content */}
-      <div className="max-w-4xl mx-auto px-4 sm:px-6 py-6">
+      <div className="w-full px-4 sm:px-6 py-6">
         {activeTab === 'arcs' && (
           <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-8 text-center">
             <p className="text-gray-400">Story Arcs feature coming soon</p>
