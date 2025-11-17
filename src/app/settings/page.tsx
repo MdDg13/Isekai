@@ -1,7 +1,8 @@
 'use client';
 
-import { useState, useEffect, useMemo } from 'react';
+import { Suspense, useState, useEffect, useMemo } from 'react';
 import { createClient } from '@supabase/supabase-js';
+import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useTheme } from '@/providers/theme-context';
 
@@ -14,6 +15,14 @@ interface TableData {
 }
 
 export default function SettingsPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-black text-white flex items-center justify-center text-sm">Loading settings…</div>}>
+      <SettingsClient />
+    </Suspense>
+  );
+}
+
+function SettingsClient() {
   const [activeTab, setActiveTab] = useState<'data-browser' | 'feedback' | 'account' | 'preferences'>('data-browser');
   const [selectedTable, setSelectedTable] = useState<TableType | null>(null);
   const [tableData, setTableData] = useState<TableData[]>([]);
@@ -29,6 +38,16 @@ export default function SettingsPage() {
   }, []);
 
   const { theme, setTheme } = useTheme();
+  const router = useRouter();
+  const searchParams = useSearchParams();
+  const fromParam = searchParams?.get('from');
+  const handleBack = () => {
+    if (fromParam) {
+      router.push(fromParam);
+    } else {
+      router.back();
+    }
+  };
 
   const loadTableData = async () => {
     if (!selectedTable || !supabase) return;
@@ -88,11 +107,14 @@ export default function SettingsPage() {
       {/* Header */}
       <header className="sticky top-0 z-10 bg-black/80 backdrop-blur-sm border-b border-gray-800">
         <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-4">
-          <div className="flex items-center justify-between">
-            <div className="flex items-center gap-4">
-              <Link href="/" className="text-xs text-gray-400 hover:text-gray-300">← Back</Link>
-              <h1 className="text-xl sm:text-2xl font-medium">Settings</h1>
-            </div>
+          <div className="flex items-center gap-4">
+            <button
+              onClick={handleBack}
+              className="text-xs text-gray-400 hover:text-gray-300 underline"
+            >
+              ← Back
+            </button>
+            <h1 className="text-xl sm:text-2xl font-medium">Settings</h1>
           </div>
         </div>
       </header>

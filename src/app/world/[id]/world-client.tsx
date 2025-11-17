@@ -285,7 +285,6 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
         <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between mb-2">
             <Link href="/" className="text-xs text-gray-400 hover:text-gray-300">← Back to Worlds</Link>
-            <button onClick={loadWorldNpcs} className="text-xs text-gray-400 hover:text-gray-300">Refresh</button>
           </div>
           <div className="flex items-center gap-2">
             <h1 className="text-xl sm:text-2xl font-medium">{world.name}</h1>
@@ -296,8 +295,8 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
                 aria-label="World actions"
               >
                 <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-gray-200">
-                  <path d="M15.232 5.232a2.5 2.5 0 013.536 3.536L8.964 18.572a4 4 0 01-1.682.986l-2.817.805a.75.75 0 01-.924-.924l.805-2.817a4 4 0 01.986-1.682l9.9-9.9z" />
-                  <path d="M5 13l6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                  <path d="M16.862 3.487a2.25 2.25 0 113.182 3.182L7.5 19.313 3 21l1.688-4.5L16.862 3.487z" />
+                  <path d="M12.5 7l4.5 4.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" />
                 </svg>
               </button>
               {showWorldMenu && (

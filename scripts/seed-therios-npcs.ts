@@ -13,30 +13,6 @@ import { createClient } from '@supabase/supabase-js';
 
 const WORLD_ID = '9d3f8a90-4f31-43cf-9431-f3d1f517459e';
 
-const npcs = [
-  {
-    name: 'Eris Thornwell',
-    bio: 'A tiefling archivist who records dreams inside Therios’s forbidden stacks.',
-    backstory:
-      'Eris monitors the Sapphire Athenaeum’s sealed wing, stealing nightmares and binding them into ink. Her demonic patron now demands she revise history to glorify the infernal empire, forcing her to choose between truth and survival.',
-    traits: {
-      race: 'tiefling',
-      class: 'wizard (lore archivist)',
-      temperament: 'serene',
-      keywords: ['Sapphire Athenaeum', 'dream ink', 'infernal patron'],
-      summary: {
-        oneLiner: 'Serene tiefling historian torn between truthful record keeping and a demon’s demand for propaganda.',
-        keyPoints: [
-          'Sleepwalks while writing; pages capture future events when read backward.',
-          'Needs allies to counter her patron’s pressure.',
-          'Can extract dreams from PCs as payment for research.',
-        ],
-      },
-    },
-  },
-  // ...remaining NPCs declared below
-];
-
 const detailedNpcs = [
   {
     name: 'Eris Thornwell',

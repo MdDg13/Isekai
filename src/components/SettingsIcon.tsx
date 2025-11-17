@@ -1,11 +1,17 @@
 'use client';
 
 import Link from 'next/link';
+import { usePathname } from 'next/navigation';
 
 export default function SettingsIcon() {
+  const pathname = usePathname();
+  const href = pathname && !pathname.startsWith('/settings')
+    ? `/settings?from=${encodeURIComponent(pathname)}`
+    : '/settings';
+
   return (
     <Link
-      href="/settings"
+      href={href}
       className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-black/30 hover:bg-black/50 transition-colors shadow-lg border border-white/10"
       title="Settings"
     >
