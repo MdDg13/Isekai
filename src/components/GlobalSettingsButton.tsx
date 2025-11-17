@@ -2,10 +2,9 @@
 
 import { usePathname } from 'next/navigation';
 import SettingsIcon from './SettingsIcon';
-import BuildBadge from './BuildBadge';
 
 const HIDDEN_PATHS = ['/settings', '/login'];
-const MAX_WIDTH = 1200;
+const MAX_WIDTH = 1152;
 
 export default function GlobalSettingsButton() {
   const pathname = usePathname();
@@ -20,19 +19,11 @@ export default function GlobalSettingsButton() {
     return null;
   }
 
-  const horizontalOffset = `max(1rem, calc((100vw - ${MAX_WIDTH}px) / 2 + 1rem))`;
+  const horizontalOffset = `max(0.75rem, calc((100vw - ${MAX_WIDTH}px) / 2 + 0.75rem))`;
 
   return (
-    <div
-      className="fixed top-4 z-50 flex flex-col items-end gap-2 pointer-events-none"
-      style={{ right: horizontalOffset }}
-    >
-      <div className="pointer-events-auto">
-        <SettingsIcon />
-      </div>
-      <div className="bg-black/70 rounded-md px-2 py-1 pointer-events-auto shadow-lg">
-        <BuildBadge />
-      </div>
+    <div style={{ position: 'fixed', top: '1rem', right: horizontalOffset, zIndex: 50 }}>
+      <SettingsIcon />
     </div>
   );
 }
