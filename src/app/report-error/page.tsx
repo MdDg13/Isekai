@@ -150,7 +150,7 @@ function ReportErrorForm() {
 
         <div>
           <label className="block font-medium mb-2">
-            What's the issue? <span className="text-red-500">*</span>
+            What&apos;s the issue? <span className="text-red-500">*</span>
           </label>
           <select
             value={formData.issue_type}
@@ -161,7 +161,7 @@ function ReportErrorForm() {
             <option value="">Select issue type...</option>
             <option value="missing_data">Missing Data</option>
             <option value="incorrect_data">Incorrect Data</option>
-            <option value="false_positive">False Positive (shouldn't be here)</option>
+            <option value="false_positive">False Positive (shouldn&apos;t be here)</option>
             <option value="formatting">Formatting Issue</option>
             <option value="other">Other</option>
           </select>
@@ -171,12 +171,12 @@ function ReportErrorForm() {
           <label className="block font-medium mb-2">
             Describe the issue <span className="text-red-500">*</span>
           </label>
-          <textarea
+            <textarea
             value={formData.description}
             onChange={(e) => setFormData({ ...formData, description: e.target.value })}
             required
             rows={4}
-            placeholder="Please describe what's wrong..."
+            placeholder="Please describe what&apos;s wrong..."
             className="w-full p-2 border rounded"
           />
         </div>
@@ -224,7 +224,7 @@ function ReportErrorForm() {
             className="w-full p-2 border rounded"
           />
           <p className="text-sm text-gray-500 mt-1">
-            If you're logged in, we'll use your account email. Otherwise, provide an email if you'd like updates.
+            If you&apos;re logged in, we&apos;ll use your account email. Otherwise, provide an email if you&apos;d like updates.
           </p>
         </div>
 

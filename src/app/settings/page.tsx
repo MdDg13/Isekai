@@ -20,7 +20,6 @@ export default function SettingsPage() {
   const [loading, setLoading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedItem, setSelectedItem] = useState<TableData | null>(null);
-  const [showFeedbackForm, setShowFeedbackForm] = useState(false);
 
   const supabase = useMemo(() => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -211,7 +210,6 @@ export default function SettingsPage() {
                         key={item.id}
                         onClick={() => {
                           setSelectedItem(item);
-                          setShowFeedbackForm(false);
                         }}
                         className="p-4 bg-gray-900 border border-gray-800 rounded-lg cursor-pointer hover:border-gray-700 transition-colors"
                       >

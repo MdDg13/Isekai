@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import { createClient } from '@supabase/supabase-js';
 
 interface QCFeedback {
@@ -28,11 +28,7 @@ export default function QCFeedbackAdminPage() {
   const [reviewNotes, setReviewNotes] = useState('');
   const [newStatus, setNewStatus] = useState('pending');
 
-  useEffect(() => {
-    loadFeedback();
-  }, [filter]);
-
-  async function loadFeedback() {
+  const loadFeedback = useCallback(async () => {
     try {
       const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
       const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -64,7 +60,11 @@ export default function QCFeedbackAdminPage() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [filter]);
+
+  useEffect(() => {
+    loadFeedback();
+  }, [loadFeedback]);
 
   async function updateFeedbackStatus(feedbackId: string, status: string, notes: string) {
     try {

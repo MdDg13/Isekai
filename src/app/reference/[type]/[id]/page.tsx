@@ -1,14 +1,13 @@
 'use client';
 
 import { useState, useMemo, useEffect } from 'react';
-import { useParams, useRouter } from 'next/navigation';
+import { useParams } from 'next/navigation';
 import { createClient } from '@supabase/supabase-js';
 import Link from 'next/link';
 import SettingsIcon from '@/components/SettingsIcon';
 
 export default function ReferenceDetailPage() {
   const params = useParams();
-  const router = useRouter();
   const type = params.type as string;
   const id = params.id as string;
 

@@ -207,6 +207,9 @@ CLOUDFLARE_API_TOKEN       # For GitHub Actions deployment
 3. ✅ Run `npm run test` - ensure tests pass
 4. ✅ Check TypeScript compilation: `npx tsc --noEmit`
 5. ✅ Verify changes work in dev: `npm run dev`
+6. ✅ **Check commit size**: Run `powershell -ExecutionPolicy Bypass -File scripts/check-commit-size.ps1` before pushing
+   - Prevents pushing large files (>10MB individual, >50MB total) that cause HTTP 408 timeouts
+   - If large files detected, add to `.gitignore` or remove from commit before pushing
 
 #### After Committing
 1. Push to GitHub: `git push origin main`
@@ -297,6 +300,9 @@ When working with Cursor AI:
   - Git hooks waiting for input
   - File system locks or anti-virus scanning
   - Network timeouts (push/pull/fetch)
+  - **Large file uploads**: Pushing commits with large files (>10MB) can cause HTTP 408 timeouts
+  - **REQUIRED**: Always run `scripts/check-commit-size.ps1` before pushing to detect large files
+  - If large files found, remove from commit or add to `.gitignore` before pushing
 - **REQUIRED**: Git editor MUST be set globally to `:` to prevent hangs:
   ```powershell
   git config --global core.editor :
