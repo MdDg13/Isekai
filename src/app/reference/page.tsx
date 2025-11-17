@@ -5,6 +5,29 @@ import { createClient } from '@supabase/supabase-js';
 import Link from 'next/link';
 import SettingsIcon from '@/components/SettingsIcon';
 
+interface ReferenceListItem {
+  id?: string;
+  name?: string;
+  source?: string;
+  kind?: string;
+  rarity?: string;
+  category?: string;
+  cost_gp?: number;
+  description?: string;
+  level?: number;
+  school?: string;
+  casting_time?: string;
+  range?: string;
+  type?: string;
+  size?: string;
+  challenge_rating?: number;
+  armor_class?: number;
+  hit_points?: number;
+  hit_dice?: string;
+  speed?: number | string;
+  [key: string]: unknown;
+}
+
 export default function ReferenceLibraryPage() {
   const supabase = useMemo(() => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
@@ -16,7 +39,7 @@ export default function ReferenceLibraryPage() {
   const [activeTab, setActiveTab] = useState<'items' | 'spells' | 'monsters' | 'classes' | 'races' | 'backgrounds' | 'feats'>('items');
   const [searchQuery, setSearchQuery] = useState('');
   const [loading, setLoading] = useState(false);
-  const [results, setResults] = useState<Array<Record<string, unknown>>>([]);
+  const [results, setResults] = useState<ReferenceListItem[]>([]);
 
   const handleSearch = async () => {
     if (!supabase || !searchQuery.trim()) return;
@@ -35,7 +58,7 @@ export default function ReferenceLibraryPage() {
         console.error('Search error:', error);
         setResults([]);
       } else {
-        setResults(data || []);
+        setResults((data as ReferenceListItem[]) || []);
       }
     } catch (err) {
       console.error('Search failed:', err);
@@ -121,12 +144,12 @@ export default function ReferenceLibraryPage() {
                 >
                   <div className="flex justify-between items-start">
                     <div className="flex-1">
-                      <h3 className="text-xl font-semibold mb-2">{String(item.name || 'Unknown')}</h3>
+                      <h3 className="text-xl font-semibold mb-2">{String(item.name ?? 'Unknown')}</h3>
                       {activeTab === 'items' && (
                         <div className="text-sm text-gray-400 space-y-1">
                           {item.kind && <div>Kind: {String(item.kind)}</div>}
                           {item.rarity && <div>Rarity: {String(item.rarity)}</div>}
-                          {item.cost_gp !== undefined && <div>Cost: {item.cost_gp} gp</div>}
+                          {typeof item.cost_gp === 'number' ? <div>Cost: {item.cost_gp} gp</div> : null}
                           {item.description && (
                             <p className="mt-2 text-gray-300 line-clamp-2">{String(item.description)}</p>
                           )}
@@ -134,7 +157,7 @@ export default function ReferenceLibraryPage() {
                       )}
                       {activeTab === 'spells' && (
                         <div className="text-sm text-gray-400 space-y-1">
-                          {item.level !== undefined && <div>Level: {item.level === 0 ? 'Cantrip' : item.level}</div>}
+                          {typeof item.level === 'number' ? <div>Level: {item.level === 0 ? 'Cantrip' : item.level}</div> : null}
                           {item.school && <div>School: {String(item.school)}</div>}
                           {item.casting_time && <div>Casting Time: {String(item.casting_time)}</div>}
                           {item.range && <div>Range: {String(item.range)}</div>}
@@ -147,9 +170,9 @@ export default function ReferenceLibraryPage() {
                         <div className="text-sm text-gray-400 space-y-1">
                           {item.type && <div>Type: {String(item.type)}</div>}
                           {item.size && <div>Size: {String(item.size)}</div>}
-                          {item.challenge_rating !== undefined && <div>CR: {item.challenge_rating}</div>}
-                          {item.armor_class !== undefined && <div>AC: {item.armor_class}</div>}
-                          {item.hit_points !== undefined && <div>HP: {item.hit_points}</div>}
+                          {typeof item.challenge_rating === 'number' ? <div>CR: {item.challenge_rating}</div> : null}
+                          {typeof item.armor_class === 'number' ? <div>AC: {item.armor_class}</div> : null}
+                          {typeof item.hit_points === 'number' ? <div>HP: {item.hit_points}</div> : null}
                         </div>
                       )}
                       {activeTab === 'classes' && (
@@ -160,7 +183,7 @@ export default function ReferenceLibraryPage() {
                       {activeTab === 'races' && (
                         <div className="text-sm text-gray-400 space-y-1">
                           {item.size && <div>Size: {String(item.size)}</div>}
-                          {item.speed !== undefined && <div>Speed: {item.speed} ft</div>}
+                          {typeof item.speed === 'number' ? <div>Speed: {item.speed} ft</div> : null}
                         </div>
                       )}
                     </div>

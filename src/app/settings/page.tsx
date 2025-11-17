@@ -216,9 +216,9 @@ export default function SettingsPage() {
                         <div className="flex justify-between items-start">
                           <div>
                             <h3 className="font-medium">{item.name}</h3>
-                            {item.source && (
-                              <p className="text-xs text-gray-400 mt-1">Source: {String(item.source)}</p>
-                            )}
+                            {typeof item.source === 'string' ? (
+                              <p className="text-xs text-gray-400 mt-1">Source: {item.source}</p>
+                            ) : null}
                           </div>
                           <Link
                             href={`/reference/${selectedTable}/${item.id}`}
