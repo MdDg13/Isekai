@@ -47,7 +47,9 @@ async function getPdfParser() {
       // pdf-parse is an ES module, use dynamic import
       const pdfModule = await import('pdf-parse');
       // The default export should be the function
-      pdfParseFn = pdfModule.default || pdfModule;
+      // pdf-parse module structure varies, handle both default and named exports
+      const moduleWithDefault = pdfModule as { default?: unknown; [key: string]: unknown };
+      pdfParseFn = (moduleWithDefault.default || pdfModule) as typeof pdfParseFn;
       
       // If still not a function, try to find PDFParse class
       if (typeof pdfParseFn !== 'function' && pdfModule.PDFParse) {
@@ -60,6 +62,7 @@ async function getPdfParser() {
           const originalWarn = console.warn;
           console.warn = () => {}; // Suppress warnings
           try {
+            // @ts-expect-error - load() is private but required for PDFParse class
             await parser.load();
             const textResult = await parser.getText();
             // getText() returns a TextResult object with a text property
@@ -99,8 +102,8 @@ async function getPdfParser() {
           throw new Error('pdf-parse module structure not recognized');
         }
       } catch (requireError) {
-        console.error('Failed to load pdf-parse:', error, requireError);
-        throw error;
+        console.error('Failed to load pdf-parse:', requireError);
+        throw requireError;
       }
     }
   }

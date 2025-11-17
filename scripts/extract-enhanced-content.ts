@@ -647,23 +647,10 @@ function parseItemsEnhanced(text: string, source: string): Array<Record<string, 
           if (weightStr) weight_lb = parseFloat(weightStr[1]);
         }
         
-        // Process weight and volume
-        const weightVolume = processItemWeightAndVolume({
-          name,
-          kind,
-          description,
-          weight_lb
-        });
-        
-        // Calculate extraction confidence
-        const extraction_confidence_score = calculateConfidence(
-          weight_lb !== null && weight_lb > 0,
-          cost_gp !== null && cost_gp > 0,
-          description.length > 0,
-          description.length,
-          Object.keys(properties).length > 0,
-          kind
-        );
+        // Extract description (before using it)
+        let description = itemBlock.substring(match[0].length).trim();
+        // Remove cost/weight/properties from description
+        description = description.replace(/(?:Cost|Price|Weight|Rarity|Properties?)[:\s]+[^\n]+/gi, '').trim();
         
         // Extract properties
         const properties: Record<string, unknown> = {};
@@ -683,11 +670,23 @@ function parseItemsEnhanced(text: string, source: string): Array<Record<string, 
         const attunementReqMatch = itemBlock.match(/attunement\s+(?:by\s+)?([^\n.]+)/i);
         const attunement_requirements = attunementReqMatch ? attunementReqMatch[1].trim() : null;
         
-        // Extract description
-        const descStart = match.index + match[0].length;
-        let description = itemBlock.substring(match[0].length).trim();
-        // Remove cost/weight/properties from description
-        description = description.replace(/(?:Cost|Price|Weight|Rarity|Properties?)[:\s]+[^\n]+/gi, '').trim();
+        // Process weight and volume (description already extracted above)
+        const weightVolume = processItemWeightAndVolume({
+          name,
+          kind,
+          description,
+          weight_lb
+        });
+        
+        // Calculate extraction confidence
+        const extraction_confidence_score = calculateConfidence(
+          weight_lb !== null && weight_lb > 0,
+          cost_gp !== null && cost_gp > 0,
+          description.length > 0,
+          description.length,
+          Object.keys(properties).length > 0,
+          kind
+        );
         
         if (name && (cost_gp !== null || weight_lb !== null || description.length > 15)) {
           items.push({
@@ -858,7 +857,9 @@ async function getPdfParser() {
   if (!pdfParseFn) {
     try {
       const pdfModule = await import('pdf-parse');
-      pdfParseFn = pdfModule.default || pdfModule;
+      // pdf-parse module structure varies, handle both default and named exports
+      const moduleWithDefault = pdfModule as { default?: unknown; [key: string]: unknown };
+      pdfParseFn = (moduleWithDefault.default || pdfModule) as typeof pdfParseFn;
       if (typeof pdfParseFn !== 'function' && pdfModule.PDFParse) {
         const PDFParseClass = pdfModule.PDFParse;
         pdfParseFn = async (buffer: Buffer | Uint8Array) => {
@@ -867,6 +868,7 @@ async function getPdfParser() {
           const originalWarn = console.warn;
           console.warn = () => {};
           try {
+            // @ts-expect-error - load() is private but required for PDFParse class
             await parser.load();
             const textResult = await parser.getText();
             return { text: textResult.text || '' };
@@ -876,8 +878,8 @@ async function getPdfParser() {
         };
       }
     } catch {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
       try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
         const pdfModule = require('pdf-parse');
         if (typeof pdfModule === 'function') {
           pdfParseFn = pdfModule;

@@ -387,5 +387,6 @@ if (require.main === module) {
   main();
 }
 
-export { loadFeedback, analyzeFeedback, FeedbackAnalysis, Improvement };
+export { loadFeedback, analyzeFeedback };
+export type { FeedbackAnalysis, Improvement };
 

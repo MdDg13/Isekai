@@ -63,6 +63,7 @@ function generateQCReport(
   const items: QCItem[] = [];
   
   // Sample items for review (top 10 by confidence, bottom 10 by confidence, random 10)
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
   const sortedByConfidence = [...data].sort((a: any, b: any) => {
     const scoreA = a.extraction_confidence_score || 0;
     const scoreB = b.extraction_confidence_score || 0;
@@ -72,6 +73,7 @@ function generateQCReport(
   const topItems = sortedByConfidence.slice(0, 5);
   const bottomItems = sortedByConfidence.slice(-5);
   const randomItems = sortedByConfidence
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     .filter((_: any, i: number) => i > 4 && i < sortedByConfidence.length - 5)
     .sort(() => Math.random() - 0.5)
     .slice(0, 5);
@@ -146,7 +148,7 @@ function findSourceFile(source: string, sourceTextDir?: string): string | null {
 /**
  * Extract relevant text around the item name
  */
-function extractRelevantText(sourceText: string, itemName: string, dataType: string): string {
+function extractRelevantText(sourceText: string, itemName: string, _dataType: string): string {
   const namePattern = new RegExp(itemName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
   const match = sourceText.search(namePattern);
   
@@ -163,7 +165,7 @@ function extractRelevantText(sourceText: string, itemName: string, dataType: str
 /**
  * Extract context (wider view) around the item
  */
-function extractContext(sourceText: string, itemName: string, dataType: string): string {
+function extractContext(sourceText: string, itemName: string, _dataType: string): string {
   const namePattern = new RegExp(itemName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
   const match = sourceText.search(namePattern);
   

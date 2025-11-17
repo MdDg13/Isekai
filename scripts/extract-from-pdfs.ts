@@ -20,7 +20,9 @@ async function getPdfParser() {
   if (!pdfParseFn) {
     try {
       const pdfModule = await import('pdf-parse');
-      pdfParseFn = pdfModule.default || pdfModule;
+      // pdf-parse module structure varies, handle both default and named exports
+      const moduleWithDefault = pdfModule as { default?: unknown; [key: string]: unknown };
+      pdfParseFn = (moduleWithDefault.default || pdfModule) as typeof pdfParseFn;
       if (typeof pdfParseFn !== 'function' && pdfModule.PDFParse) {
         const PDFParseClass = pdfModule.PDFParse;
         pdfParseFn = async (buffer: Buffer | Uint8Array) => {
@@ -29,6 +31,7 @@ async function getPdfParser() {
           const originalWarn = console.warn;
           console.warn = () => {};
           try {
+            // @ts-expect-error - load() is private but required for PDFParse class
             await parser.load();
             const textResult = await parser.getText();
             return { text: textResult.text || '' };
@@ -38,8 +41,8 @@ async function getPdfParser() {
         };
       }
     } catch {
-      // eslint-disable-next-line @typescript-eslint/no-require-imports
       try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
         const pdfModule = require('pdf-parse');
         if (typeof pdfModule === 'function') {
           pdfParseFn = pdfModule;

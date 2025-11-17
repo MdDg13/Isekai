@@ -23,6 +23,7 @@ interface ContentStats {
 }
 
 // Lazy load pdf-parse - it's an ES module, use dynamic import
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
 let pdfParseFn: any = null;
 async function loadPdfParse() {
   if (!pdfParseFn) {
@@ -30,10 +31,13 @@ async function loadPdfParse() {
       // pdf-parse is an ES module, use dynamic import
       const pdfModule = await import('pdf-parse');
       // The module exports PDFParse class, but we need the default export
-      pdfParseFn = pdfModule.default || pdfModule;
+      // pdf-parse module structure varies, handle both default and named exports
+      const moduleWithDefault = pdfModule as { default?: unknown; [key: string]: unknown };
+      pdfParseFn = (moduleWithDefault.default || pdfModule) as typeof pdfParseFn;
     } catch (error) {
       // Fallback to require for CommonJS compatibility
       try {
+        // eslint-disable-next-line @typescript-eslint/no-require-imports
         const pdfModule = require('pdf-parse');
         // Try PDFParse class if module is not callable
         if (typeof pdfModule === 'function') {
@@ -45,8 +49,8 @@ async function loadPdfParse() {
           pdfParseFn = pdfModule;
         }
       } catch (requireError) {
-        console.error(`Failed to load pdf-parse: ${error}, ${requireError}`);
-        throw error;
+        console.error(`Failed to load pdf-parse: ${requireError}`);
+        throw requireError;
       }
     }
   }
