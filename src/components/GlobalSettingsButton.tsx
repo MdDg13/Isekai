@@ -2,6 +2,7 @@
 
 import { usePathname } from 'next/navigation';
 import SettingsIcon from './SettingsIcon';
+import BuildBadge from './BuildBadge';
 
 const HIDDEN_PATHS = ['/settings', '/login'];
 
@@ -19,8 +20,13 @@ export default function GlobalSettingsButton() {
   }
 
   return (
-    <div className="fixed top-4 right-4 z-50">
-      <SettingsIcon />
+    <div className="fixed top-4 right-4 z-50 flex flex-col items-end gap-2 pointer-events-none">
+      <div className="pointer-events-auto">
+        <SettingsIcon />
+      </div>
+      <div className="bg-black/70 rounded-md px-2 py-1 pointer-events-auto shadow-lg">
+        <BuildBadge />
+      </div>
     </div>
   );
 }

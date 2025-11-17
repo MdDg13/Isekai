@@ -84,7 +84,7 @@ export default function SettingsPage() {
     <div className="min-h-screen bg-black text-white">
       {/* Header */}
       <header className="sticky top-0 z-10 bg-black/80 backdrop-blur-sm border-b border-gray-800">
-        <div className="w-full px-4 sm:px-6 py-4">
+        <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link href="/" className="text-xs text-gray-400 hover:text-gray-300">← Back</Link>
@@ -94,7 +94,7 @@ export default function SettingsPage() {
         </div>
       </header>
 
-      <div className="w-full px-4 sm:px-6 py-6">
+      <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-6">
         {/* Tabs */}
         <div className="border-b border-gray-800 mb-6">
           <div className="flex gap-4">

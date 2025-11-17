@@ -6,16 +6,16 @@ export default function SettingsIcon() {
   return (
     <Link
       href="/settings"
-      className="inline-flex items-center justify-center w-8 h-8 rounded-md hover:bg-gray-800 transition-colors"
+      className="inline-flex items-center justify-center w-12 h-12 rounded-lg bg-black/30 hover:bg-black/50 transition-colors shadow-lg border border-white/10"
       title="Settings"
     >
       <svg
         xmlns="http://www.w3.org/2000/svg"
         fill="none"
         viewBox="0 0 24 24"
-        strokeWidth={1.5}
+        strokeWidth={1.8}
         stroke="currentColor"
-        className="w-5 h-5 text-gray-400 hover:text-gray-300"
+        className="w-6 h-6 text-white drop-shadow"
       >
         <path
           strokeLinecap="round"

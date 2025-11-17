@@ -79,7 +79,7 @@ export default function ReferenceLibraryPage() {
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100 p-8">
-      <div className="w-full">
+      <div className="w-full max-w-6xl mx-auto">
         <div className="flex items-center justify-between mb-2">
           <h1 className="text-4xl font-bold">Free5e Reference Library</h1>
         </div>

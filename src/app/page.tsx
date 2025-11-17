@@ -207,7 +207,7 @@ export default function Home() {
 
   return (
     <div className="min-h-screen bg-black text-white p-4 sm:p-6">
-      <div className="w-full">
+      <div className="w-full max-w-5xl mx-auto">
         <header className="mb-6 sm:mb-8">
           <div className="mb-2">
             <h1 className="font-display text-2xl sm:text-3xl">Isekai</h1>

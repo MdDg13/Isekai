@@ -1,10 +1,30 @@
 "use client";
 
 import { createClient } from "@supabase/supabase-js";
-import { useMemo, useState, useEffect, useCallback } from "react";
+import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import BuildBadge from "@/components/BuildBadge";
+
+interface WorldRecord {
+  id: string;
+  name: string;
+  slug?: string | null;
+  ruleset?: string | null;
+  created_at: string;
+}
+
+interface WorldNpcRecord {
+  id: string;
+  name: string;
+  created_at: string;
+  bio?: string;
+  backstory?: string;
+  traits?: unknown;
+  stats?: unknown;
+  location_id?: string | null;
+  affiliations?: unknown[];
+  relationships?: Record<string, unknown>;
+}
 
 interface WorldClientProps {
   worldId: string;
@@ -22,23 +42,15 @@ export default function WorldClient({ worldId }: WorldClientProps) {
     return createClient(url, key);
   }, []);
 
-  const [world, setWorld] = useState<{ id: string; name: string; created_at: string } | null>(null);
-  const [worldNpcs, setWorldNpcs] = useState<Array<{
-    id: string;
-    name: string;
-    created_at: string;
-    bio?: string;
-    backstory?: string;
-    traits?: unknown;
-    stats?: unknown;
-    location_id?: string | null;
-  }>>([]);
+  const [world, setWorld] = useState<WorldRecord | null>(null);
+  const [worldNpcs, setWorldNpcs] = useState<WorldNpcRecord[]>([]);
   const [status, setStatus] = useState<string>("");
   const [activeTab, setActiveTab] = useState<'npc-generator' | 'npcs' | 'locations' | 'items'>('npc-generator');
   const [isRenamingWorld, setIsRenamingWorld] = useState(false);
   const [renameValue, setRenameValue] = useState('');
   const [savingWorldName, setSavingWorldName] = useState(false);
-  const [deletingWorld, setDeletingWorld] = useState(false);
+  const [showWorldMenu, setShowWorldMenu] = useState(false);
+  const worldMenuRef = useRef<HTMLDivElement | null>(null);
 
   // NPC generator form state
   const [npcForm, setNpcForm] = useState({
@@ -70,14 +82,14 @@ export default function WorldClient({ worldId }: WorldClientProps) {
   // Detail view state
   const [viewMode, setViewMode] = useState<'list' | 'detail'>('list');
   const [selectedNpcId, setSelectedNpcId] = useState<string | null>(null);
-  const [selectedNpc, setSelectedNpc] = useState<typeof worldNpcs[0] | null>(null);
+  const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
 
   const loadWorld = useCallback(async () => {
     if (!supabase) return;
     
     const { data, error } = await supabase
       .from('world')
-      .select('*')
+      .select('id,name,slug,ruleset,created_at')
       .eq('id', worldId)
       .single();
     
@@ -85,7 +97,7 @@ export default function WorldClient({ worldId }: WorldClientProps) {
       console.error('Error loading world:', error);
       setStatus(`Error loading world: ${error.message}`);
     } else {
-      setWorld(data);
+      setWorld(data as WorldRecord);
     }
   }, [supabase, worldId]);
 
@@ -99,7 +111,7 @@ export default function WorldClient({ worldId }: WorldClientProps) {
     if (error) {
       console.error('Error loading world NPCs:', error);
     } else {
-      setWorldNpcs(data || []);
+      setWorldNpcs((data as WorldNpcRecord[]) || []);
     }
   }, [supabase, worldId]);
 
@@ -110,7 +122,6 @@ export default function WorldClient({ worldId }: WorldClientProps) {
     loadWorldNpcs();
   }, [supabase, worldId, loadWorld, loadWorldNpcs]);
   
-  // Update selected NPC when ID changes
   useEffect(() => {
     if (selectedNpcId && worldNpcs.length > 0) {
       const npc = worldNpcs.find(n => n.id === selectedNpcId);
@@ -119,6 +130,26 @@ export default function WorldClient({ worldId }: WorldClientProps) {
       setSelectedNpc(null);
     }
   }, [selectedNpcId, worldNpcs]);
+
+  useEffect(() => {
+    if (!showWorldMenu) return;
+    const handleClick = (event: MouseEvent) => {
+      if (worldMenuRef.current && !worldMenuRef.current.contains(event.target as Node)) {
+        setShowWorldMenu(false);
+      }
+    };
+    const handleKey = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setShowWorldMenu(false);
+      }
+    };
+    document.addEventListener('mousedown', handleClick);
+    document.addEventListener('keydown', handleKey);
+    return () => {
+      document.removeEventListener('mousedown', handleClick);
+      document.removeEventListener('keydown', handleKey);
+    };
+  }, [showWorldMenu]);
 
   const handleStartRename = () => {
     if (!world) return;
@@ -156,10 +187,61 @@ export default function WorldClient({ worldId }: WorldClientProps) {
     }
   };
 
+  const slugify = (value: string) =>
+    value
+      .toLowerCase()
+      .replace(/[^a-z0-9]+/g, '-')
+      .replace(/^-+|-+$/g, '')
+      .replace(/-+/g, '-') || `world-${Date.now()}`;
+
+  const handleDuplicateWorld = async () => {
+    if (!supabase || !world) return;
+    setStatus('Duplicating world...');
+    try {
+      const baseName = `${world.name} Copy`;
+      const newName = baseName.length > 60 ? `${baseName.slice(0, 57)}...` : baseName;
+      const slugBase = slugify(world.slug || world.name || 'world');
+      const slug = `${slugBase}-${Math.random().toString(36).slice(2, 6)}`;
+
+      const { data: newWorld, error: worldErr } = await supabase
+        .from('world')
+        .insert({
+          name: newName,
+          slug,
+          ruleset: world.ruleset ?? 'DND5E_2024',
+        })
+        .select('*')
+        .single();
+
+      if (worldErr || !newWorld) throw worldErr;
+
+      if (worldNpcs.length > 0) {
+        const npcCopies = worldNpcs.map((npc) => {
+          const { id: _unusedId, created_at: _unusedCreated, ...rest } = npc;
+          void _unusedId;
+          void _unusedCreated;
+          return {
+            ...rest,
+            world_id: newWorld.id,
+            created_at: new Date().toISOString(),
+            visibility: 'public',
+          };
+        });
+        await supabase.from('world_npc').insert(npcCopies);
+      }
+
+      setStatus('World duplicated');
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
+      setStatus(`Duplicate failed: ${message}`);
+    } finally {
+      setShowWorldMenu(false);
+    }
+  };
+
   const handleDeleteWorld = async () => {
     if (!supabase || !world) return;
     if (!confirm(`Delete world "${world.name}"? This cannot be undone.`)) return;
-    setDeletingWorld(true);
     setStatus('Deleting world...');
     try {
       const { error } = await supabase
@@ -172,8 +254,6 @@ export default function WorldClient({ worldId }: WorldClientProps) {
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : String(e);
       setStatus(`Delete failed: ${message}`);
-    } finally {
-      setDeletingWorld(false);
     }
   };
 
@@ -192,65 +272,92 @@ export default function WorldClient({ worldId }: WorldClientProps) {
     <div className="min-h-screen bg-black text-white">
       {/* Header */}
       <header className="sticky top-0 z-10 bg-black/80 backdrop-blur-sm border-b border-gray-800">
-        <div className="w-full px-4 sm:px-6 py-4">
+        <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between mb-2">
             <Link href="/" className="text-xs text-gray-400 hover:text-gray-300">← Back to Worlds</Link>
-            <div className="flex items-center gap-3">
-              <BuildBadge />
-              <button onClick={loadWorldNpcs} className="text-xs text-gray-400 hover:text-gray-300">Refresh</button>
+            <button onClick={loadWorldNpcs} className="text-xs text-gray-400 hover:text-gray-300">Refresh</button>
+          </div>
+          <div className="flex items-center gap-2">
+            <h1 className="text-xl sm:text-2xl font-medium">{world.name}</h1>
+            <div className="relative" ref={worldMenuRef}>
+              <button
+                onClick={() => setShowWorldMenu((prev) => !prev)}
+                className="p-2 rounded-md border border-gray-700 bg-gray-900/40 hover:bg-gray-800 transition-colors"
+                aria-label="World actions"
+              >
+                <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="currentColor" className="w-4 h-4 text-gray-200">
+                  <path d="M15.232 5.232a2.5 2.5 0 013.536 3.536L8.964 18.572a4 4 0 01-1.682.986l-2.817.805a.75.75 0 01-.924-.924l.805-2.817a4 4 0 01.986-1.682l9.9-9.9z" />
+                  <path d="M5 13l6 6" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" />
+                </svg>
+              </button>
+              {showWorldMenu && (
+                <div
+                  ref={worldMenuRef}
+                  className="absolute right-0 mt-2 w-48 rounded-lg border border-gray-800 bg-black/90 shadow-xl z-10"
+                >
+                  <button
+                    onClick={() => {
+                      setShowWorldMenu(false);
+                      handleStartRename();
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-800 transition-colors"
+                  >
+                    Rename World
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowWorldMenu(false);
+                      handleDuplicateWorld();
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-gray-200 hover:bg-gray-800 transition-colors"
+                  >
+                    Duplicate World
+                  </button>
+                  <button
+                    onClick={() => {
+                      setShowWorldMenu(false);
+                      handleDeleteWorld();
+                    }}
+                    className="w-full px-4 py-2 text-left text-sm text-red-400 hover:bg-red-900/40 transition-colors"
+                  >
+                    Delete World
+                  </button>
+                </div>
+              )}
             </div>
           </div>
-          <h1 className="text-xl sm:text-2xl font-medium">{world.name}</h1>
           <p className="text-xs text-gray-400 mt-1">World-level content (shared across all campaigns)</p>
-          <div className="mt-3 flex flex-wrap items-center gap-2">
-            {isRenamingWorld ? (
-              <>
-                <input
-                  className="rounded-md border border-gray-700 bg-gray-900/50 px-3 py-1.5 text-sm outline-none focus:border-blue-600"
-                  value={renameValue}
-                  onChange={(e) => setRenameValue(e.target.value)}
-                  placeholder="World name"
-                  autoFocus
-                />
-                <button
-                  onClick={handleSaveWorldName}
-                  disabled={savingWorldName || !renameValue.trim()}
-                  className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {savingWorldName ? 'Saving...' : 'Save'}
-                </button>
-                <button
-                  onClick={handleCancelRename}
-                  disabled={savingWorldName}
-                  className="rounded-md border border-gray-700 px-3 py-1.5 text-xs font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  Cancel
-                </button>
-              </>
-            ) : (
-              <>
-                <button
-                  onClick={handleStartRename}
-                  className="rounded-md border border-gray-700 px-3 py-1.5 text-xs font-medium hover:bg-gray-800 transition-colors"
-                >
-                  Rename World
-                </button>
-                <button
-                  onClick={handleDeleteWorld}
-                  disabled={deletingWorld}
-                  className="rounded-md border border-red-700 px-3 py-1.5 text-xs font-medium text-red-300 hover:bg-red-900/30 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
-                >
-                  {deletingWorld ? 'Deleting...' : 'Delete World'}
-                </button>
-              </>
-            )}
-          </div>
+          {isRenamingWorld && (
+            <div className="mt-3 flex flex-wrap items-center gap-2">
+              <input
+                className="rounded-md border border-gray-700 bg-gray-900/50 px-3 py-1.5 text-sm outline-none focus:border-blue-600"
+                value={renameValue}
+                onChange={(e) => setRenameValue(e.target.value)}
+                placeholder="World name"
+                autoFocus
+              />
+              <button
+                onClick={handleSaveWorldName}
+                disabled={savingWorldName || !renameValue.trim()}
+                className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                {savingWorldName ? 'Saving...' : 'Save'}
+              </button>
+              <button
+                onClick={handleCancelRename}
+                disabled={savingWorldName}
+                className="rounded-md border border-gray-700 px-3 py-1.5 text-xs font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Cancel
+              </button>
+            </div>
+          )}
         </div>
       </header>
 
       {/* Tabs */}
       <div className="border-b border-gray-800 bg-gray-900/30">
-        <div className="w-full px-4 sm:px-6">
+        <div className="w-full max-w-6xl mx-auto px-4 sm:px-6">
           <div className="flex gap-1 overflow-x-auto">
             <button
               onClick={() => setActiveTab('npc-generator')}
@@ -297,7 +404,7 @@ export default function WorldClient({ worldId }: WorldClientProps) {
       </div>
 
       {/* Content */}
-      <div className="w-full px-4 sm:px-6 py-6">
+      <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-6">
         {activeTab === 'npc-generator' && (
           <div className="space-y-6">
             {/* NPC Generator */}
@@ -878,6 +985,7 @@ export default function WorldClient({ worldId }: WorldClientProps) {
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Race</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Class</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Level</th>
+                          <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Created</th>
                           <th className="px-4 py-3 text-left text-xs font-medium text-gray-400 uppercase">Actions</th>
                         </tr>
                       </thead>
@@ -951,6 +1059,7 @@ export default function WorldClient({ worldId }: WorldClientProps) {
                                 <td className="px-4 py-3 text-sm text-gray-300">{traits?.race || '-'}</td>
                                 <td className="px-4 py-3 text-sm text-gray-300">{traits?.class || '-'}</td>
                                 <td className="px-4 py-3 text-sm text-gray-300">{stats?.level ?? 0}</td>
+                                <td className="px-4 py-3 text-sm text-gray-300">{new Date(n.created_at).toLocaleString()}</td>
                                 <td className="px-4 py-3">
                                   <button
                                     onClick={e => {

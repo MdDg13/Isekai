@@ -79,7 +79,7 @@ function ReportErrorForm() {
 
   if (submitted) {
     return (
-      <div className="w-full p-6">
+      <div className="w-full max-w-3xl mx-auto p-6">
         <div className="bg-green-50 border border-green-200 rounded-lg p-6 text-center">
           <h2 className="text-2xl font-bold text-green-800 mb-2">Thank You!</h2>
           <p className="text-green-700">
@@ -94,7 +94,7 @@ function ReportErrorForm() {
   }
 
   return (
-    <div className="w-full p-6">
+    <div className="w-full max-w-3xl mx-auto p-6">
       <h1 className="text-3xl font-bold mb-6">Report Error or Bad Data</h1>
       <p className="text-gray-600 mb-6">
         Found an error in our reference data? Let us know! Your feedback helps us improve
@@ -251,7 +251,7 @@ function ReportErrorForm() {
 
 export default function ReportErrorPage() {
   return (
-    <Suspense fallback={<div className="w-full p-6">Loading...</div>}>
+    <Suspense fallback={<div className="w-full max-w-3xl mx-auto p-6">Loading...</div>}>
       <ReportErrorForm />
     </Suspense>
   );

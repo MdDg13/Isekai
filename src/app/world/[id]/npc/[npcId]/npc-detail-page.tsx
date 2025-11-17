@@ -4,7 +4,6 @@ import { createClient } from "@supabase/supabase-js";
 import { useMemo, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import BuildBadge from "@/components/BuildBadge";
 
 interface NPCDetailPageProps {
   worldId: string;
@@ -147,7 +146,7 @@ export default function NPCDetailPage({ worldId, npcId }: NPCDetailPageProps) {
     <div className="min-h-screen bg-black text-white">
       {/* Header */}
       <header className="sticky top-0 z-10 bg-black/80 backdrop-blur-sm border-b border-gray-800">
-        <div className="w-full px-4 sm:px-6 py-4">
+        <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between">
             <div className="flex items-center gap-4">
               <Link href={`/world/${worldId}`} className="text-blue-400 hover:text-blue-300 text-sm underline">
@@ -160,6 +159,7 @@ export default function NPCDetailPage({ worldId, npcId }: NPCDetailPageProps) {
                     {traits.race} {traits.class} {stats?.level ? `• Level ${stats.level}` : ''}
                   </p>
                 )}
+                <p className="text-[11px] text-gray-500 mt-1">Created {new Date(npc.created_at).toLocaleString()}</p>
               </div>
             </div>
             <div className="flex items-center gap-3">
@@ -170,14 +170,13 @@ export default function NPCDetailPage({ worldId, npcId }: NPCDetailPageProps) {
               >
                 {deleting ? 'Deleting...' : 'Delete NPC'}
               </button>
-              <BuildBadge />
             </div>
           </div>
         </div>
       </header>
 
       {/* Content */}
-      <div className="w-full px-4 sm:px-6 py-6">
+      <div className="w-full max-w-5xl mx-auto px-4 sm:px-6 py-6">
         <div className="grid gap-6 lg:grid-cols-3">
           {/* Main Content */}
           <div className="lg:col-span-2 space-y-6">
@@ -369,7 +368,7 @@ export default function NPCDetailPage({ worldId, npcId }: NPCDetailPageProps) {
               <div className="space-y-2 text-sm">
                 <div className="flex justify-between">
                   <span className="text-gray-400">Created:</span>
-                  <span className="text-gray-300">{new Date(npc.created_at).toLocaleDateString()}</span>
+                  <span className="text-gray-300">{new Date(npc.created_at).toLocaleString()}</span>
                 </div>
               </div>
             </div>

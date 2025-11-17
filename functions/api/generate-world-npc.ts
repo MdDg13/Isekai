@@ -602,6 +602,42 @@ Return JSON: { "bio": string, "summary": { "oneLiner": string, "keyPoints": stri
         const currentTraits = npcDraft.traits as Record<string, unknown>;
         npcDraft.traits = { ...currentTraits, summary: qualityEdits.summary };
       }
+
+      const readabilitySourceSummary = (npcDraft.traits as { summary?: { oneLiner?: string; keyPoints?: string[] } })?.summary || { oneLiner: '', keyPoints: [] };
+
+      const readabilityPrompt =
+`FINAL READABILITY POLISH:
+- Ensure the bio is a single, vivid sentence under 30 words that highlights a hook or tension.
+- Ensure summary.oneLiner is 1 sentence (max 28 words) that combines role + motivation + current tension.
+- Ensure summary.keyPoints contains 3-5 bullet points, each under 18 words, starting with an action verb or descriptor (e.g., "Protects the river shrine from smugglers").
+- Make key points concrete and DM-usable (relationships, quirks, actionable behaviors).
+- Ensure backstory paragraphs are no longer than 3 sentences each and highlight cause → effect → current agenda.
+- Keep everything third-person (no "I/my/me").
+
+Return JSON: { "bio": string, "summary": { "oneLiner": string, "keyPoints": string[] }, "backstory": string } with all fixes applied.
+
+Current content:
+Bio: "${npcDraft.bio || ''}"
+Summary one-liner: "${readabilitySourceSummary.oneLiner || ''}"
+Summary key points: ${JSON.stringify(readabilitySourceSummary.keyPoints || [])}
+Backstory: "${npcDraft.backstory || ''}"`;
+
+      const readabilityEdits = await runWorkersAIJSON<StyleEdit>(
+        {
+          CLOUDFLARE_API_TOKEN: env.CLOUDFLARE_API_TOKEN as string | undefined,
+          CLOUDFLARE_ACCOUNT_ID: env.CLOUDFLARE_ACCOUNT_ID as string | undefined,
+          WORKERS_AI_MODEL: (env.WORKERS_AI_MODEL as string | undefined) || undefined,
+        },
+        readabilityPrompt,
+        { maxTokens: 600, temperature: 0.2 }
+      );
+
+      if (readabilityEdits?.bio) npcDraft.bio = readabilityEdits.bio;
+      if (readabilityEdits?.backstory) npcDraft.backstory = readabilityEdits.backstory;
+      if (readabilityEdits?.summary) {
+        const currentTraits = npcDraft.traits as Record<string, unknown>;
+        npcDraft.traits = { ...currentTraits, summary: readabilityEdits.summary };
+      }
       
       // Note: Programmatic fixes are applied after AI block (see below) to ensure they always run
     } catch (err) {
@@ -815,6 +851,7 @@ Return JSON: { "bio": string, "summary": { "oneLiner": string, "keyPoints": stri
       relationships: finalNpc.relationships ?? {},
       connections: finalNpc.connections ?? [],
       visibility: 'public',
+      created_at: new Date().toISOString(),
     })
     .select()
     .single();

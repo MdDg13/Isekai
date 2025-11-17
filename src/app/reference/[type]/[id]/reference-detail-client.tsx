@@ -113,7 +113,7 @@ export default function ReferenceDetailClient({ type, id }: ReferenceDetailClien
 
   return (
     <div className="min-h-screen bg-gray-950 text-gray-100 p-8">
-      <div className="w-full px-4 sm:px-6">
+      <div className="w-full max-w-5xl mx-auto px-4 sm:px-6">
         <div className="flex items-center justify-between mb-4">
           <Link href="/reference" className="text-blue-400 hover:text-blue-300 inline-block">
             ← Back to Reference Library
