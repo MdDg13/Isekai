@@ -5,6 +5,7 @@ import { useMemo, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import BuildBadge from "@/components/BuildBadge";
+import SettingsIcon from "@/components/SettingsIcon";
 
 interface NPCDetailPageProps {
   worldId: string;
@@ -163,6 +164,7 @@ export default function NPCDetailPage({ worldId, npcId }: NPCDetailPageProps) {
               </div>
             </div>
             <div className="flex items-center gap-3">
+              <SettingsIcon />
               <button
                 onClick={handleDelete}
                 disabled={deleting}

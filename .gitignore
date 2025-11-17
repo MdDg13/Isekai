@@ -42,3 +42,14 @@ yarn-error.log*
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# data extraction files (not needed for app - data is in Supabase)
+/Downloads/
+/data/free5e/processed/
+/data/free5e/qc-reports/
+/data/free5e/qc-feedback/
+/data/free5e/raw/
+
+# temporary git push files
+git-push-output.txt
+git-push-error.txt

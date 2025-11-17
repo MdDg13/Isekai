@@ -185,6 +185,16 @@ cmd /c git log --oneline -N
 - **Solution**: Use PowerShell directly: `powershell -ExecutionPolicy Bypass -File scripts/script.ps1 -ParamName value`
 - **Status**: ✅ Fixed - pattern documented in `.cursorrules`
 
+### 2025-11-XX: Git push command hang with credential manager
+- **Command**: `$env:GIT_TERMINAL_PROMPT='0'; cmd /c git push origin main`
+- **Issue**: Command hangs indefinitely, even with GIT_TERMINAL_PROMPT='0'
+- **Root Cause**: Windows Credential Manager (`credential.helper=manager`) may still prompt for authentication despite environment variables
+- **Workaround**: 
+  1. Push manually outside Cursor terminal (GitHub Desktop, external terminal, or VS Code terminal)
+  2. Or ensure credentials are pre-stored in Windows Credential Manager
+  3. Or use SSH authentication instead of HTTPS
+- **Status**: ⚠️ Known issue - manual push recommended when this occurs
+
 ## Success Log
 
 ### 2025-11-10: Git commit success

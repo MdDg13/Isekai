@@ -11,7 +11,7 @@ create table if not exists public.world (
   name text not null,
   slug text unique not null,
   description text,
-  ruleset text default 'DND5E_2024',
+  ruleset text default 'Free5e',
   created_at timestamptz default now(),
   created_by uuid
 );

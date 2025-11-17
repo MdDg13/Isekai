@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { useMemo, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import BuildBadge from "@/components/BuildBadge";
+import SettingsIcon from "@/components/SettingsIcon";
 
 export default function Home() {
   const supabase = useMemo(() => {
@@ -211,7 +212,10 @@ export default function Home() {
         <header className="mb-6 sm:mb-8">
           <div className="flex items-center justify-between mb-2">
             <h1 className="font-display text-2xl sm:text-3xl">Isekai</h1>
-            <BuildBadge />
+            <div className="flex items-center gap-3">
+              <SettingsIcon />
+              <BuildBadge />
+            </div>
           </div>
           {user ? (
             <div className="flex items-center justify-between">

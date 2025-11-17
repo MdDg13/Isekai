@@ -16,7 +16,19 @@
     "auto-fix": "powershell -ExecutionPolicy Bypass -File scripts/auto-fix-cycle.ps1",
     "check-logs": "powershell -ExecutionPolicy Bypass -File scripts/check-logs.ps1",
     "analyze-npcs": "powershell -ExecutionPolicy Bypass -File scripts/analyze-npcs.ps1",
-    "cf:logs": "powershell -ExecutionPolicy Bypass -File scripts/fetch-cf-logs.ps1"
+    "cf:logs": "powershell -ExecutionPolicy Bypass -File scripts/fetch-cf-logs.ps1",
+    "extract-free5e": "powershell -ExecutionPolicy Bypass -File scripts/extract-free5e-data.ps1",
+    "parse-free5e": "tsx scripts/parse-free5e-markdown.ts",
+    "parse-all-content": "tsx scripts/parse-all-content.ts",
+    "extract-all-content": "tsx scripts/extract-all-content.ts",
+    "extract-enhanced": "tsx scripts/extract-enhanced-content.ts",
+    "extract-pdfs": "tsx scripts/extract-from-pdfs.ts",
+    "qc-review": "tsx scripts/qc-review-extracted-data.ts",
+    "qc-analyze": "tsx scripts/collect-qc-feedback.ts",
+    "qc-retrieve": "powershell -ExecutionPolicy Bypass -File scripts/retrieve-qc-feedback.ps1",
+    "update-existing-data": "tsx scripts/update-existing-data.ts",
+    "validate-extracted": "tsx scripts/validate-extracted-data.ts",
+    "sample-data": "tsx scripts/sample-and-validate.ts"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.75.0",
@@ -35,13 +47,16 @@
     "@testing-library/react": "^16.3.0",
     "@testing-library/user-event": "^14.6.1",
     "@types/node": "^20",
+    "@types/pdf-parse": "^1.1.5",
     "@types/react": "19.2.2",
     "@types/react-dom": "^19",
     "@types/testing-library__jest-dom": "^5.14.9",
     "eslint": "^9",
     "eslint-config-next": "15.5.4",
     "jsdom": "^27.0.1",
+    "pdf-parse": "^2.4.5",
     "tailwindcss": "^4",
+    "tsx": "^4.20.6",
     "typescript": "5.9.3",
     "vitest": "^4.0.5"
   }

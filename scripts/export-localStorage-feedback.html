@@ -1,0 +1,129 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <title>Export QC Feedback from localStorage</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    .container {
+      background: #f5f5f5;
+      padding: 20px;
+      border-radius: 5px;
+    }
+    button {
+      padding: 10px 20px;
+      background: #3498db;
+      color: white;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: #2980b9;
+    }
+    pre {
+      background: white;
+      padding: 15px;
+      border-radius: 3px;
+      overflow-x: auto;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .info {
+      background: #e8f4f8;
+      padding: 15px;
+      border-radius: 3px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Export QC Feedback from localStorage</h1>
+    
+    <div class="info">
+      <p><strong>Instructions:</strong></p>
+      <ol>
+        <li>Open the QC report HTML file in your browser</li>
+        <li>Submit feedback through the forms</li>
+        <li>Return to this page and click "Export Feedback"</li>
+        <li>Save the JSON file to <code>data/free5e/qc-feedback/localStorage-backup.json</code></li>
+      </ol>
+    </div>
+    
+    <button onclick="exportFeedback()">Export Feedback</button>
+    <button onclick="clearFeedback()">Clear localStorage</button>
+    <button onclick="viewFeedback()">View Feedback</button>
+    
+    <div id="output" style="margin-top: 20px;"></div>
+  </div>
+  
+  <script>
+    function exportFeedback() {
+      const feedback = JSON.parse(localStorage.getItem('qc-feedback') || '[]');
+      
+      if (feedback.length === 0) {
+        alert('No feedback found in localStorage. Make sure you have submitted feedback through the QC report.');
+        return;
+      }
+      
+      const json = JSON.stringify(feedback, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'localStorage-backup.json';
+      a.click();
+      URL.revokeObjectURL(url);
+      
+      document.getElementById('output').innerHTML = `
+        <h3>Exported ${feedback.length} feedback items</h3>
+        <p>File saved as: <code>localStorage-backup.json</code></p>
+        <p>Move this file to: <code>data/free5e/qc-feedback/localStorage-backup.json</code></p>
+        <pre>${json}</pre>
+      `;
+    }
+    
+    function clearFeedback() {
+      if (confirm('Are you sure you want to clear all feedback from localStorage? This cannot be undone.')) {
+        localStorage.removeItem('qc-feedback');
+        document.getElementById('output').innerHTML = '<p>localStorage cleared.</p>';
+      }
+    }
+    
+    function viewFeedback() {
+      const feedback = JSON.parse(localStorage.getItem('qc-feedback') || '[]');
+      
+      if (feedback.length === 0) {
+        document.getElementById('output').innerHTML = '<p>No feedback found in localStorage.</p>';
+        return;
+      }
+      
+      document.getElementById('output').innerHTML = `
+        <h3>Found ${feedback.length} feedback items</h3>
+        <pre>${JSON.stringify(feedback, null, 2)}</pre>
+      `;
+    }
+    
+    // Auto-check on load
+    window.onload = function() {
+      const feedback = JSON.parse(localStorage.getItem('qc-feedback') || '[]');
+      if (feedback.length > 0) {
+        document.getElementById('output').innerHTML = `
+          <div class="info">
+            <p><strong>Found ${feedback.length} feedback items in localStorage.</strong></p>
+            <p>Click "Export Feedback" to download them as a JSON file.</p>
+          </div>
+        `;
+      }
+    };
+  </script>
+</body>
+</html>
+

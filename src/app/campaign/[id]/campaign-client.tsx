@@ -3,6 +3,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { useMemo, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
+import SettingsIcon from "@/components/SettingsIcon";
 
 interface CampaignClientProps {
   campaignId: string;
@@ -98,7 +99,10 @@ export default function CampaignClient({ campaignId }: CampaignClientProps) {
         <div className="max-w-4xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between mb-2">
             <Link href="/" className="text-xs text-gray-400 hover:text-gray-300">← Back to Worlds</Link>
-            <button onClick={loadNpcs} className="text-xs text-gray-400 hover:text-gray-300">Refresh</button>
+            <div className="flex items-center gap-3">
+              <SettingsIcon />
+              <button onClick={loadNpcs} className="text-xs text-gray-400 hover:text-gray-300">Refresh</button>
+            </div>
           </div>
           <h1 className="text-xl sm:text-2xl font-medium">{campaign.name}</h1>
           <p className="text-xs text-gray-400 mt-1">Created {new Date(campaign.created_at).toLocaleDateString()}</p>

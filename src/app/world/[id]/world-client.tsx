@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { useMemo, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import BuildBadge from "@/components/BuildBadge";
+import SettingsIcon from "@/components/SettingsIcon";
 
 interface WorldClientProps {
   worldId: string;
@@ -133,6 +134,7 @@ export default function WorldClient({ worldId }: WorldClientProps) {
           <div className="flex items-center justify-between mb-2">
             <Link href="/" className="text-xs text-gray-400 hover:text-gray-300">← Back to Worlds</Link>
             <div className="flex items-center gap-3">
+              <SettingsIcon />
               <BuildBadge />
               <button onClick={loadWorldNpcs} className="text-xs text-gray-400 hover:text-gray-300">Refresh</button>
             </div>
