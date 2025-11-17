@@ -24,7 +24,7 @@ const VOLUME_CATEGORIES = {
 // Weight estimation patterns based on item descriptions
 const WEIGHT_ESTIMATES: Array<{
   pattern: RegExp;
-  weight_kg: number;
+  weight_kg: number | null;
   volume_category: string;
   confidence: number;
 }> = [

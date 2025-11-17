@@ -681,5 +681,6 @@ if (require.main === module) {
   main();
 }
 
-export { validateData, validateSpell, validateItem, validateMonster, validateTrap, validatePuzzle, ValidationResult };
+export { validateData, validateSpell, validateItem, validateMonster, validateTrap, validatePuzzle };
+export type { ValidationResult };
 

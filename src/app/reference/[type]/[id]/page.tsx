@@ -85,9 +85,9 @@ export default function ReferenceDetailPage() {
 
         <div className="flex justify-between items-start mb-8">
           <div>
-            <h1 className="text-4xl font-bold mb-2">{String(item.name || 'Unknown')}</h1>
-            {item.source && (
-              <p className="text-gray-400">Source: {String(item.source)}</p>
+            <h1 className="text-4xl font-bold mb-2">{String(item.name ?? 'Unknown')}</h1>
+            {item.source && typeof item.source === 'string' && (
+              <p className="text-gray-400">Source: {item.source}</p>
             )}
           </div>
           <Link

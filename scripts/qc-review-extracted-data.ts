@@ -519,5 +519,6 @@ if (require.main === module) {
   main();
 }
 
-export { generateQCReport, QCReport, QCItem, FeedbackItem };
+export { generateQCReport };
+export type { QCReport, QCItem, FeedbackItem };
 
