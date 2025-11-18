@@ -1,0 +1,83 @@
+{
+  "source_name": "Cultural Patterns & Social Structures",
+  "source_link": "Anthropological and historical patterns",
+  "license": "synthetic",
+  "snippets": [
+    {
+      "excerpt": "Matriarchal trading confederation where lineage determines trade routes. Eldest daughters inherit routes, youngest sons become diplomats. Family bonds override national loyalty. Disputes settled through competitive storytelling contests judged by grandmothers.",
+      "tags": ["culture", "social-structure", "matriarchal", "trade", "diplomacy"],
+      "archetype": "matriarchal confederation",
+      "conflict_hook": "New trade route discovered, but it crosses sacred ancestral lands. Traditionalists vs. expansionists. Storytelling contest becomes high-stakes political battle.",
+      "rp_cues": ["respect for elders is absolute", "stories carry legal weight", "family names matter more than titles", "trade agreements sealed with family bonds"],
+      "culture": "matriarchal",
+      "biome": "any",
+      "tone": "traditional",
+      "mechanics": {
+        "social_rules": ["eldest daughter inheritance", "storytelling as law", "family over nation"],
+        "trade_system": "route-based"
+      },
+      "quality_score": 83
+    },
+    {
+      "excerpt": "Nomadic warrior culture that follows seasonal migrations of magical beasts. Warriors prove worth by taming beasts, not killing them. Leadership changes with each migration cycle. Those who bond with beasts gain their abilities temporarily.",
+      "tags": ["culture", "social-structure", "nomadic", "warrior", "beast-bonding"],
+      "archetype": "beast-following nomads",
+      "conflict_hook": "Magical beasts are disappearing. Culture faces extinction. Some want to settle, others to find new beasts. Outsiders hunt the beasts for profit, creating war.",
+      "rp_cues": ["respect for beasts is sacred", "migration timing is everything", "warriors show beast scars proudly", "leadership is earned, not inherited"],
+      "culture": "nomadic",
+      "biome": "plains",
+      "tone": "honor-bound",
+      "mechanics": {
+        "social_rules": ["seasonal leadership", "beast bonding", "migration-based"],
+        "power_system": "temporary beast abilities"
+      },
+      "quality_score": 84
+    },
+    {
+      "excerpt": "Merchant republic where wealth determines citizenship. Anyone can become a citizen by accumulating enough trade credits. Laws favor commerce over tradition. Information is the most valuable currency. Secrets are bought and sold openly.",
+      "tags": ["culture", "social-structure", "merchant", "republic", "capitalist"],
+      "archetype": "meritocratic merchant state",
+      "conflict_hook": "Ancient noble families losing power to new merchant class. They plot to restore old system. Meanwhile, a trade war threatens to collapse the economy. Information brokers profit from both sides.",
+      "rp_cues": ["everything has a price", "contracts are sacred", "information is power", "status shown through trade networks"],
+      "culture": "merchant",
+      "biome": "urban",
+      "tone": "commercial",
+      "mechanics": {
+        "social_rules": ["wealth = citizenship", "information trading", "contract-based law"],
+        "economic_system": "credit-based"
+      },
+      "quality_score": 82
+    },
+    {
+      "excerpt": "Scholarly theocracy where knowledge is divine. Priests are also researchers. Heresy is questioning without evidence. Libraries are temples. Experiments are rituals. Discovery is revelation. The god is literally the sum of all knowledge.",
+      "tags": ["culture", "social-structure", "theocracy", "scholarly", "knowledge"],
+      "archetype": "knowledge-worshipping theocracy",
+      "conflict_hook": "Discovery threatens core doctrine. Some want to suppress it, others to revise doctrine. The god itself seems conflicted. Heretics become prophets. Knowledge becomes dangerous.",
+      "rp_cues": ["research is prayer", "libraries are sacred", "evidence over faith", "discovery is divine"],
+      "culture": "scholarly",
+      "biome": "urban",
+      "tone": "intellectual",
+      "mechanics": {
+        "social_rules": ["knowledge = divinity", "evidence-based faith", "research as worship"],
+        "religious_system": "knowledge accumulation"
+      },
+      "quality_score": 85
+    },
+    {
+      "excerpt": "Clan-based society where honor debts bind families for generations. A favor must be repaid, even by descendants. Blood feuds last centuries. Hospitality is absolute law. Guest-right is sacred. Breaking it curses the entire clan.",
+      "tags": ["culture", "social-structure", "clan", "honor", "feud"],
+      "archetype": "honor-bound clans",
+      "conflict_hook": "Ancient debt comes due, but repayment would destroy the clan. Breaking the debt would curse them. A third party offers to pay, but demands something worse. Heroes must find a way to honor the debt without destruction.",
+      "rp_cues": ["family history is everything", "honor is life", "hospitality is absolute", "curses are real and feared"],
+      "culture": "tribal",
+      "biome": "any",
+      "tone": "honor-bound",
+      "mechanics": {
+        "social_rules": ["generational debts", "blood feuds", "absolute hospitality"],
+        "honor_system": "debt-based"
+      },
+      "quality_score": 83
+    }
+  ]
+}
+

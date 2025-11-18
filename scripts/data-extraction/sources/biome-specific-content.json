@@ -1,0 +1,83 @@
+{
+  "source_name": "Biome-Specific Content",
+  "source_link": "Environmental world-building patterns",
+  "license": "synthetic",
+  "snippets": [
+    {
+      "excerpt": "Underwater city built in air bubbles created by ancient magic. Inhabitants are amphibious or use breathing enchantments. Trade happens through water portals. Light comes from bioluminescent sea life. Pressure changes affect magic.",
+      "tags": ["location", "biome", "underwater", "city", "magical", "aquatic"],
+      "archetype": "submerged settlement",
+      "conflict_hook": "Air bubbles are failing. Ancient magic is fading. City must find new power source or relocate. Surface dwellers want to exploit the magic. Sea monsters are drawn to the failing barriers.",
+      "rp_cues": ["everything moves slowly", "sound travels strangely", "pressure affects speech", "bioluminescence creates mood lighting"],
+      "culture": "aquatic",
+      "biome": "underwater",
+      "tone": "pressured",
+      "mechanics": {
+        "environmental": ["pressure affects magic", "breathing requirements", "water portals"],
+        "hazards": ["drowning", "pressure damage", "sea monsters"]
+      },
+      "quality_score": 84
+    },
+    {
+      "excerpt": "Desert oasis that moves with the seasons, following underground water currents. Nomads track it using ancient star charts. The oasis appears in different locations each year. Those who find it first control trade routes for the season.",
+      "tags": ["location", "biome", "desert", "oasis", "nomadic", "seasonal"],
+      "archetype": "migrating resource",
+      "conflict_hook": "Oasis has stopped moving. Water is running out. Nomads blame each other for breaking ancient pacts. A hidden force is controlling the water. Finding the truth requires following the old star charts.",
+      "rp_cues": ["water is precious", "star patterns matter", "first arrival is everything", "desert silence is profound"],
+      "culture": "nomadic",
+      "biome": "desert",
+      "tone": "desperate",
+      "mechanics": {
+        "environmental": ["seasonal migration", "water scarcity", "star navigation"],
+        "hazards": ["dehydration", "sandstorms", "getting lost"]
+      },
+      "quality_score": 83
+    },
+    {
+      "excerpt": "Floating forest where trees grow on clouds, roots hanging in the air. Paths are made of living vines that shift. Gravity is inconsistent. Some areas float, others fall. Inhabitants use gliders and climbing gear. Weather magic is common.",
+      "tags": ["location", "biome", "forest", "aerial", "magical", "floating"],
+      "archetype": "sky forest",
+      "conflict_hook": "Forest is sinking. Cloud magic is failing. Trees are dying. Inhabitants must find new cloud source or relocate. Ground-dwellers see opportunity to harvest the falling trees. Weather mages are in high demand.",
+      "rp_cues": ["gravity feels wrong", "paths move", "wind is constant", "falling is always a risk"],
+      "culture": "aerial",
+      "biome": "sky",
+      "tone": "precarious",
+      "mechanics": {
+        "environmental": ["variable gravity", "moving paths", "cloud magic"],
+        "hazards": ["falling", "shifting paths", "weather magic"]
+      },
+      "quality_score": 85
+    },
+    {
+      "excerpt": "Volcanic forge-city built into active volcano. Lava flows power magical forges. Inhabitants are fire-resistant or use protective magic. Metalwork is legendary. The volcano's mood affects production. Eruptions are both danger and opportunity.",
+      "tags": ["location", "biome", "volcanic", "city", "forge", "industrial"],
+      "archetype": "volcanic forge",
+      "conflict_hook": "Volcano is becoming unstable. Forges are too hot, production is failing. Some want to tame it with magic, others to abandon it. Ancient fire spirits are awakening. The volcano itself seems sentient.",
+      "rp_cues": ["heat is constant", "metalwork sounds everywhere", "volcanic rumbling", "fire is both tool and threat"],
+      "culture": "industrial",
+      "biome": "volcanic",
+      "tone": "intense",
+      "mechanics": {
+        "environmental": ["lava power", "fire resistance needed", "volcanic activity"],
+        "hazards": ["eruptions", "heat damage", "lava flows"]
+      },
+      "quality_score": 84
+    },
+    {
+      "excerpt": "Tundra trading post where seasons determine what's available. Summer brings traders from south, winter brings northern nomads. The post is built on permafrost that's starting to melt. Ancient ice preserves secrets and dangers.",
+      "tags": ["location", "biome", "tundra", "trading-post", "seasonal", "arctic"],
+      "archetype": "seasonal crossroads",
+      "conflict_hook": "Permafrost melting reveals ancient city. Some want to excavate, others to preserve. Melting releases ancient creatures. Trading routes are disrupted. Climate change threatens the post's existence.",
+      "rp_cues": ["cold is constant", "seasons are extreme", "traders come and go", "ice holds secrets"],
+      "culture": "cosmopolitan",
+      "biome": "tundra",
+      "tone": "harsh",
+      "mechanics": {
+        "environmental": ["extreme seasons", "permafrost", "ice preservation"],
+        "hazards": ["freezing", "ice breaking", "ancient creatures"]
+      },
+      "quality_score": 82
+    }
+  ]
+}
+

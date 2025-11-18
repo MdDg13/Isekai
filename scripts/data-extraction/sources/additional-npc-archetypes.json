@@ -1,0 +1,83 @@
+{
+  "source_name": "Additional NPC Archetypes",
+  "source_link": "Expanded NPC patterns",
+  "license": "synthetic",
+  "snippets": [
+    {
+      "excerpt": "Retired adventurer running a tavern, telling exaggerated stories of past exploits. Actually more capable than they let on. Hides their true power behind self-deprecating humor. Knows everyone's business but keeps most secrets. Offers advice disguised as rambling stories.",
+      "tags": ["npc", "archetype", "retired-adventurer", "tavern-keeper", "mentor", "humble"],
+      "archetype": "humble master",
+      "conflict_hook": "Past enemies have found them. They must choose: reveal their power and risk their peaceful life, or stay hidden and let others suffer. Their retirement was actually a self-imposed exile for a past mistake.",
+      "rp_cues": ["stories are exaggerated", "hides true skill", "knows more than they say", "advice in stories"],
+      "culture": "universal",
+      "biome": "urban",
+      "tone": "humble",
+      "mechanics": {
+        "suggested_class": "any",
+        "key_abilities": ["insight", "persuasion", "hidden combat skills"]
+      },
+      "quality_score": 83
+    },
+    {
+      "excerpt": "Child prodigy who sees magic in everything. Their innocence makes them powerful, but also vulnerable. They don't understand danger, only wonder. Their magic is unpredictable because it follows child logic. Adults underestimate them at their peril.",
+      "tags": ["npc", "archetype", "child", "prodigy", "innocent", "powerful"],
+      "archetype": "innocent power",
+      "conflict_hook": "Someone wants to exploit the child's power. Others want to protect them, but protection means limiting their freedom. The child doesn't understand the danger, only that adults are trying to control them. Their magic responds to their emotions.",
+      "rp_cues": ["sees magic everywhere", "doesn't understand danger", "power is emotional", "adults underestimate"],
+      "culture": "universal",
+      "biome": "any",
+      "tone": "innocent",
+      "mechanics": {
+        "suggested_class": "sorcerer",
+        "key_abilities": ["wild magic", "innocence as power", "emotional magic"]
+      },
+      "quality_score": 84
+    },
+    {
+      "excerpt": "Scholar who studies the impossible. They collect paradoxes, contradictions, and things that shouldn't exist. Their research is dangerous because understanding the impossible makes it possible. They're slowly going mad from the knowledge, but also becoming more powerful.",
+      "tags": ["npc", "archetype", "scholar", "mad", "paradox", "dangerous-knowledge"],
+      "archetype": "paradox researcher",
+      "conflict_hook": "Their research is creating reality glitches. The impossible is becoming possible in dangerous ways. Some want to stop them, others to use their research. The scholar themselves is trapped between understanding and madness.",
+      "rp_cues": ["speaks in contradictions", "reality glitches near them", "knowledge is visible", "madness is power"],
+      "culture": "scholarly",
+      "biome": "any",
+      "tone": "unsettling",
+      "mechanics": {
+        "suggested_class": "wizard",
+        "key_abilities": ["paradox magic", "reality manipulation", "dangerous knowledge"]
+      },
+      "quality_score": 85
+    },
+    {
+      "excerpt": "Merchant who trades in experiences, not goods. They buy memories, sell dreams, trade emotions. Their shop is a place between places. They remember everything they've bought, becoming a living archive of human experience. Some say they're not human anymore.",
+      "tags": ["npc", "archetype", "merchant", "experience", "memory", "otherworldly"],
+      "archetype": "experience trader",
+      "conflict_hook": "Someone wants to buy a memory that would destroy the seller. The merchant must choose: profit or protection. Their own memories are becoming confused with those they've collected. They're losing their original self.",
+      "rp_cues": ["trades intangibles", "shop feels wrong", "remembers everything", "not quite human"],
+      "culture": "otherworldly",
+      "biome": "liminal",
+      "tone": "mysterious",
+      "mechanics": {
+        "suggested_class": "warlock or bard",
+        "key_abilities": ["memory magic", "experience manipulation", "liminal space"]
+      },
+      "quality_score": 84
+    },
+    {
+      "excerpt": "Guardian of a place that doesn't want to be found. They don't protect it with force, but with obscurity. They make the place forgettable, unremarkable, easy to overlook. They themselves are forgettable. Meeting them is like meeting a stranger you've known forever.",
+      "tags": ["npc", "archetype", "guardian", "obscurity", "forgettable", "protector"],
+      "archetype": "obscure guardian",
+      "conflict_hook": "Something wants to find the hidden place. The guardian's obscurity is failing. They must become more visible to protect it, but visibility is dangerous. The place itself might be sentient, choosing to reveal itself.",
+      "rp_cues": ["hard to remember", "place feels wrong", "easy to overlook", "familiar stranger"],
+      "culture": "universal",
+      "biome": "any",
+      "tone": "forgettable",
+      "mechanics": {
+        "suggested_class": "ranger or druid",
+        "key_abilities": ["obscurity magic", "protection through hiding", "forgettable presence"]
+      },
+      "quality_score": 83
+    }
+  ]
+}
+

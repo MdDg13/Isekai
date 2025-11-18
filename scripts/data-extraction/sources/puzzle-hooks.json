@@ -1,0 +1,88 @@
+{
+  "source_name": "Puzzle & Challenge Hooks",
+  "source_link": "RPG puzzle design patterns",
+  "license": "synthetic",
+  "snippets": [
+    {
+      "excerpt": "Door that only opens when you tell it a truth you've never told anyone. The door judges sincerity, not just truth. Some truths are too painful to speak. The door has opened for liars who believed their lies, and rejected honest people who weren't ready.",
+      "tags": ["puzzle", "door", "truth", "emotional", "judgment"],
+      "archetype": "truth-telling door",
+      "conflict_hook": "Someone is trapped because they can't face their truth. Others want to force them, but that won't work. The door itself might be sentient, testing not just truth but courage. What if the truth would hurt others?",
+      "rp_cues": ["door seems to listen", "speaking feels vulnerable", "others are watching", "silence is heavy"],
+      "culture": "universal",
+      "biome": "any",
+      "tone": "introspective",
+      "mechanics": {
+        "type": "emotional puzzle",
+        "solution": "sincere truth",
+        "failure": "rejection or trap"
+      },
+      "quality_score": 85
+    },
+    {
+      "excerpt": "Bridge that only appears when you're not looking for it. Looking directly makes it vanish. You must approach it indirectly, using peripheral vision or closing your eyes. The bridge tests faith and perception, not logic.",
+      "tags": ["puzzle", "bridge", "perception", "paradox", "faith"],
+      "archetype": "indirect bridge",
+      "conflict_hook": "Someone is stranded, unable to see the bridge. Others can see it but can't help. The bridge's nature suggests a deeper truth about perception and reality. What else can't be seen by looking directly?",
+      "rp_cues": ["bridge flickers", "peripheral vision works", "direct looking fails", "faith is required"],
+      "culture": "universal",
+      "biome": "any",
+      "tone": "paradoxical",
+      "mechanics": {
+        "type": "perception puzzle",
+        "solution": "indirect approach",
+        "failure": "bridge disappears"
+      },
+      "quality_score": 84
+    },
+    {
+      "excerpt": "Room with seven doors, each leading to a different version of the same place. Each version shows what could have been if different choices were made. One door shows the true path forward, but it changes based on who enters. The room tests understanding of consequences.",
+      "tags": ["puzzle", "room", "alternate-reality", "choice", "consequences"],
+      "archetype": "consequence chamber",
+      "conflict_hook": "Someone is lost in the wrong version, living a life that isn't theirs. Others must find the right door, but the right door is different for each person. Some want to stay in better versions. Time is running out.",
+      "rp_cues": ["doors show possibilities", "each feels real", "choices matter", "right door is personal"],
+      "culture": "universal",
+      "biome": "any",
+      "tone": "philosophical",
+      "mechanics": {
+        "type": "choice puzzle",
+        "solution": "understand consequences",
+        "failure": "wrong reality"
+      },
+      "quality_score": 85
+    },
+    {
+      "excerpt": "Lock that requires a key made of sound. The correct melody opens it, but the melody is different for each person. It's based on their life's rhythm, their heartbeat, their personal song. Playing wrong notes causes pain, playing right ones brings joy.",
+      "tags": ["puzzle", "lock", "music", "personal", "rhythm"],
+      "archetype": "personal melody lock",
+      "conflict_hook": "Lock protects something vital, but the key-holder is missing. Others must find their own melodies, but that takes time. Some melodies are dangerous, others healing. The lock itself seems to respond to emotion.",
+      "rp_cues": ["lock resonates", "music feels personal", "wrong notes hurt", "right notes heal"],
+      "culture": "universal",
+      "biome": "any",
+      "tone": "musical",
+      "mechanics": {
+        "type": "musical puzzle",
+        "solution": "personal melody",
+        "failure": "pain or rejection"
+      },
+      "quality_score": 84
+    },
+    {
+      "excerpt": "Maze that rearranges itself based on the solver's fears. Confronting fears opens paths, running from them closes them. The maze becomes easier or harder based on courage. Some fears are illusions, others are real dangers. The maze tests emotional strength.",
+      "tags": ["puzzle", "maze", "fear", "emotional", "courage"],
+      "archetype": "fear-based maze",
+      "conflict_hook": "Someone is trapped, their fears making the maze impossible. Others want to help, but the maze responds to each person individually. Some fears must be faced, others overcome. The maze might be sentient, testing worthiness.",
+      "rp_cues": ["walls shift with emotion", "fears become real", "courage opens paths", "running makes it worse"],
+      "culture": "universal",
+      "biome": "any",
+      "tone": "fearful",
+      "mechanics": {
+        "type": "emotional maze",
+        "solution": "face fears",
+        "failure": "maze closes"
+      },
+      "quality_score": 85
+    }
+  ]
+}
+

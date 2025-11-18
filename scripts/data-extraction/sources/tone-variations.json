@@ -1,0 +1,88 @@
+{
+  "source_name": "Tone & Atmosphere Variations",
+  "source_link": "Narrative tone patterns",
+  "license": "synthetic",
+  "snippets": [
+    {
+      "excerpt": "Gothic horror atmosphere where shadows hold secrets and architecture reflects inner darkness. Buildings lean inward, windows are eyes, doors are mouths. The city itself seems alive and malevolent. Every corner hides a threat or a revelation.",
+      "tags": ["tone", "atmosphere", "gothic", "horror", "dark", "architectural"],
+      "archetype": "gothic horror",
+      "conflict_hook": "City is awakening, its architecture coming to life. Some want to stop it, others to embrace it. The city's consciousness is fragmented, some parts benevolent, others malevolent. Heroes must navigate a living, thinking city.",
+      "rp_cues": ["shadows move", "architecture feels alive", "whispers from walls", "every building watches"],
+      "culture": "gothic",
+      "biome": "urban",
+      "tone": "gothic-horror",
+      "mechanics": {
+        "atmosphere": "living architecture",
+        "threats": "shadows and structures",
+        "mood": "paranoid"
+      },
+      "quality_score": 84
+    },
+    {
+      "excerpt": "Whimsical fairy-tale world where logic is flexible and magic is common. Animals talk, objects have personalities, wishes come true in unexpected ways. The world follows story logic, not physical laws. Happy endings are possible but not guaranteed.",
+      "tags": ["tone", "atmosphere", "whimsical", "fairy-tale", "magical", "light"],
+      "archetype": "fairy-tale logic",
+      "conflict_hook": "Someone is trying to impose real-world logic on the fairy-tale world, making it mundane. The world is fighting back, but logic is winning. Heroes must choose: preserve magic or accept reality?",
+      "rp_cues": ["animals give advice", "objects have opinions", "wishes twist", "stories come true"],
+      "culture": "fairy-tale",
+      "biome": "any",
+      "tone": "whimsical",
+      "mechanics": {
+        "atmosphere": "story logic",
+        "magic": "common and flexible",
+        "mood": "hopeful"
+      },
+      "quality_score": 83
+    },
+    {
+      "excerpt": "Post-apocalyptic wasteland where hope is the rarest resource. Communities are isolated, trust is earned through action not words. Technology and magic both failed, leaving only determination. Beauty exists in small moments, survival in cooperation.",
+      "tags": ["tone", "atmosphere", "post-apocalyptic", "grim", "survival", "hope"],
+      "archetype": "hopeful wasteland",
+      "conflict_hook": "A new threat emerges that could end the last safe havens. Some want to fight, others to flee. Resources are running out. But there's a rumor of a place untouched by the apocalypse. Is it real or just hope?",
+      "rp_cues": ["trust is earned", "resources are precious", "beauty in small things", "cooperation is survival"],
+      "culture": "survivalist",
+      "biome": "wasteland",
+      "tone": "grim-hope",
+      "mechanics": {
+        "atmosphere": "resource scarcity",
+        "threats": "environment and people",
+        "mood": "determined"
+      },
+      "quality_score": 84
+    },
+    {
+      "excerpt": "High-tech cyberpunk city where magic and technology merge. Spells are code, programs are rituals. Hackers are wizards, corporations are cults. The line between real and virtual blurs. Identity is fluid, reality is constructed.",
+      "tags": ["tone", "atmosphere", "cyberpunk", "tech-magic", "urban", "futuristic"],
+      "archetype": "magic-tech fusion",
+      "conflict_hook": "A virus is spreading that makes magic and technology incompatible. The city is breaking down as systems fail. Some want to separate them, others to merge them further. The virus might be sentient, choosing what to affect.",
+      "rp_cues": ["tech feels magical", "magic feels technical", "reality glitches", "identity is code"],
+      "culture": "cyberpunk",
+      "biome": "urban",
+      "tone": "tech-noir",
+      "mechanics": {
+        "atmosphere": "tech-magic fusion",
+        "systems": "blurred reality",
+        "mood": "paranoid"
+      },
+      "quality_score": 85
+    },
+    {
+      "excerpt": "Peaceful pastoral setting where conflict is subtle and internal. External threats are rare, but personal growth is the challenge. Communities are tight-knit, traditions are strong. Change comes slowly, but when it comes, it's profound.",
+      "tags": ["tone", "atmosphere", "pastoral", "peaceful", "introspective", "rural"],
+      "archetype": "peaceful growth",
+      "conflict_hook": "Change is coming whether the community wants it or not. Some embrace it, others resist. The conflict is generational, cultural, personal. No villains, just people with different values. Heroes must navigate without violence.",
+      "rp_cues": ["conflict is subtle", "traditions matter", "change is slow", "community is everything"],
+      "culture": "rural",
+      "biome": "pastoral",
+      "tone": "peaceful",
+      "mechanics": {
+        "atmosphere": "low conflict",
+        "challenges": "personal growth",
+        "mood": "contemplative"
+      },
+      "quality_score": 82
+    }
+  ]
+}
+

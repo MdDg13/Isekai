@@ -1,0 +1,88 @@
+{
+  "source_name": "Item Hooks & Artifacts",
+  "source_link": "RPG item design patterns",
+  "license": "synthetic",
+  "snippets": [
+    {
+      "excerpt": "Sword that grows stronger with each enemy it defeats, but also more bloodthirsty. The wielder must resist its urge to kill. It remembers every battle. Eventually, it might control the wielder. It was forged to end a war but became a weapon of war itself.",
+      "tags": ["item", "weapon", "cursed", "sentient", "powerful"],
+      "archetype": "corrupted weapon",
+      "conflict_hook": "Sword's original purpose was peace, but it's been corrupted by centuries of war. Someone wants to purify it, others to destroy it, some to use its power. The sword itself has opinions.",
+      "rp_cues": ["sword seems to whisper", "grows heavier with kills", "wielder's eyes change", "memories of past battles"],
+      "culture": "universal",
+      "biome": "any",
+      "tone": "corrupting",
+      "mechanics": {
+        "type": "sentient weapon",
+        "power": "grows with kills",
+        "curse": "bloodthirsty influence"
+      },
+      "quality_score": 84
+    },
+    {
+      "excerpt": "Cloak that makes the wearer invisible but also makes them forget they're wearing it. The longer it's worn, the more the wearer forgets their own identity. Eventually, they become permanently invisible and forgotten by all.",
+      "tags": ["item", "armor", "cursed", "memory", "invisibility"],
+      "archetype": "forgetful protection",
+      "conflict_hook": "Someone is trapped in the cloak, becoming forgotten. Their family wants to save them, but the cloak resists removal. The longer it takes, the less they remember. Time is running out.",
+      "rp_cues": ["wearer seems confused", "others forget them", "cloak feels wrong", "memories fade"],
+      "culture": "universal",
+      "biome": "any",
+      "tone": "tragic",
+      "mechanics": {
+        "type": "cursed cloak",
+        "power": "invisibility",
+        "curse": "memory loss"
+      },
+      "quality_score": 85
+    },
+    {
+      "excerpt": "Compass that points not to north, but to what the holder needs most. It might point to a person, place, or thing. Sometimes it points to something dangerous but necessary. The holder must interpret what they truly need.",
+      "tags": ["item", "tool", "magical", "guidance", "mysterious"],
+      "archetype": "need-finding compass",
+      "conflict_hook": "Compass points to something that will solve one problem but create another. Multiple people need it for different purposes. The compass itself might be sentient, choosing what to reveal.",
+      "rp_cues": ["compass moves erratically", "points to unexpected places", "holder feels drawn", "others want it"],
+      "culture": "universal",
+      "biome": "any",
+      "tone": "mysterious",
+      "mechanics": {
+        "type": "magical compass",
+        "power": "finds needs",
+        "limitation": "interpretation required"
+      },
+      "quality_score": 83
+    },
+    {
+      "excerpt": "Book that writes itself based on the reader's thoughts. It becomes a perfect record of their inner life. But reading it back changes the reader's memories to match what's written. The book rewrites history by rewriting memory.",
+      "tags": ["item", "artifact", "book", "memory", "dangerous"],
+      "archetype": "memory-rewriting tome",
+      "conflict_hook": "Book contains someone's rewritten memories. They don't know what's real anymore. Others want to use it to change history. The book's original author might still be alive, trapped in its pages.",
+      "rp_cues": ["book seems to watch", "reading feels invasive", "memories feel wrong", "others are suspicious"],
+      "culture": "universal",
+      "biome": "any",
+      "tone": "unsettling",
+      "mechanics": {
+        "type": "sentient book",
+        "power": "records thoughts",
+        "curse": "rewrites memory"
+      },
+      "quality_score": 85
+    },
+    {
+      "excerpt": "Ring that grants wishes, but each wish costs a memory. The more important the memory, the more powerful the wish. The ring's previous owners are all amnesiacs. Some memories can't be regained, even if the wish is undone.",
+      "tags": ["item", "artifact", "ring", "wish", "memory"],
+      "archetype": "memory-cost wish",
+      "conflict_hook": "Someone used the ring to save a loved one, losing crucial memories. They want those memories back, but the ring demands another wish. Others want the ring for their own purposes. The lost memories might be important to everyone.",
+      "rp_cues": ["ring feels heavy", "memories fade after use", "previous owners are lost", "wishes have hidden costs"],
+      "culture": "universal",
+      "biome": "any",
+      "tone": "tragic",
+      "mechanics": {
+        "type": "wish ring",
+        "power": "grants wishes",
+        "cost": "memories"
+      },
+      "quality_score": 84
+    }
+  ]
+}
+

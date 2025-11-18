@@ -1,0 +1,88 @@
+{
+  "source_name": "Faction Archetypes",
+  "source_link": "RPG faction design patterns",
+  "license": "synthetic",
+  "snippets": [
+    {
+      "excerpt": "Secret society of information brokers who trade in secrets, not gold. Membership is by invitation only. They know everything but reveal nothing without price. Their network spans all known lands. They have agents everywhere, even among enemies.",
+      "tags": ["faction", "secret-society", "information", "network", "spy"],
+      "archetype": "information cartel",
+      "conflict_hook": "A member has gone rogue, selling secrets to highest bidder. The society must stop them without revealing their own existence. Heroes are caught between the society and those who want their secrets exposed.",
+      "rp_cues": ["members use code phrases", "information is currency", "secrets are power", "trust is everything"],
+      "culture": "cosmopolitan",
+      "biome": "any",
+      "tone": "secretive",
+      "mechanics": {
+        "structure": "cell-based network",
+        "resources": "information",
+        "power": "knowledge"
+      },
+      "quality_score": 84
+    },
+    {
+      "excerpt": "Religious order that preserves ancient texts and rituals. They believe knowledge must be earned, not given. Their libraries are protected by trials. They recruit those who solve their puzzles. Their goal is to prevent dangerous knowledge from spreading.",
+      "tags": ["faction", "religious", "scholarly", "preservation", "guardian"],
+      "archetype": "knowledge guardians",
+      "conflict_hook": "A text contains information that could save or destroy the world. Order wants to hide it, others want it. The text itself seems to want to be read. Heroes must decide: preserve or reveal?",
+      "rp_cues": ["trials test worthiness", "knowledge is sacred", "puzzles are prayers", "recruitment is selective"],
+      "culture": "scholarly",
+      "biome": "any",
+      "tone": "reverent",
+      "mechanics": {
+        "structure": "monastic order",
+        "resources": "ancient texts",
+        "power": "preserved knowledge"
+      },
+      "quality_score": 83
+    },
+    {
+      "excerpt": "Merchant guild that controls trade routes through economic pressure. They don't use force, they use contracts. Breaking a contract means economic ruin. They have monopolies on key resources. Their influence extends to governments.",
+      "tags": ["faction", "merchant", "guild", "economic", "influence"],
+      "archetype": "trade monopoly",
+      "conflict_hook": "New trade route discovered that bypasses their control. Guild wants to control it, others want it free. A contract dispute threatens to start a trade war. Heroes must navigate economic warfare.",
+      "rp_cues": ["contracts are everything", "gold is power", "influence is subtle", "economic pressure is weapon"],
+      "culture": "merchant",
+      "biome": "any",
+      "tone": "commercial",
+      "mechanics": {
+        "structure": "guild hierarchy",
+        "resources": "trade routes",
+        "power": "economic control"
+      },
+      "quality_score": 82
+    },
+    {
+      "excerpt": "Revolutionary movement that seeks to overthrow the current system. They operate in cells, each unaware of others. Their methods range from peaceful protest to violent rebellion. They recruit the disenfranchised and idealistic.",
+      "tags": ["faction", "revolutionary", "rebellion", "underground", "political"],
+      "archetype": "underground revolution",
+      "conflict_hook": "Movement is infiltrated by agents. Some cells want violence, others peace. The movement's leader is missing. Heroes must determine who to trust while the movement splinters. Time is running out before the revolution begins.",
+      "rp_cues": ["secrecy is survival", "ideals vs. methods", "recruitment is careful", "trust is tested"],
+      "culture": "revolutionary",
+      "biome": "any",
+      "tone": "urgent",
+      "mechanics": {
+        "structure": "cell network",
+        "resources": "popular support",
+        "power": "numbers and ideals"
+      },
+      "quality_score": 83
+    },
+    {
+      "excerpt": "Ancient order of monster hunters who pass knowledge through generations. They track patterns, not individual monsters. Each hunter specializes in a type. They maintain bestiaries that are constantly updated. Their code forbids unnecessary killing.",
+      "tags": ["faction", "hunter", "monster", "order", "preservation"],
+      "archetype": "monster preservationists",
+      "conflict_hook": "A new monster type appears that doesn't fit patterns. Some want to kill it, others to study it. The monster seems intelligent. Ancient bestiaries suggest it shouldn't exist. The order is divided.",
+      "rp_cues": ["knowledge is weapon", "patterns reveal truth", "respect for prey", "code is absolute"],
+      "culture": "hunter",
+      "biome": "any",
+      "tone": "methodical",
+      "mechanics": {
+        "structure": "specialist network",
+        "resources": "bestiaries",
+        "power": "knowledge and skill"
+      },
+      "quality_score": 84
+    }
+  ]
+}
+
