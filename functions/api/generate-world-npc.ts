@@ -2,6 +2,7 @@ import { createClient } from '@supabase/supabase-js';
 import { runWorkersAIJSON } from '../_lib/ai';
 import { generateNPC, type GenerateNPCOptions, type GeneratedNPC } from '../_lib/npc-procedural';
 import { getWorldContext, getRandomSnippets, formatContextForPrompt } from '../_lib/context-builder';
+import { GenerationLogger } from '../_lib/generation-logger';
 
 interface GenerateWorldNpcBody {
   worldId: string;
@@ -77,6 +78,9 @@ export const onRequest: PagesFunction = async (context) => {
     });
   }
 
+  // Initialize generation logger
+  const logger = new GenerationLogger(supabase, reqRow.id, body.worldId);
+
   // Parse tags for race, class, temperament - extract from phrases too
   const allTagText = body.tags?.join(' ').toLowerCase() || '';
   
@@ -126,11 +130,39 @@ export const onRequest: PagesFunction = async (context) => {
     fullyRandom: body.fullyRandom ?? false
   };
 
+  // Step 1: Procedural generation
+  logger.startStep('procedural');
+  logger.log({
+    step: 'procedural',
+    logType: 'info',
+    message: 'Starting procedural NPC generation',
+    data: { options: proceduralOptions }
+  });
+
   const npcDraft = generateNPC(proceduralOptions);
+
+  logger.log({
+    step: 'procedural',
+    logType: 'info',
+    message: 'Procedural generation complete',
+    data: {
+      name: npcDraft.name,
+      class: (npcDraft.traits as Record<string, unknown>)?.class,
+      race: (npcDraft.traits as Record<string, unknown>)?.race,
+      bio: npcDraft.bio?.substring(0, 100)
+    }
+  });
+  logger.endStep('procedural');
 
   // Optionally enhance with AI if enabled
   const modelEnabled = (env.WORKERS_AI_ENABLE as string | undefined)?.toLowerCase() === 'true';
-  console.log(`[NPC Generation] AI enhancement: ${modelEnabled ? 'ENABLED' : 'DISABLED'} (WORKERS_AI_ENABLE=${env.WORKERS_AI_ENABLE})`);
+  logger.log({
+    step: 'procedural',
+    logType: modelEnabled ? 'info' : 'warning',
+    message: `AI enhancement: ${modelEnabled ? 'ENABLED' : 'DISABLED'}`,
+    data: { WORKERS_AI_ENABLE: env.WORKERS_AI_ENABLE }
+  });
+
   if (modelEnabled) {
     try {
       // Build explicit constraints list
@@ -189,17 +221,32 @@ export const onRequest: PagesFunction = async (context) => {
         : '';
 
       // Get world context and source snippets for richer generation
+      logger.startStep('context_fetch');
       let worldContextText = '';
       let contextFetched = false;
       try {
-        console.log('[NPC Generation] Fetching world context...');
+        logger.log({
+          step: 'context_fetch',
+          logType: 'info',
+          message: 'Fetching world context and source snippets'
+        });
+
         const worldContext = await getWorldContext(supabase, body.worldId, {
           elementType: 'npc',
           includeSnippets: true,
           snippetCount: 5
         });
         
-        console.log(`[NPC Generation] World context: ${worldContext.elements?.length || 0} elements, ${worldContext.snippets?.length || 0} snippets`);
+        logger.log({
+          step: 'context_fetch',
+          logType: 'info',
+          message: 'World context fetched',
+          data: {
+            elementsCount: worldContext.elements?.length || 0,
+            snippetsCount: worldContext.snippets?.length || 0,
+            summary: worldContext.summary
+          }
+        });
         
         // Also get random NPC snippets for inspiration
         const randomSnippets = await getRandomSnippets(supabase, {
@@ -209,7 +256,15 @@ export const onRequest: PagesFunction = async (context) => {
           ensureDiversity: true
         });
         
-        console.log(`[NPC Generation] Random snippets: ${randomSnippets.length} snippets`);
+        logger.log({
+          step: 'context_fetch',
+          logType: 'info',
+          message: 'Random snippets fetched',
+          data: {
+            count: randomSnippets.length,
+            archetypes: randomSnippets.map(s => s.archetype).filter(Boolean)
+          }
+        });
         
         // Combine world context with random snippets
         const combinedContext = {
@@ -219,12 +274,28 @@ export const onRequest: PagesFunction = async (context) => {
         
         worldContextText = formatContextForPrompt(combinedContext);
         contextFetched = true;
-        console.log(`[NPC Generation] Context formatted: ${worldContextText.length} characters`);
+        
+        logger.log({
+          step: 'context_fetch',
+          logType: 'info',
+          message: 'Context formatted for prompt',
+          data: {
+            contextLength: worldContextText.length,
+            totalSnippets: combinedContext.snippets?.length || 0
+          }
+        });
       } catch (contextError) {
         // If context fetching fails, continue without it (graceful degradation)
-        console.warn('[NPC Generation] Failed to fetch world context:', contextError);
-        console.warn('[NPC Generation] Continuing without context (graceful degradation)');
+        logger.log({
+          step: 'context_fetch',
+          logType: 'error',
+          message: 'Failed to fetch world context',
+          data: {
+            error: contextError instanceof Error ? contextError.message : String(contextError)
+          }
+        });
       }
+      logger.endStep('context_fetch');
 
       // Step 1: Enhancement with strict schema + examples
       // Structured for DM usability: quick reference → summary → details
@@ -537,7 +608,14 @@ Now apply ALL fixes to the bio and backstory.`;
         npcDraft.traits = { ...currentTraits, summary: styleEdits.summary };
       }
 
-      // Step 4: Grammar-specific pass (focus ONLY on first-person removal)
+      // Step 5: Grammar-specific pass (focus ONLY on first-person removal)
+      logger.startStep('grammar_fix');
+      logger.log({
+        step: 'grammar_fix',
+        logType: 'info',
+        message: 'Starting grammar fixes (first-person removal)'
+      });
+
       const currentSummaryForGrammar = (npcDraft.traits as { summary?: { oneLiner?: string; keyPoints?: string[] } })?.summary || { oneLiner: '', keyPoints: [] };
       const grammarPrompt =
 `CRITICAL: Remove ALL first-person references. This is a grammar-only pass.
@@ -903,6 +981,26 @@ Backstory: "${npcDraft.backstory || ''}"`;
       headers: { 'content-type': 'application/json' },
     });
   }
+
+  // Final logging
+  logger.startStep('final');
+  logger.log({
+    step: 'final',
+    logType: 'info',
+    message: 'NPC generation complete',
+    data: {
+      npcId: npcRow?.id,
+      name: finalNpc.name,
+      hasBio: !!finalNpc.bio,
+      hasBackstory: !!finalNpc.backstory,
+      hasSummary: !!(finalNpc.traits as Record<string, unknown>)?.summary,
+      aiEnabled: modelEnabled
+    }
+  });
+  logger.endStep('final');
+
+  // Flush all logs to database
+  await logger.flush();
 
   return new Response(JSON.stringify({ request: reqRow, output: outRow, npc: npcRow }), {
     status: 200,
