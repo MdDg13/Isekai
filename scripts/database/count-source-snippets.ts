@@ -40,7 +40,7 @@ async function main() {
   // Group by tags
   const tagCounts: Record<string, number> = {};
   data?.forEach(s => {
-    s.tags?.forEach(tag => {
+    (s.tags || []).forEach((tag: string) => {
       tagCounts[tag] = (tagCounts[tag] || 0) + 1;
     });
   });
