@@ -318,6 +318,23 @@ function SettingsClient() {
           </div>
         )}
 
+        {activeTab === 'source-library' && (
+          <div className="space-y-6">
+            <div>
+              <h2 className="text-lg font-medium mb-4">Source Library</h2>
+              <p className="text-sm text-gray-400 mb-4">
+                Browse and manage source snippets used for world generation. These snippets provide inspiration and context for generating NPCs, locations, conflicts, and more.
+              </p>
+              <Link
+                href="/admin/source-library"
+                className="inline-block px-4 py-2 bg-blue-600 hover:bg-blue-700 rounded-lg text-sm font-medium"
+              >
+                Open Source Library →
+              </Link>
+            </div>
+          </div>
+        )}
+
         {activeTab === 'feedback' && (
           <div className="space-y-6">
             <div>
