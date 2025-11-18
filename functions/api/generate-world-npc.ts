@@ -1,6 +1,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { runWorkersAIJSON } from '../_lib/ai';
 import { generateNPC, type GenerateNPCOptions, type GeneratedNPC } from '../_lib/npc-procedural';
+import { getWorldContext, getRandomSnippets, formatContextForPrompt } from '../_lib/context-builder';
 
 interface GenerateWorldNpcBody {
   worldId: string;
@@ -186,6 +187,35 @@ export const onRequest: PagesFunction = async (context) => {
         ? `\n\nCRITICAL CONSTRAINTS (MANDATORY - DO NOT CHANGE):\n${constraintParts.map(c => `- ${c}`).join('\n')}\n`
         : '';
 
+      // Get world context and source snippets for richer generation
+      let worldContextText = '';
+      try {
+        const worldContext = await getWorldContext(supabase, body.worldId, {
+          elementType: 'npc',
+          includeSnippets: true,
+          snippetCount: 5
+        });
+        
+        // Also get random NPC snippets for inspiration
+        const randomSnippets = await getRandomSnippets(supabase, {
+          tags: ['npc'],
+          count: 3,
+          minQuality: 80,
+          ensureDiversity: true
+        });
+        
+        // Combine world context with random snippets
+        const combinedContext = {
+          ...worldContext,
+          snippets: [...(worldContext.snippets || []), ...randomSnippets]
+        };
+        
+        worldContextText = formatContextForPrompt(combinedContext);
+      } catch (contextError) {
+        // If context fetching fails, continue without it (graceful degradation)
+        console.warn('Failed to fetch world context:', contextError);
+      }
+
       // Step 1: Enhancement with strict schema + examples
       // Structured for DM usability: quick reference → summary → details
       type Enhanced = {
@@ -215,6 +245,7 @@ export const onRequest: PagesFunction = async (context) => {
       const enhancePrompt =
 `You are creating a cohesive, DM-friendly D&D 5e NPC. Think holistically: all elements must connect and support each other.
 ${intent}${explicitConstraints}
+${worldContextText ? `\n\nWORLD CONTEXT:\n${worldContextText}\n` : ''}
 
 CRITICAL RULES (MUST FOLLOW):
 
