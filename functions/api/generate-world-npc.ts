@@ -297,7 +297,20 @@ export const onRequest: PagesFunction = async (context) => {
       }
       logger.endStep('context_fetch');
 
-      // Step 1: Enhancement with strict schema + examples
+      // Step 2: AI Enhancement with strict schema + examples
+      logger.startStep('ai_enhance');
+      logger.log({
+        step: 'ai_enhance',
+        logType: 'info',
+        message: 'Starting AI enhancement',
+        data: {
+          hasContext: !!worldContextText,
+          contextLength: worldContextText.length,
+          intent: intent.substring(0, 200),
+          constraintsCount: constraintParts.length
+        }
+      });
+
       // Structured for DM usability: quick reference → summary → details
       type Enhanced = {
         name: string;
@@ -404,7 +417,23 @@ ${JSON.stringify(npcDraft)}`;
         { maxTokens: 1200, temperature }
       );
 
-      // Step 2: Self-critique and targeted edits
+      logger.log({
+        step: 'ai_enhance',
+        logType: 'info',
+        message: 'AI enhancement complete',
+        data: {
+          hasName: !!aiEnhanced.name,
+          hasBio: !!aiEnhanced.bio,
+          hasBackstory: !!aiEnhanced.backstory,
+          hasSummary: !!aiEnhanced.summary,
+          summaryOneLiner: aiEnhanced.summary?.oneLiner?.substring(0, 100),
+          summaryKeyPointsCount: aiEnhanced.summary?.keyPoints?.length || 0,
+          temperature,
+          model: env.WORKERS_AI_MODEL
+        }
+      });
+
+      // Step 3: Self-critique and targeted edits
       type Critique = {
         issues: string[];
         edits: Partial<Enhanced>;
@@ -761,6 +790,16 @@ Backstory: "${npcDraft.backstory || ''}"`;
       // Note: Programmatic fixes are applied after AI block (see below) to ensure they always run
     } catch (err) {
       // If AI fails, use procedural base (no degradation)
+      logger.log({
+        step: 'ai_enhance',
+        logType: 'error',
+        message: 'AI enhancement failed, using procedural base',
+        data: {
+          error: err instanceof Error ? err.message : String(err),
+          stack: err instanceof Error ? err.stack : undefined
+        }
+      });
+      logger.endStep('ai_enhance');
       console.error('AI enhancement failed, using procedural base:', err);
       // Log the error details for debugging
       if (err instanceof Error) {
