@@ -1,0 +1,63 @@
+{
+  "_comment": "Template for creating new source data files",
+  "_instructions": "Copy this file, rename it, and fill in your source data",
+  
+  "source_name": "Your Source Name",
+  "source_link": "URL or reference to source (optional)",
+  "license": "synthetic",
+  "_license_options": [
+    "public_domain",
+    "cc0",
+    "cc_by",
+    "cc_by_sa",
+    "open_game_license",
+    "orc",
+    "commercial_with_credit",
+    "synthetic"
+  ],
+  "snippets": [
+    {
+      "_required_fields": {
+        "excerpt": "Full description with roleplay cues embedded naturally. Should be vivid and engaging, not generic."
+      },
+      "_optional_fields": {
+        "tags": ["array", "of", "lowercase", "hyphenated", "tags"],
+        "archetype": "Character/concept archetype classification",
+        "conflict_hook": "Specific, actionable conflict for story integration",
+        "rp_cues": ["array", "of", "roleplay", "behavior", "patterns"],
+        "culture": "Cultural context",
+        "biome": "Environmental context",
+        "tone": "Atmospheric tone",
+        "mechanics": {
+          "any": "structured data",
+          "for": "mechanical information"
+        },
+        "quality_score": 80
+      },
+      "_quality_guidelines": {
+        "minimum_50": "Clear excerpt, 3+ tags, basic archetype, one conflict hook",
+        "high_80": "Rich excerpt with embedded cues, 5+ tags, clear archetype, active conflict, 2-3 rp cues, world context, complete mechanics, vivid prose",
+        "exemplary_90": "All high-quality criteria + unique concept, rich sensory details, multiple hooks, world integration, DM-ready"
+      },
+      "_example": {
+        "excerpt": "Tiefling Dream Archivist who curates forbidden wing, recording dreams as primary sources. Speaks in hushed present-tense. Eyes glaze when playing back nightmares. Offers secrets in exchange for players' dreams.",
+        "tags": ["npc", "tiefling", "wizard", "archivist", "dream", "forbidden-knowledge"],
+        "archetype": "knowledge keeper with dark patron",
+        "conflict_hook": "Demonic patron demands redaction of history to glorify infernal dynasty. Needs protection during public reading.",
+        "rp_cues": ["speaks in hushed present-tense", "eyes glaze when playing back nightmares", "offers secrets for dreams"],
+        "culture": "urban",
+        "biome": "urban",
+        "tone": "mysterious",
+        "mechanics": {
+          "class": "wizard",
+          "level": 5,
+          "stat_block": "Mage",
+          "ac": 12,
+          "hp": 58
+        },
+        "quality_score": 90
+      }
+    }
+  ]
+}
+
