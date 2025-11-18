@@ -21,7 +21,9 @@ export async function runWorkersAIText(env: WorkersAIEnv, prompt: string, option
     throw new Error('Workers AI credentials not configured');
   }
 
-  const url = `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/${encodeURIComponent(model)}`;
+  // Important: Workers AI expects the raw model slug (e.g. "@cf/meta/llama-3.1-8b-instruct")
+  // The endpoint rejects encoded slugs ("%40cf%2Fmeta...") with "No route for that URI".
+  const url = `https://api.cloudflare.com/client/v4/accounts/${CLOUDFLARE_ACCOUNT_ID}/ai/run/${model}`;
   const body = {
     messages: [
       options.system ? { role: 'system', content: options.system } : null,
