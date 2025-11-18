@@ -5,6 +5,7 @@ import { createClient } from '@supabase/supabase-js';
 import { useRouter, useSearchParams } from 'next/navigation';
 import Link from 'next/link';
 import { useTheme } from '@/providers/theme-context';
+import AppShell from '@/components/AppShell';
 
 type TableType = 'spell' | 'monster' | 'item' | 'feat' | 'class' | 'subclass' | 'race';
 
@@ -16,7 +17,7 @@ interface TableData {
 
 export default function SettingsPage() {
   return (
-    <Suspense fallback={<div className="min-h-screen bg-black text-white flex items-center justify-center text-sm">Loading settings…</div>}>
+    <Suspense fallback={<div className="min-h-screen flex items-center justify-center text-sm text-gray-400">Loading settings…</div>}>
       <SettingsClient />
     </Suspense>
   );
@@ -103,10 +104,9 @@ function SettingsClient() {
   ];
 
   return (
-    <div className="min-h-screen bg-black text-white">
-      {/* Header */}
+    <div className="min-h-screen">
       <header className="sticky top-0 z-10 bg-black/80 backdrop-blur-sm border-b border-gray-800">
-        <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-4">
+        <AppShell as="div" width="wide" bleed className="py-4">
           <div className="flex items-center gap-4">
             <button
               onClick={handleBack}
@@ -116,10 +116,10 @@ function SettingsClient() {
             </button>
             <h1 className="text-xl sm:text-2xl font-medium">Settings</h1>
           </div>
-        </div>
+        </AppShell>
       </header>
 
-      <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-6">
+      <AppShell as="section" width="wide" className="py-6 space-y-6">
         {/* Tabs */}
         <div className="border-b border-gray-800 mb-6">
           <div className="flex gap-4">
@@ -187,7 +187,7 @@ function SettingsClient() {
             </div>
 
             {/* Table Selection */}
-            <div className="bg-gray-900 rounded-lg p-4">
+            <div className="surface-card p-4">
               <label className="block text-sm font-medium mb-2">Select Table</label>
               <div className="grid grid-cols-2 md:grid-cols-4 gap-2">
                 {tableTypes.map((type) => (
@@ -244,7 +244,7 @@ function SettingsClient() {
                         onClick={() => {
                           setSelectedItem(item);
                         }}
-                        className="p-4 bg-gray-900 border border-gray-800 rounded-lg cursor-pointer hover:border-gray-700 transition-colors"
+                        className="p-4 surface-card cursor-pointer hover:border-blue-600/40 transition-colors"
                       >
                         <div className="flex justify-between items-start">
                           <div>
@@ -275,7 +275,7 @@ function SettingsClient() {
 
             {/* Item Detail & Feedback */}
             {selectedItem && (
-              <div className="bg-gray-900 rounded-lg p-6 border border-gray-800">
+              <div className="surface-card p-6">
                 <div className="flex justify-between items-start mb-4">
                   <h3 className="text-lg font-medium">{selectedItem.name}</h3>
                   <button
@@ -350,7 +350,7 @@ function SettingsClient() {
               >
                 Open Feedback Dashboard →
               </Link>
-              <div className="bg-gray-900 rounded-lg p-4 border border-gray-800">
+              <div className="surface-card p-4">
                 <h3 className="font-medium mb-2">Quick Actions</h3>
                 <ul className="text-sm text-gray-400 space-y-1">
                   <li>• View all pending feedback</li>
@@ -369,7 +369,7 @@ function SettingsClient() {
               <h2 className="text-lg font-medium mb-4">Account Settings</h2>
               <p className="text-sm text-gray-400">Account management options (coming soon)</p>
             </div>
-            <div className="bg-gray-900 rounded-lg p-6 border border-gray-800">
+            <div className="surface-card p-6">
               <p className="text-gray-400">Account settings will be available here.</p>
             </div>
           </div>
@@ -381,7 +381,7 @@ function SettingsClient() {
               <h2 className="text-lg font-medium mb-4">Preferences</h2>
               <p className="text-sm text-gray-400">Customize your application experience.</p>
             </div>
-            <div className="bg-gray-900 rounded-lg p-6 border border-gray-800">
+            <div className="surface-card p-6">
               <h3 className="text-base font-medium mb-3">Theme</h3>
               <p className="text-sm text-gray-400 mb-4">
                 Choose between light and dark themes. This preference is remembered on this device.
@@ -417,7 +417,7 @@ function SettingsClient() {
             </div>
           </div>
         )}
-      </div>
+      </AppShell>
     </div>
   );
 }

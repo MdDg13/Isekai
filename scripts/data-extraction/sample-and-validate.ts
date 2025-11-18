@@ -10,8 +10,7 @@ import {
   validateItem,
   validateMonster,
   validateTrap,
-  validatePuzzle,
-  ValidationResult,
+  validatePuzzle
 } from './validate-extracted-data';
 
 interface SampleResult {

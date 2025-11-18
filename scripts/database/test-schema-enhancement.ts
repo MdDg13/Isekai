@@ -55,12 +55,12 @@ async function testIndexes(): Promise<TestResult[]> {
     });
 
     const duration = Date.now() - start;
-    const exists = data && Array.isArray(data) && data.length > 0;
+    const exists = !error && data && Array.isArray(data) && data.length > 0;
 
     results.push({
       name: `Index: ${indexName}`,
       passed: exists,
-      message: exists ? 'Index exists' : 'Index not found',
+      message: error ? `Error: ${error.message}` : exists ? 'Index exists' : 'Index not found',
       duration,
     });
   }
@@ -88,12 +88,12 @@ async function testFunctions(): Promise<TestResult[]> {
     });
 
     const duration = Date.now() - start;
-    const exists = data && Array.isArray(data) && data.length > 0;
+    const exists = !error && data && Array.isArray(data) && data.length > 0;
 
     results.push({
       name: `Function: ${funcName}`,
       passed: exists,
-      message: exists ? 'Function exists' : 'Function not found',
+      message: error ? `Error: ${error.message}` : exists ? 'Function exists' : 'Function not found',
       duration,
     });
   }
@@ -107,7 +107,7 @@ async function testViews(): Promise<TestResult[]> {
 
   for (const viewName of requiredViews) {
     const start = Date.now();
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from(viewName)
       .select('*')
       .limit(1);

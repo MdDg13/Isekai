@@ -11,11 +11,6 @@ import * as path from 'path';
 import { processItemWeightAndVolume, calculateConfidence } from './weight-and-volume-estimator';
 import { normalizeItemCost } from './cost-normalizer';
 
-interface UpdateOptions {
-  inputDir: string;
-  outputDir: string;
-}
-
 function updateItems(items: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
   return items.map(item => {
     const name = (item.name as string) || '';
@@ -63,7 +58,6 @@ function updateItems(items: Array<Record<string, unknown>>): Array<Record<string
 
 function updateMonsters(monsters: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
   return monsters.map(monster => {
-    const name = (monster.name as string) || '';
     const description = JSON.stringify(monster).substring(0, 500); // Use full monster as description proxy
     const traits = (monster.traits as Array<unknown>) || [];
     const actions = (monster.actions as Array<unknown>) || [];
@@ -86,7 +80,6 @@ function updateMonsters(monsters: Array<Record<string, unknown>>): Array<Record<
 
 function updateSpells(spells: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
   return spells.map(spell => {
-    const name = (spell.name as string) || '';
     const description = (spell.description as string) || '';
     const level = (spell.level as number) || null;
     const school = (spell.school as string) || null;
@@ -109,7 +102,6 @@ function updateSpells(spells: Array<Record<string, unknown>>): Array<Record<stri
 
 function updateClasses(classes: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
   return classes.map(cls => {
-    const name = (cls.name as string) || '';
     const features = (cls.class_features as Array<unknown>) || [];
     const description = JSON.stringify(cls).substring(0, 500);
     
@@ -131,7 +123,6 @@ function updateClasses(classes: Array<Record<string, unknown>>): Array<Record<st
 
 function updateRaces(races: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
   return races.map(race => {
-    const name = (race.name as string) || '';
     const traits = (race.traits as Array<unknown>) || [];
     const description = JSON.stringify(race).substring(0, 500);
     
@@ -153,7 +144,6 @@ function updateRaces(races: Array<Record<string, unknown>>): Array<Record<string
 
 function updateFeats(feats: Array<Record<string, unknown>>): Array<Record<string, unknown>> {
   return feats.map(feat => {
-    const name = (feat.name as string) || '';
     const description = (feat.description as string) || (feat.benefits as string) || '';
     const prerequisites = (feat.prerequisites as string) || null;
     
@@ -241,6 +231,60 @@ function main() {
         console.log(`  Updated ${updated.length} spells`);
       } catch (error) {
         console.error(`  Error updating spells: ${error}`);
+      }
+    }
+  }
+
+  // Update classes
+  const classesFile = path.join(inputDir, 'classes-merged.json');
+  if (fs.existsSync(classesFile)) {
+    console.log('Updating classes...');
+    let content = fs.readFileSync(classesFile, 'utf-8').trim();
+    if (content.charCodeAt(0) === 0xFEFF) content = content.slice(1);
+    if (content.length > 0) {
+      try {
+        const classes = JSON.parse(content) as Array<Record<string, unknown>>;
+        const updated = updateClasses(classes);
+        fs.writeFileSync(path.join(outputDir, 'classes-merged.json'), JSON.stringify(updated, null, 2));
+        console.log(`  Updated ${updated.length} classes`);
+      } catch (error) {
+        console.error(`  Error updating classes: ${error}`);
+      }
+    }
+  }
+
+  // Update races
+  const racesFile = path.join(inputDir, 'races-merged.json');
+  if (fs.existsSync(racesFile)) {
+    console.log('Updating races...');
+    let content = fs.readFileSync(racesFile, 'utf-8').trim();
+    if (content.charCodeAt(0) === 0xFEFF) content = content.slice(1);
+    if (content.length > 0) {
+      try {
+        const races = JSON.parse(content) as Array<Record<string, unknown>>;
+        const updated = updateRaces(races);
+        fs.writeFileSync(path.join(outputDir, 'races-merged.json'), JSON.stringify(updated, null, 2));
+        console.log(`  Updated ${updated.length} races`);
+      } catch (error) {
+        console.error(`  Error updating races: ${error}`);
+      }
+    }
+  }
+
+  // Update feats
+  const featsFile = path.join(inputDir, 'feats-merged.json');
+  if (fs.existsSync(featsFile)) {
+    console.log('Updating feats...');
+    let content = fs.readFileSync(featsFile, 'utf-8').trim();
+    if (content.charCodeAt(0) === 0xFEFF) content = content.slice(1);
+    if (content.length > 0) {
+      try {
+        const feats = JSON.parse(content) as Array<Record<string, unknown>>;
+        const updated = updateFeats(feats);
+        fs.writeFileSync(path.join(outputDir, 'feats-merged.json'), JSON.stringify(updated, null, 2));
+        console.log(`  Updated ${updated.length} feats`);
+      } catch (error) {
+        console.error(`  Error updating feats: ${error}`);
       }
     }
   }

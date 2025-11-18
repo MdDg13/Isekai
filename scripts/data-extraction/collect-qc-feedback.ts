@@ -100,7 +100,7 @@ function analyzeFeedback(feedback: FeedbackItem[]): FeedbackAnalysis {
   
   // Find common patterns (appearing 3+ times)
   const commonPatterns: PatternIssue[] = Object.entries(patternMap)
-    .filter(([_, items]) => items.length >= 3)
+    .filter(([, items]) => items.length >= 3)
     .map(([pattern, items]) => ({
       pattern,
       count: items.length,

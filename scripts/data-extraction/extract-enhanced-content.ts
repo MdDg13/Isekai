@@ -240,10 +240,8 @@ function parseRaces(text: string, source: string): Array<Record<string, unknown>
       const languagesMatch = raceBlock.match(/\*\*Languages?:\*\*\s*([^\n]+)/i);
       const languages = languagesMatch ? languagesMatch[1].split(',').map(s => s.trim()) : [];
       
-      // Extract subraces
+      // Extract subraces (placeholder for future detailed parsing)
       const subraces: Array<Record<string, unknown>> = [];
-      const subracePattern = /\*\*([A-Z][A-Za-z\s]+)\s+(?:Elf|Dwarf|Halfling|etc\.)\*\*/gi;
-      // This is simplified - actual subrace extraction would be more complex
       
       if (name && size && speed) {
         const raceConfidence = calculateConfidence(

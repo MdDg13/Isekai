@@ -35,6 +35,7 @@ async function loadPdfParse() {
       const moduleWithDefault = pdfModule as { default?: unknown; [key: string]: unknown };
       pdfParseFn = (moduleWithDefault.default || pdfModule) as typeof pdfParseFn;
     } catch (error) {
+      console.warn('Failed to import pdf-parse via dynamic import, trying require()', error);
       // Fallback to require for CommonJS compatibility
       try {
         // eslint-disable-next-line @typescript-eslint/no-require-imports
@@ -91,7 +92,7 @@ async function extractTextFromFile(filePath: string): Promise<string> {
     try {
       return await extractPDFText(filePath);
     } catch (error) {
-      console.log(`  Skipping PDF (extraction not available): ${path.basename(filePath)}`);
+      console.warn(`  Skipping PDF (extraction not available): ${path.basename(filePath)}`, error);
       return '';
     }
   } else if (ext === '.md' || ext === '.txt' || ext === '.html') {
@@ -179,7 +180,7 @@ function parseSpellsFromText(text: string, source: string): Array<Record<string,
           });
         }
       } catch (error) {
-        // Skip malformed entries
+        console.warn('Skipping malformed spell entry', error);
         continue;
       }
     }
@@ -244,6 +245,7 @@ function parseItemsFromText(text: string, source: string): Array<Record<string, 
           });
         }
       } catch (error) {
+        console.warn('Skipping malformed item entry', error);
         continue;
       }
     }
@@ -296,6 +298,7 @@ function parseMonstersFromText(text: string, source: string): Array<Record<strin
         source: source,
       });
     } catch (error) {
+      console.warn('Skipping malformed monster entry', error);
       continue;
     }
   }

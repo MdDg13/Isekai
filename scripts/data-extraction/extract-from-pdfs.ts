@@ -352,7 +352,7 @@ function parseItemsFromPDF(text: string, source: string): Array<Record<string, u
   // Pattern 4: Items in lists (bullet points or numbered lists)
   const itemPattern4 = /(?:^|\n)\s*(?:[-•*]|\d+[.)])\s*([A-Z][A-Za-z\s'-]{2,50}?)\s*(?:\([^)]+\))?\s*(?:[,\n]|$)/gim;
   
-  const patterns = [itemPattern1, itemPattern2, itemPattern3];
+  const patterns = [itemPattern1, itemPattern2, itemPattern3, itemPattern4];
   
   for (const pattern of patterns) {
     let match;
@@ -389,6 +389,8 @@ function parseItemsFromPDF(text: string, source: string): Array<Record<string, u
           kind = 'armor';
         } else if (lowerName.match(/\b(tool|kit)\b/)) {
           kind = 'tool';
+        } else if (kind === 'other' && itemKeywords.test(lowerName)) {
+          kind = 'equipment';
         }
         
         // Extract cost

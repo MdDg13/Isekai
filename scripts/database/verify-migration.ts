@@ -36,7 +36,7 @@ async function verifyViews(): Promise<VerificationResult[]> {
   for (const viewName of views) {
     const start = Date.now();
     try {
-      const { data, error } = await supabase.from(viewName).select('*').limit(1);
+      const { error } = await supabase.from(viewName).select('*').limit(1);
       const duration = Date.now() - start;
       results.push({
         name: `View: ${viewName}`,

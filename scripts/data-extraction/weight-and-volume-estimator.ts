@@ -21,6 +21,12 @@ const VOLUME_CATEGORIES = {
   'too big': { max_weight_kg: Infinity, max_volume: 'massive', description: 'Items too large to transport normally' },
 };
 
+const KNOWN_VOLUME_CATEGORIES = new Set<keyof typeof VOLUME_CATEGORIES>(Object.keys(VOLUME_CATEGORIES) as Array<keyof typeof VOLUME_CATEGORIES>);
+
+function normalizeVolumeCategory(category: string): keyof typeof VOLUME_CATEGORIES {
+  return KNOWN_VOLUME_CATEGORIES.has(category as keyof typeof VOLUME_CATEGORIES) ? (category as keyof typeof VOLUME_CATEGORIES) : 'held';
+}
+
 // Weight estimation patterns based on item descriptions
 const WEIGHT_ESTIMATES: Array<{
   pattern: RegExp;
@@ -93,28 +99,28 @@ export function estimateVolumeCategory(weight_kg: number | null, description: st
   // Check specific patterns first
   for (const estimate of WEIGHT_ESTIMATES) {
     if (estimate.pattern.test(combined)) {
-      return estimate.volume_category;
+      return normalizeVolumeCategory(estimate.volume_category);
     }
   }
   
   // If no pattern match, use weight-based estimation
   if (weight_kg === null || weight_kg === 0) {
     // Default to held if we can't determine
-    return 'held';
+    return normalizeVolumeCategory('held');
   }
   
-  if (weight_kg <= 2) return 'pouch';
+  if (weight_kg <= 2) return normalizeVolumeCategory('pouch');
   if (weight_kg <= 5) {
     // Check if it's a weapon (sheath/quiver) or other (bag)
     if (lowerName.match(/\b(sword|axe|bow|arrow|bolt|dagger|weapon)\b/)) {
-      return 'sheath/quiver';
+      return normalizeVolumeCategory('sheath/quiver');
     }
-    return 'held';
+    return normalizeVolumeCategory('held');
   }
-  if (weight_kg <= 10) return 'bag';
-  if (weight_kg <= 30) return 'backpack';
-  if (weight_kg <= 500) return 'wagon';
-  return 'too big';
+  if (weight_kg <= 10) return normalizeVolumeCategory('bag');
+  if (weight_kg <= 30) return normalizeVolumeCategory('backpack');
+  if (weight_kg <= 500) return normalizeVolumeCategory('wagon');
+  return normalizeVolumeCategory('too big');
 }
 
 /**

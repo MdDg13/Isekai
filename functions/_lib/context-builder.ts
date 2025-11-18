@@ -5,7 +5,7 @@
  * Used by generation pipelines to assemble context for AI prompts.
  */
 
-import { createClient, type SupabaseClient } from '@supabase/supabase-js';
+import type { SupabaseClient } from '@supabase/supabase-js';
 
 export interface SourceSnippet {
   id: string;

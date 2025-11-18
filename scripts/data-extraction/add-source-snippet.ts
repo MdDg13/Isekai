@@ -49,11 +49,19 @@ async function addSnippet() {
     console.log('1. public_domain  2. cc0  3. cc_by  4. cc_by_sa');
     console.log('5. open_game_license  6. orc  7. commercial_with_credit  8. synthetic');
     const licenseChoice = await question('License (1-8): ');
-    const licenses = [
-      'public_domain', 'cc0', 'cc_by', 'cc_by_sa',
-      'open_game_license', 'orc', 'commercial_with_credit', 'synthetic'
-    ];
-    const license = licenses[parseInt(licenseChoice) - 1] || 'synthetic';
+    const licenseOptions = [
+      'public_domain',
+      'cc0',
+      'cc_by',
+      'cc_by_sa',
+      'open_game_license',
+      'orc',
+      'commercial_with_credit',
+      'synthetic'
+    ] as const;
+    type LicenseOption = (typeof licenseOptions)[number];
+    const licenseIndex = Number.parseInt(licenseChoice, 10) - 1;
+    const license: LicenseOption = licenseOptions[licenseIndex] ?? 'synthetic';
 
     const excerpt = await question('\nExcerpt (description): ');
     if (!excerpt.trim()) {
@@ -82,7 +90,7 @@ async function addSnippet() {
     const insertData = {
       source_name: sourceName.trim(),
       source_link: sourceLink.trim() || null,
-      license: license as any,
+      license,
       excerpt: excerpt.trim(),
       tags: tags,
       archetype: archetype.trim() || null,

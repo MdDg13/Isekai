@@ -32,40 +32,9 @@ interface VerificationResult {
   message: string;
 }
 
-async function checkIndexExists(indexName: string): Promise<boolean> {
-  // Use RPC to check if index exists
-  // Note: Supabase doesn't have a direct way to query pg_indexes via REST
-  // We'll try to use a query that would fail if index doesn't exist, or check via direct SQL
-  // For now, we'll use a workaround: try to query and see if it's fast (indexed)
-  
-  // Better approach: Use Supabase's ability to run raw SQL via RPC (if available)
-  // Or check by attempting to create index and seeing if it already exists
-  
-  // Since we can't directly query pg_indexes via REST API, we'll verify by:
-  // 1. Checking if we can query efficiently (performance test)
-  // 2. Or providing manual verification steps
-  
-  return true; // Placeholder - will be verified manually
-}
-
-async function checkFunctionExists(functionName: string): Promise<boolean> {
-  // Similar limitation - can't directly query information_schema via REST
-  // We'll verify by attempting to use the function
-  try {
-    // Test by calling the function with sample data
-    const { data, error } = await supabase.rpc('exec_sql', {
-      query: `SELECT ${functionName}('{}'::jsonb)`,
-    });
-    return !error;
-  } catch {
-    // Function might not be callable via RPC, check via direct query
-    return false;
-  }
-}
-
 async function checkViewExists(viewName: string): Promise<boolean> {
   try {
-    const { data, error } = await supabase.from(viewName).select('*').limit(1);
+    const { error } = await supabase.from(viewName).select('*').limit(1);
     return !error;
   } catch {
     return false;
@@ -97,7 +66,9 @@ async function verifyMigration(): Promise<VerificationResult[]> {
   results.push({
     name: 'Table: world_element',
     passed: !tableError,
-    message: tableError ? `Error: ${tableError.message}` : 'Table exists and detail column accessible',
+    message: tableError
+      ? `Error: ${tableError.message}`
+      : `Table exists and detail column accessible (${tableData?.length || 0} sample rows)`,
   });
 
   // Test query performance (indirect index verification)

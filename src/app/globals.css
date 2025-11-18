@@ -1,13 +1,23 @@
 @import "tailwindcss";
 
 :root {
-  --background: #0b0b10; /* dark surface */
-  --foreground: #e5e7eb; /* text */
+  --background: #0b0b10;
+  --foreground: #e5e7eb;
   --muted: #a1a1aa;
   --border: #27272a;
-  --primary: #7c3aed; /* violet-600 */
+  --primary: #7c3aed;
   --primary-hover: #6d28d9;
-  --accent: #14b8a6; /* teal-500 */
+  --accent: #14b8a6;
+  --surface-base: #11131a;
+  --surface-muted: #171b24;
+  --surface-panel: #0f1118;
+  --surface-border: rgba(148, 163, 184, 0.25);
+  --surface-border-strong: rgba(148, 163, 184, 0.4);
+  --page-width-default: 72rem;
+  --page-width-wide: 78rem;
+  --page-width-narrow: 54rem;
+  --page-padding: clamp(1rem, 2vw, 2.25rem);
+  --card-shadow: 0 20px 35px rgba(15, 23, 42, 0.3);
 }
 
 @theme inline {
@@ -38,6 +48,12 @@ body.theme-light,
 body[data-theme='light'] {
   background: #f8fafc;
   color: #0f172a;
+  --surface-base: #ffffff;
+  --surface-muted: #f4f7fb;
+  --surface-panel: #f1f5f9;
+  --surface-border: rgba(15, 23, 42, 0.12);
+  --surface-border-strong: rgba(15, 23, 42, 0.2);
+  --card-shadow: 0 20px 30px rgba(15, 23, 42, 0.08);
 }
 
 body.theme-light .min-h-screen,
@@ -115,6 +131,77 @@ body[data-theme='light'] .border-gray-900,
 body[data-theme='light'] .divide-gray-800 > :not([hidden]) ~ :not([hidden]),
 body[data-theme='light'] .divide-gray-700 > :not([hidden]) ~ :not([hidden]) {
   border-color: #cbd5f5 !important;
+}
+
+.app-shell {
+  width: min(var(--page-width-default), 100%);
+  margin-inline: auto;
+  padding-inline: var(--page-padding);
+  position: relative;
+}
+
+.app-shell--wide {
+  max-width: min(var(--page-width-wide), 100%);
+}
+
+.app-shell--narrow {
+  max-width: min(var(--page-width-narrow), 100%);
+}
+
+.app-shell--bleed {
+  padding-inline: clamp(0.75rem, 2vw, 1.5rem);
+}
+
+.app-shell--padded {
+  padding-block: clamp(1rem, 2.5vw, 2.5rem);
+}
+
+.surface-card {
+  background-color: var(--surface-base);
+  border: 1px solid var(--surface-border);
+  border-radius: 1rem;
+  box-shadow: var(--card-shadow);
+  backdrop-filter: blur(4px);
+}
+
+.surface-card--muted {
+  background-color: var(--surface-muted);
+}
+
+.surface-panel {
+  background-color: var(--surface-panel);
+  border-radius: 0.75rem;
+}
+
+.surface-divider {
+  border-color: var(--surface-border-strong);
+}
+
+.surface-bordered {
+  border: 1px solid var(--surface-border);
+  border-radius: 0.75rem;
+}
+
+.theme-light .surface-card,
+body[data-theme='light'] .surface-card {
+  color: #0f172a;
+}
+
+.theme-light .surface-panel,
+body[data-theme='light'] .surface-panel {
+  color: #0f172a;
+}
+
+.app-root {
+  min-height: 100vh;
+  background: var(--background);
+  color: var(--foreground);
+}
+
+@media (max-width: 640px) {
+  .app-shell {
+    padding-inline: clamp(0.75rem, 4vw, 1.25rem);
+  }
 }
 
 .theme-light .bg-blue-600,

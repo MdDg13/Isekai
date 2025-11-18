@@ -61,7 +61,7 @@ async function assessNPCs() {
   }
 
   let contextUsedCount = 0;
-  let qualityIssues: string[] = [];
+  const qualityIssues: string[] = [];
 
   for (let i = 0; i < npcs.length; i++) {
     const npc = npcs[i];

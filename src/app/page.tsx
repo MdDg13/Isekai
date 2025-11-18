@@ -4,6 +4,7 @@ import { createClient } from "@supabase/supabase-js";
 import { useMemo, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import BuildBadge from "@/components/BuildBadge";
+import AppShell from "@/components/AppShell";
 
 export default function Home() {
   const supabase = useMemo(() => {
@@ -206,21 +207,21 @@ export default function Home() {
   };
 
   return (
-    <div className="min-h-screen bg-black text-white p-4 sm:p-6">
-      <div className="w-full max-w-5xl mx-auto">
-        <header className="mb-6 sm:mb-8">
-          <div className="mb-2">
+    <div className="min-h-screen">
+      <AppShell as="main" width="narrow" className="space-y-6">
+        <header className="mb-2 sm:mb-4">
+          <div className="mb-3">
             <h1 className="font-display text-2xl sm:text-3xl">Isekai</h1>
             <div className="mt-1">
               <BuildBadge />
             </div>
           </div>
           {user ? (
-            <div className="flex items-center justify-between">
-              <p className="text-xs sm:text-sm text-gray-400">Welcome, {user.email || 'User'}</p>
+            <div className="flex flex-col gap-2 sm:flex-row sm:items-center sm:justify-between text-sm text-gray-400">
+              <p>Welcome, {user.email || 'User'}</p>
               <button
                 onClick={onSignOut}
-                className="text-xs underline opacity-70 hover:opacity-100"
+                className="text-xs underline opacity-80 hover:opacity-100"
               >
                 Sign out
               </button>
@@ -233,7 +234,7 @@ export default function Home() {
         {user ? (
           <div className="space-y-4">
             {/* World Selection */}
-            <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-4 sm:p-6">
+            <div className="surface-card p-4 sm:p-6">
               <div className="flex items-center justify-between mb-4">
                 <h2 className="text-lg sm:text-xl font-medium">World Selection</h2>
                 <button
@@ -249,7 +250,7 @@ export default function Home() {
               ) : (
                 <div className="space-y-3">
                   {worlds.map((world) => (
-                    <div key={world.id} className="rounded-lg border border-gray-800 bg-gray-900/30 p-4">
+                    <div key={world.id} className="surface-panel surface-bordered p-4">
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
                           <Link
@@ -274,9 +275,9 @@ export default function Home() {
 
                       {/* Create Campaign Form for this world */}
                       {creatingCampaignForWorld === world.id && (
-                        <div className="rounded-md border border-gray-700 bg-gray-900/50 p-3 mb-3">
+                        <div className="surface-panel surface-bordered p-3 mb-3">
                           <input
-                            className="w-full rounded-md border border-gray-700 bg-gray-900/50 p-2 text-sm outline-none focus:border-blue-600 mb-2"
+                            className="w-full rounded-md border border-gray-700 bg-gray-900/20 p-2 text-sm outline-none focus:border-blue-600 mb-2"
                             type="text"
                             placeholder="Campaign name"
                             value={newCampaignName}
@@ -339,10 +340,10 @@ export default function Home() {
 
             {/* Create World Form */}
             {showCreateWorld && (
-              <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-4 sm:p-6">
+              <div className="surface-card p-4 sm:p-6">
                 <h3 className="text-lg font-medium mb-4">Create New World</h3>
                 <input
-                  className="w-full rounded-md border border-gray-700 bg-gray-900/50 p-3 text-sm outline-none focus:border-blue-600 mb-3"
+                  className="w-full rounded-md border border-gray-700 bg-gray-900/20 p-3 text-sm outline-none focus:border-blue-600 mb-3"
                   type="text"
                   placeholder="World name"
                   value={newWorldName}
@@ -371,10 +372,10 @@ export default function Home() {
             {status && <p className="text-sm text-gray-300">{status}</p>}
           </div>
         ) : (
-          <div className="rounded-lg border border-gray-800 bg-gray-900/50 p-4 sm:p-6">
+          <div className="surface-card p-4 sm:p-6">
             <label className="mb-2 block text-sm font-medium">Email</label>
             <input
-              className="w-full rounded-md border border-gray-700 bg-gray-900/50 p-3 text-sm outline-none focus:border-blue-600"
+              className="w-full rounded-md border border-gray-700 bg-gray-900/20 p-3 text-sm outline-none focus:border-blue-600"
               type="email"
               placeholder="you@example.com"
               value={email}
@@ -390,7 +391,7 @@ export default function Home() {
             {status && <p className="mt-2 text-sm text-gray-300">{status}</p>}
           </div>
         )}
-      </div>
+      </AppShell>
     </div>
   );
 }

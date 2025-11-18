@@ -223,7 +223,6 @@ export const onRequest: PagesFunction = async (context) => {
       // Get world context and source snippets for richer generation
       logger.startStep('context_fetch');
       let worldContextText = '';
-      let contextFetched = false;
       try {
         logger.log({
           step: 'context_fetch',
@@ -273,7 +272,6 @@ export const onRequest: PagesFunction = async (context) => {
         };
         
         worldContextText = formatContextForPrompt(combinedContext);
-        contextFetched = true;
         
         logger.log({
           step: 'context_fetch',

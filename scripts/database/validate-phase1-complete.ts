@@ -39,7 +39,7 @@ async function validateViews(): Promise<void> {
 
   for (const viewName of views) {
     try {
-      const { data, error } = await supabase.from(viewName).select('*').limit(1);
+      const { error } = await supabase.from(viewName).select('*').limit(1);
       results.push({
         category: 'Views',
         name: viewName,
@@ -63,7 +63,7 @@ async function validateTableStructure(): Promise<void> {
   console.log('\n📋 Validating Table Structure...\n');
 
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('world_element')
       .select('id, type, name, detail')
       .limit(1);
@@ -90,7 +90,7 @@ async function validateElementLinkTable(): Promise<void> {
   console.log('\n🔗 Validating Element Link Table...\n');
 
   try {
-    const { data, error } = await supabase
+    const { error } = await supabase
       .from('element_link')
       .select('id, from_element, to_element, link_type')
       .limit(1);

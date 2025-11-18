@@ -30,7 +30,9 @@ export default function RootLayout({
     <html lang="en">
       <body className={`${inter.variable} ${unbounded.variable} antialiased`}>
         <ThemeProvider>
-          {children}
+          <div className="app-root">
+            {children}
+          </div>
           <GlobalSettingsButton />
         </ThemeProvider>
       </body>

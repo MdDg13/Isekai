@@ -95,8 +95,8 @@ function generateQCReport(
       const sourceFile = findSourceFile(item.source, sourceTextDir);
       if (sourceFile) {
         const sourceText = fs.readFileSync(sourceFile, 'utf-8');
-        qcItem.sourceText = extractRelevantText(sourceText, item.name, dataType);
-        qcItem.sourceContext = extractContext(sourceText, item.name, dataType);
+        qcItem.sourceText = extractRelevantText(sourceText, item.name);
+        qcItem.sourceContext = extractContext(sourceText, item.name);
       }
     }
     
@@ -148,7 +148,7 @@ function findSourceFile(source: string, sourceTextDir?: string): string | null {
 /**
  * Extract relevant text around the item name
  */
-function extractRelevantText(sourceText: string, itemName: string, _dataType: string): string {
+function extractRelevantText(sourceText: string, itemName: string): string {
   const namePattern = new RegExp(itemName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
   const match = sourceText.search(namePattern);
   
@@ -165,7 +165,7 @@ function extractRelevantText(sourceText: string, itemName: string, _dataType: st
 /**
  * Extract context (wider view) around the item
  */
-function extractContext(sourceText: string, itemName: string, _dataType: string): string {
+function extractContext(sourceText: string, itemName: string): string {
   const namePattern = new RegExp(itemName.replace(/[.*+?^${}()|[\]\\]/g, '\\$&'), 'i');
   const match = sourceText.search(namePattern);
   
