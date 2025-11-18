@@ -1,0 +1,83 @@
+{
+  "source_name": "Conflict Hooks",
+  "source_link": "RPG conflict design patterns",
+  "license": "synthetic",
+  "snippets": [
+    {
+      "excerpt": "Resource scarcity forces difficult choices. A community needs water, but the only source is controlled by a rival group. Negotiation requires giving up something valuable. Violence will solve it quickly but create lasting enemies. Time is running out.",
+      "tags": ["conflict", "resource", "scarcity", "moral-choice", "time-pressure"],
+      "archetype": "resource conflict",
+      "conflict_hook": "Water source is poisoned, but the poison is also the only cure for a spreading disease. Heroes must find alternative solution or choose who lives.",
+      "rp_cues": ["people are desperate", "tempers flare easily", "every decision has consequences", "no perfect solution"],
+      "culture": "universal",
+      "biome": "any",
+      "tone": "tense",
+      "mechanics": {
+        "suggested_resolution": ["negotiation", "finding alternative", "force", "sacrifice"],
+        "stakes": "community survival"
+      },
+      "quality_score": 81
+    },
+    {
+      "excerpt": "Ancient prophecy coming true in unexpected way. Everyone interprets it differently. Some see it as salvation, others as doom. The actual events don't match any interpretation exactly. Heroes must figure out what's really happening before factions act on their beliefs.",
+      "tags": ["conflict", "prophecy", "misinterpretation", "faction", "mystery"],
+      "archetype": "prophetic conflict",
+      "conflict_hook": "Prophecy says a chosen one will save/destroy the world. Multiple people claim to be chosen. The real chosen one doesn't want the role. Factions are fighting over who to support.",
+      "rp_cues": ["people quote prophecy constantly", "signs appear everywhere", "factions argue interpretation", "time feels significant"],
+      "culture": "universal",
+      "biome": "any",
+      "tone": "urgent",
+      "mechanics": {
+        "suggested_resolution": ["reinterpretation", "preventing prophecy", "finding true chosen", "breaking prophecy"],
+        "stakes": "world-changing event"
+      },
+      "quality_score": 82
+    },
+    {
+      "excerpt": "Succession crisis with no clear heir. Multiple claimants, each with valid arguments. The previous ruler left conflicting instructions. External powers back different candidates. The longer it goes unresolved, the more the realm fractures.",
+      "tags": ["conflict", "political", "succession", "faction", "power-struggle"],
+      "archetype": "succession crisis",
+      "conflict_hook": "True heir is missing, presumed dead. Three claimants emerge. One is actually the heir in disguise. Another has the best claim but worst character. Third has popular support but weak claim. War looms.",
+      "rp_cues": ["nobles take sides", "commoners are divided", "foreign agents everywhere", "everyone has an agenda"],
+      "culture": "feudal",
+      "biome": "urban",
+      "tone": "political",
+      "mechanics": {
+        "suggested_resolution": ["finding true heir", "supporting best candidate", "creating new system", "preventing war"],
+        "stakes": "realm stability"
+      },
+      "quality_score": 83
+    },
+    {
+      "excerpt": "Cursed artifact spreading its influence. Those who touch it gain power but lose something important. The curse grows stronger each time it's used. Destroying it might release something worse. Hiding it just delays the problem.",
+      "tags": ["conflict", "curse", "artifact", "corruption", "power-temptation"],
+      "archetype": "cursed power",
+      "conflict_hook": "Artifact is in the hands of someone who doesn't know the cost. They're using it to help people, but each use corrupts them and spreads the curse. Heroes must stop them before it's too late, but the user thinks they're doing good.",
+      "rp_cues": ["users look increasingly haggard", "power feels wrong", "victims show signs of corruption", "artifact seems to whisper"],
+      "culture": "universal",
+      "biome": "any",
+      "tone": "corrupting",
+      "mechanics": {
+        "suggested_resolution": ["destroying artifact", "breaking curse", "containing artifact", "sacrificing to save others"],
+        "stakes": "widespread corruption"
+      },
+      "quality_score": 84
+    },
+    {
+      "excerpt": "Natural disaster approaching, but preparation requires resources the community doesn't have. Some want to flee, others to fortify. The disaster might not come, but waiting means certain doom if it does. Outsiders offer help at a terrible price.",
+      "tags": ["conflict", "disaster", "preparation", "resource", "time-pressure"],
+      "archetype": "impending disaster",
+      "conflict_hook": "Volcano will erupt, but evacuation requires crossing enemy territory. Fortifying means abandoning outlying settlements. A dragon offers protection in exchange for tribute that will impoverish the community for generations.",
+      "rp_cues": ["signs of disaster everywhere", "people are panicking", "leaders are divided", "time is running out"],
+      "culture": "universal",
+      "biome": "any",
+      "tone": "desperate",
+      "mechanics": {
+        "suggested_resolution": ["evacuation", "fortification", "negotiating with threat", "finding alternative"],
+        "stakes": "community survival"
+      },
+      "quality_score": 82
+    }
+  ]
+}
+

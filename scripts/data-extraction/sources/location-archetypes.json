@@ -1,0 +1,83 @@
+{
+  "source_name": "Location Archetypes",
+  "source_link": "RPG location design patterns",
+  "license": "synthetic",
+  "snippets": [
+    {
+      "excerpt": "Abandoned watchtower on a cliff edge, half-collapsed but still offering commanding views. Wind howls through broken windows. Ancient signal fires still burn mysteriously. Perfect vantage point for spotting approaching threats or hidden paths.",
+      "tags": ["location", "structure", "ruin", "watchtower", "strategic", "elevated"],
+      "archetype": "strategic ruin",
+      "conflict_hook": "Bandits use it as hideout, but the original owners' ghosts still guard it. Heroes must choose: fight bandits or negotiate with spirits.",
+      "rp_cues": ["wind sounds like voices", "fires never go out", "feeling of being watched", "ancient symbols carved in stone"],
+      "culture": "military",
+      "biome": "mountain",
+      "tone": "haunted",
+      "mechanics": {
+        "suggested_features": ["advantage on perception checks", "difficult terrain", "hidden passages"],
+        "hazards": ["collapsing floor", "wind exposure", "ghostly encounters"]
+      },
+      "quality_score": 82
+    },
+    {
+      "excerpt": "Underground market hidden beneath the city, accessible only through secret entrances. Stalls carved from natural caves, lit by glowing fungi. Merchants trade in contraband, information, and rare artifacts. Always crowded, always watching for authorities.",
+      "tags": ["location", "settlement", "market", "underground", "criminal", "urban"],
+      "archetype": "hidden marketplace",
+      "conflict_hook": "City guard plans raid. Market leaders need heroes to either warn everyone or help set up new location. Some merchants have information worth protecting.",
+      "rp_cues": ["whispers echo strangely", "merchants use hand signals", "guards posted at every entrance", "strange goods from distant lands"],
+      "culture": "urban",
+      "biome": "underground",
+      "tone": "secretive",
+      "mechanics": {
+        "suggested_features": ["advantage on stealth", "information gathering", "rare item availability"],
+        "hazards": ["getting lost", "pickpockets", "guard patrols"]
+      },
+      "quality_score": 83
+    },
+    {
+      "excerpt": "Ancient library built into a living tree, books growing on branches like fruit. Reading a book causes it to wither, but new ones sprout with different knowledge. Librarian is the tree's spirit, speaks through rustling leaves. Knowledge here is alive and changes.",
+      "tags": ["location", "structure", "library", "magical", "nature", "mysterious"],
+      "archetype": "living archive",
+      "conflict_hook": "Disease threatens the tree. Books are dying faster than they grow. Heroes must find the source of corruption or help the spirit relocate to a new tree.",
+      "rp_cues": ["leaves whisper when you approach", "books pulse with inner light", "floor feels like walking on roots", "scent of old paper and growing things"],
+      "culture": "druidic",
+      "biome": "forest",
+      "tone": "mystical",
+      "mechanics": {
+        "suggested_features": ["advantage on knowledge checks", "spell research", "nature magic enhancement"],
+        "hazards": ["getting lost in knowledge", "cursed books", "tree's mood affects access"]
+      },
+      "quality_score": 85
+    },
+    {
+      "excerpt": "Floating island tethered by massive chains to the ground below. Weather patterns are strange here, with localized storms and clear skies existing simultaneously. Inhabitants have adapted to the shifting gravity and wind patterns. Perfect for airship docking.",
+      "tags": ["location", "settlement", "floating", "aerial", "magical", "unique"],
+      "archetype": "sky settlement",
+      "conflict_hook": "Chains are weakening. Island will drift away or crash. Heroes must repair ancient mechanisms or find alternative anchoring. Some want it to drift free, others want it grounded.",
+      "rp_cues": ["wind changes direction suddenly", "gravity feels lighter", "clouds pass through structures", "inhabitants walk with careful balance"],
+      "culture": "aerial",
+      "biome": "sky",
+      "tone": "precarious",
+      "mechanics": {
+        "suggested_features": ["airship docking", "wind magic", "unique crafting materials"],
+        "hazards": ["falling", "wind storms", "chain failure"]
+      },
+      "quality_score": 84
+    },
+    {
+      "excerpt": "Crossroads where three major trade routes meet, marked by an ancient stone circle. Travelers leave offerings for safe passage. Local inn is built around the central stone, rooms arranged in a spiral. Stories say the crossroads can lead to other worlds if you know the right path.",
+      "tags": ["location", "landmark", "crossroads", "inn", "magical", "trade"],
+      "archetype": "mystical waypoint",
+      "conflict_hook": "One of the paths has been corrupted, leading travelers to dangerous planes. Innkeeper needs heroes to close the corrupted path or find who opened it. Some travelers are trapped.",
+      "rp_cues": ["compass spins erratically", "strange travelers from other worlds", "offerings disappear overnight", "innkeeper knows more than they say"],
+      "culture": "cosmopolitan",
+      "biome": "plains",
+      "tone": "mysterious",
+      "mechanics": {
+        "suggested_features": ["planar travel", "information hub", "safe rest"],
+        "hazards": ["wrong path", "planar creatures", "corrupted magic"]
+      },
+      "quality_score": 83
+    }
+  ]
+}
+
