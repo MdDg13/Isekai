@@ -23,7 +23,7 @@ export default function SettingsPage() {
 }
 
 function SettingsClient() {
-  const [activeTab, setActiveTab] = useState<'data-browser' | 'feedback' | 'account' | 'preferences'>('data-browser');
+  const [activeTab, setActiveTab] = useState<'data-browser' | 'source-library' | 'feedback' | 'account' | 'preferences'>('data-browser');
   const [selectedTable, setSelectedTable] = useState<TableType | null>(null);
   const [tableData, setTableData] = useState<TableData[]>([]);
   const [loading, setLoading] = useState(false);
@@ -132,6 +132,16 @@ function SettingsClient() {
               }`}
             >
               Data Browser
+            </button>
+            <button
+              onClick={() => setActiveTab('source-library')}
+              className={`pb-3 px-2 text-sm font-medium border-b-2 transition-colors ${
+                activeTab === 'source-library'
+                  ? 'border-blue-500 text-blue-400'
+                  : 'border-transparent text-gray-400 hover:text-gray-300'
+              }`}
+            >
+              Source Library
             </button>
             <button
               onClick={() => setActiveTab('feedback')}
