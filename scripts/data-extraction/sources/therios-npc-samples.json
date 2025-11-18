@@ -1,0 +1,168 @@
+{
+  "source_name": "Therios NPC Samples (Internal)",
+  "license": "Internal - Curated Examples",
+  "source_url": "docs/NPC_THERIOS_SAMPLES.md",
+  "snippets": [
+    {
+      "type": "npc_archetype",
+      "content": "Tiefling archivist who curates forbidden knowledge and records dreams as history. Patron demon demands historical corrections favoring infernal dynasty. Sleepwalks while writing; pages contain prophecies when read backward.",
+      "culture_tags": ["infernal", "scholarly"],
+      "archetype_tags": ["scholar", "keeper", "trickster"],
+      "conflict_tags": ["moral-dilemma", "supernatural-burden"],
+      "tone_tags": ["mysterious", "dark"],
+      "mechanical_tags": ["information-broker", "puzzle-solver"],
+      "quality_score": 95,
+      "metadata": {
+        "race": "tiefling",
+        "class": "wizard",
+        "location": "Sapphire Athenaeum",
+        "example_name": "Eris Thornwell"
+      }
+    },
+    {
+      "type": "npc_archetype",
+      "content": "Dwarven tunnel-monk, former mercenary who founded a meditation order inside a magma duct. Iron Syndicate wants his tunnels as a smuggling route. Uses pressure-point strikes that extinguish torches; brews calming tea from volcanic herbs.",
+      "culture_tags": ["dwarven", "monastic"],
+      "archetype_tags": ["monk", "guardian", "reformed"],
+      "conflict_tags": ["resource-conflict", "gang-pressure"],
+      "tone_tags": ["heroic", "contemplative"],
+      "mechanical_tags": ["combat-focused", "quest-giver"],
+      "quality_score": 90,
+      "metadata": {
+        "race": "dwarf",
+        "class": "monk",
+        "location": "Volcanic tunnels",
+        "example_name": "Bram Coalhook"
+      }
+    },
+    {
+      "type": "npc_archetype",
+      "content": "Human itinerant judge who travels with a clockwork scale that weighs intent rather than goods. Guilty nobles have placed a price on her head. Can deputize PCs with parchment badges that glow when oaths are broken.",
+      "culture_tags": ["human", "judicial"],
+      "archetype_tags": ["judge", "wanderer", "justice-seeker"],
+      "conflict_tags": ["political-intrigue", "assassination-threat"],
+      "tone_tags": ["heroic", "mysterious"],
+      "mechanical_tags": ["quest-giver", "social-encounter"],
+      "quality_score": 92,
+      "metadata": {
+        "race": "human",
+        "class": "paladin",
+        "location": "itinerant",
+        "example_name": "Lysa Quillwater"
+      }
+    },
+    {
+      "type": "npc_archetype",
+      "content": "Elven meteor shepherd who herds falling stars into crystal nets for spellcasters. Astral Port Authority accuses him of tax evasion on cosmic debris. Has a stable of 'shooting star' familiars that illuminate sky routes.",
+      "culture_tags": ["elven", "astral"],
+      "archetype_tags": ["shepherd", "merchant", "outcast"],
+      "conflict_tags": ["tax-evasion", "bureaucratic-conflict"],
+      "tone_tags": ["whimsical", "mysterious"],
+      "mechanical_tags": ["merchant", "information-broker"],
+      "quality_score": 88,
+      "metadata": {
+        "race": "elf",
+        "class": "ranger",
+        "location": "astral plane",
+        "example_name": "Tovin Starfallow"
+      }
+    },
+    {
+      "type": "npc_archetype",
+      "content": "Halfling river warden who guards a floating temple barge housing refugees. Plague cult insists the barge carries their 'chosen vectors.' Reads currents like tea leaves; can hide an entire fleet in fog she summons.",
+      "culture_tags": ["halfling", "riverine"],
+      "archetype_tags": ["guardian", "healer", "mystic"],
+      "conflict_tags": ["cult-threat", "refugee-crisis"],
+      "tone_tags": ["hopeful", "mysterious"],
+      "mechanical_tags": ["quest-giver", "puzzle-solver"],
+      "quality_score": 91,
+      "metadata": {
+        "race": "halfling",
+        "class": "cleric",
+        "location": "floating barge",
+        "example_name": "Mara Driftline"
+      }
+    },
+    {
+      "type": "npc_archetype",
+      "content": "Warforged gossipwright who embeds resonant crystals in taverns to record oral history. Tyrant wants the recordings erased before a rebellion trial. Plays memories aloud as illusions; drinks oil mixed with espresso.",
+      "culture_tags": ["warforged", "urban"],
+      "archetype_tags": ["historian", "information-broker", "rebel"],
+      "conflict_tags": ["political-intrigue", "censorship"],
+      "tone_tags": ["mysterious", "dark"],
+      "mechanical_tags": ["information-broker", "quest-giver"],
+      "quality_score": 89,
+      "metadata": {
+        "race": "warforged",
+        "class": "bard",
+        "location": "taverns",
+        "example_name": "Gregor Vox"
+      }
+    },
+    {
+      "type": "npc_archetype",
+      "content": "Half-elf mirror ranger who tracks creatures across planar reflections. Her soul is split; 'other Selene' trades favors with shadow courts. Can manifest the last thing a mirror saw for one round.",
+      "culture_tags": ["half-elf", "planar"],
+      "archetype_tags": ["ranger", "hunter", "split-personality"],
+      "conflict_tags": ["supernatural-burden", "planar-conflict"],
+      "tone_tags": ["mysterious", "dark"],
+      "mechanical_tags": ["combat-focused", "information-broker"],
+      "quality_score": 87,
+      "metadata": {
+        "race": "half-elf",
+        "class": "ranger",
+        "location": "planar boundaries",
+        "example_name": "Selene Blackfen"
+      }
+    },
+    {
+      "type": "npc_archetype",
+      "content": "Kenku bone-luthier who crafts instruments from dinosaurs unearthed in Therios. Paleontological Guild claims he desecrates sacred fossils. Instruments grant bardic inspiration flavored by specific dinosaurs (rage, tranquility, stealth).",
+      "culture_tags": ["kenku", "artisan"],
+      "archetype_tags": ["artisan", "merchant", "outcast"],
+      "conflict_tags": ["religious-conflict", "guild-dispute"],
+      "tone_tags": ["whimsical", "contemplative"],
+      "mechanical_tags": ["merchant", "quest-giver"],
+      "quality_score": 86,
+      "metadata": {
+        "race": "kenku",
+        "class": "bard",
+        "location": "workshop",
+        "example_name": "Oro Finch"
+      }
+    },
+    {
+      "type": "npc_archetype",
+      "content": "Dragonborn lightning broker who sells bottled storms to artificers. Storm giant wants his stolen thundercloud back. Lightning tattoos arc between clients, letting her eavesdrop magically.",
+      "culture_tags": ["dragonborn", "mercantile"],
+      "archetype_tags": ["merchant", "trickster", "spy"],
+      "conflict_tags": ["theft", "giant-anger"],
+      "tone_tags": ["mysterious", "comedic"],
+      "mechanical_tags": ["merchant", "information-broker"],
+      "quality_score": 88,
+      "metadata": {
+        "race": "dragonborn",
+        "class": "sorcerer",
+        "location": "marketplace",
+        "example_name": "Nadina Brassveil"
+      }
+    },
+    {
+      "type": "npc_archetype",
+      "content": "Human penitent vampire who keeps himself anaemic by donating blood to orphanages he funds. His sire wants the tithe stopped and the orphans turned into a thrall choir. Uses mirrored gauntlets to reflect sunlight; carries contracts that bind fiends into monastery service.",
+      "culture_tags": ["human", "monastic"],
+      "archetype_tags": ["vampire", "penitent", "guardian"],
+      "conflict_tags": ["family-drama", "moral-dilemma", "redemption"],
+      "tone_tags": ["tragic", "hopeful"],
+      "mechanical_tags": ["quest-giver", "combat-focused"],
+      "quality_score": 93,
+      "metadata": {
+        "race": "human",
+        "class": "paladin",
+        "location": "monastery",
+        "example_name": "Brother Cale Driftveil"
+      }
+    }
+  ]
+}
+
