@@ -12,49 +12,51 @@ BEGIN;
 -- ============================================
 
 -- NPC identity indexes (for filtering NPCs by race, class, level)
+-- Using B-tree for text fields (better for exact matches than GIN)
 CREATE INDEX IF NOT EXISTS idx_npc_race 
-  ON world_element USING GIN ((detail->'identity'->>'race'))
-  WHERE type = 'npc';
+  ON world_element ((detail->'identity'->>'race'))
+  WHERE type = 'npc' AND detail->'identity'->>'race' IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_npc_class 
-  ON world_element USING GIN ((detail->'identity'->>'class'))
-  WHERE type = 'npc';
+  ON world_element ((detail->'identity'->>'class'))
+  WHERE type = 'npc' AND detail->'identity'->>'class' IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_npc_level 
-  ON world_element ((detail->'identity'->>'level'))
-  WHERE type = 'npc';
+  ON world_element (((detail->'identity'->>'level')::INTEGER))
+  WHERE type = 'npc' AND detail->'identity'->>'level' IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_npc_alignment 
-  ON world_element USING GIN ((detail->'identity'->>'alignment'))
-  WHERE type = 'npc';
+  ON world_element ((detail->'identity'->>'alignment'))
+  WHERE type = 'npc' AND detail->'identity'->>'alignment' IS NOT NULL;
 
 -- NPC conflict index (for finding NPCs with active conflicts)
 CREATE INDEX IF NOT EXISTS idx_npc_conflict 
-  ON world_element USING GIN ((detail->'conflict'->>'active_conflict'))
-  WHERE type = 'npc';
+  ON world_element ((detail->'conflict'->>'active_conflict'))
+  WHERE type = 'npc' AND detail->'conflict'->>'active_conflict' IS NOT NULL;
 
 -- NPC location link index (for finding NPCs at a location)
+-- UUID stored as text in JSONB, so we index the text and cast in queries
 CREATE INDEX IF NOT EXISTS idx_npc_primary_location 
-  ON world_element USING GIN ((detail->'world_integration'->>'primary_location_id'))
-  WHERE type = 'npc';
+  ON world_element ((detail->'world_integration'->>'primary_location_id'))
+  WHERE type = 'npc' AND detail->'world_integration'->>'primary_location_id' IS NOT NULL;
 
 -- Location type and biome indexes
 CREATE INDEX IF NOT EXISTS idx_location_type 
-  ON world_element USING GIN ((detail->'identity'->>'type'))
-  WHERE type = 'location';
+  ON world_element ((detail->'identity'->>'type'))
+  WHERE type = 'location' AND detail->'identity'->>'type' IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_location_biome 
-  ON world_element USING GIN ((detail->'geography'->>'biome'))
-  WHERE type = 'location';
+  ON world_element ((detail->'geography'->>'biome'))
+  WHERE type = 'location' AND detail->'geography'->>'biome' IS NOT NULL;
 
 CREATE INDEX IF NOT EXISTS idx_location_region 
-  ON world_element USING GIN ((detail->'geography'->>'region'))
-  WHERE type = 'location';
+  ON world_element ((detail->'geography'->>'region'))
+  WHERE type = 'location' AND detail->'geography'->>'region' IS NOT NULL;
 
 -- Faction indexes
 CREATE INDEX IF NOT EXISTS idx_faction_type 
-  ON world_element USING GIN ((detail->'identity'->>'type'))
-  WHERE type = 'faction';
+  ON world_element ((detail->'identity'->>'type'))
+  WHERE type = 'faction' AND detail->'identity'->>'type' IS NOT NULL;
 
 -- General indexes for element_link queries
 CREATE INDEX IF NOT EXISTS idx_element_link_from 
@@ -183,19 +185,19 @@ COMMENT ON COLUMN world_element.detail IS
    - Map: identity, spatial, layers, markers, routes';
 
 COMMENT ON INDEX idx_npc_race IS 
-  'GIN index for filtering NPCs by race. Query: WHERE type = ''npc'' AND detail->''identity''->>''race'' = ''human''';
+  'B-tree index for filtering NPCs by race. Query: WHERE type = ''npc'' AND detail->''identity''->>''race'' = ''human''';
 
 COMMENT ON INDEX idx_npc_class IS 
-  'GIN index for filtering NPCs by class. Query: WHERE type = ''npc'' AND detail->''identity''->>''class'' = ''wizard''';
+  'B-tree index for filtering NPCs by class. Query: WHERE type = ''npc'' AND detail->''identity''->>''class'' = ''wizard''';
 
 COMMENT ON INDEX idx_npc_level IS 
   'B-tree index for filtering NPCs by level. Query: WHERE type = ''npc'' AND (detail->''identity''->>''level'')::INTEGER >= 5';
 
 COMMENT ON INDEX idx_npc_conflict IS 
-  'GIN index for finding NPCs with active conflicts. Query: WHERE type = ''npc'' AND detail->''conflict''->>''active_conflict'' IS NOT NULL';
+  'B-tree index for finding NPCs with active conflicts. Query: WHERE type = ''npc'' AND detail->''conflict''->>''active_conflict'' IS NOT NULL';
 
 COMMENT ON INDEX idx_npc_primary_location IS 
-  'GIN index for finding NPCs at a specific location. Query: WHERE type = ''npc'' AND detail->''world_integration''->>''primary_location_id'' = ''<uuid>''';
+  'B-tree index for finding NPCs at a specific location. Query: WHERE type = ''npc'' AND detail->''world_integration''->>''primary_location_id'' = ''<uuid>''';
 
 COMMENT ON VIEW npc_with_location IS 
   'Convenience view joining NPCs with their primary location for common queries';
