@@ -1,0 +1,83 @@
+{
+  "source_name": "Folklore & Mythology Archetypes",
+  "source_link": "Public domain folklore collections",
+  "license": "public_domain",
+  "snippets": [
+    {
+      "excerpt": "Trickster figure who uses wit and cunning to outsmart stronger opponents. Speaks in riddles and wordplay. Leaves behind clues that seem nonsensical but reveal deeper truths. Often appears when heroes are stuck or need unconventional solutions.",
+      "tags": ["npc", "archetype", "trickster", "mentor", "folklore", "cunning"],
+      "archetype": "trickster mentor",
+      "conflict_hook": "Villain has captured trickster's family, forcing them to serve evil. Trickster needs heroes to break the curse while maintaining their reputation.",
+      "rp_cues": ["speaks in riddles", "leaves cryptic clues", "appears when least expected", "laughs at own cleverness"],
+      "culture": "universal",
+      "biome": "any",
+      "tone": "playful",
+      "mechanics": {
+        "suggested_class": "bard or rogue",
+        "key_abilities": ["deception", "insight", "performance"]
+      },
+      "quality_score": 82
+    },
+    {
+      "excerpt": "Wise elder who guards ancient knowledge and traditions. Speaks slowly, choosing words carefully. Offers cryptic advice that becomes clear only in hindsight. Protects sacred sites and teaches through stories rather than direct instruction.",
+      "tags": ["npc", "archetype", "elder", "mentor", "knowledge-keeper", "folklore"],
+      "archetype": "wise elder guardian",
+      "conflict_hook": "Forces seek to destroy the sacred knowledge. Elder must choose between preserving secrets and helping heroes who need that knowledge to save the world.",
+      "rp_cues": ["speaks slowly and deliberately", "tells stories instead of giving answers", "touches sacred objects while speaking", "eyes seem to see beyond the present"],
+      "culture": "universal",
+      "biome": "any",
+      "tone": "reverent",
+      "mechanics": {
+        "suggested_class": "cleric or druid",
+        "key_abilities": ["history", "religion", "insight"]
+      },
+      "quality_score": 80
+    },
+    {
+      "excerpt": "Wandering storyteller who carries news and legends between settlements. Knows everyone's business but keeps most secrets. Sings songs that contain hidden warnings or coded messages. Always has a new tale that somehow relates to current events.",
+      "tags": ["npc", "archetype", "storyteller", "information-broker", "wanderer", "folklore"],
+      "archetype": "wandering messenger",
+      "conflict_hook": "Knows a secret that could prevent a war, but revealing it would break an oath. Needs heroes to discover the truth through other means so the secret can be 'accidentally' confirmed.",
+      "rp_cues": ["sings while traveling", "pauses dramatically in stories", "winks when telling important parts", "always knows more than they say"],
+      "culture": "universal",
+      "biome": "any",
+      "tone": "mysterious",
+      "mechanics": {
+        "suggested_class": "bard",
+        "key_abilities": ["performance", "persuasion", "investigation"]
+      },
+      "quality_score": 81
+    },
+    {
+      "excerpt": "Cursed individual who transforms between human and beast forms. Struggles with the animal instincts that grow stronger each transformation. Seeks a cure but fears losing the power that protects their community. Shows physical signs of the curse even in human form.",
+      "tags": ["npc", "archetype", "cursed", "shapeshifter", "conflicted", "folklore"],
+      "archetype": "cursed protector",
+      "conflict_hook": "The curse is spreading to others. Must choose between accepting the transformation fully or finding a cure that might leave the community defenseless.",
+      "rp_cues": ["flinches at sudden movements", "sniffs the air unconsciously", "grows agitated during full moon", "has animal-like eyes"],
+      "culture": "universal",
+      "biome": "any",
+      "tone": "tragic",
+      "mechanics": {
+        "suggested_class": "barbarian or ranger",
+        "key_abilities": ["survival", "athletics", "perception"]
+      },
+      "quality_score": 83
+    },
+    {
+      "excerpt": "Master craftsman who creates items of legendary quality but demands unusual payment. Might ask for a memory, a promise, or a favor to be called in later. Workshop is filled with half-finished projects that tell stories. Speaks to tools and materials as if they're alive.",
+      "tags": ["npc", "archetype", "craftsman", "merchant", "magical", "folklore"],
+      "archetype": "enigmatic artisan",
+      "conflict_hook": "A powerful entity wants the craftsman's soul as payment for a past debt. Heroes must find an alternative payment or break the original contract.",
+      "rp_cues": ["murmurs to tools while working", "touches items with reverence", "eyes light up when discussing craft", "refuses gold, wants something personal"],
+      "culture": "universal",
+      "biome": "urban",
+      "tone": "mysterious",
+      "mechanics": {
+        "suggested_class": "artificer or wizard",
+        "key_abilities": ["arcana", "investigation", "persuasion"]
+      },
+      "quality_score": 84
+    }
+  ]
+}
+

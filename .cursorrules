@@ -462,7 +462,8 @@ Denied
 Guardrails
 - Add timeouts; cancel tasks running >30s with no output.
 - Prefer small batches; commit frequently with clear messages.
-- Never disable typechecking/lint to “pass”. Fix root cause.
+- Never disable typechecking/lint to "pass". Fix root cause.
+- **npx commands**: Always use `npx tsx` (already installed) or `npx --yes <package>` to avoid confirmation prompts that cause hangs.
 
 Validation loops
 - Fast loop: lint → tsc → vitest (unit) → fix

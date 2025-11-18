@@ -5,7 +5,8 @@
  * `source_snippet` table for use in world content generation.
  * 
  * Usage:
- *   npx ts-node scripts/data-extraction/import-source-snippets.ts <source-file> [--dry-run]
+ *   npx tsx scripts/data-extraction/import-source-snippets.ts <source-file> [--dry-run]
+ *   OR: npx --yes ts-node scripts/data-extraction/import-source-snippets.ts <source-file> [--dry-run]
  * 
  * Source file format (JSON):
  * {
