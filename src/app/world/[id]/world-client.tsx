@@ -497,10 +497,15 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
                     try {
                       const parsedLevel = Number.parseInt(npcForm.level, 10);
                       const safeLevel = Number.isFinite(parsedLevel) ? Math.min(Math.max(parsedLevel, 0), 20) : 0;
-                      const keywordTags = npcForm.keywords
-                        .split(/[,\\n]+/)
-                        .map(tag => tag.trim())
-                        .filter(tag => tag.length > 0);
+                      // Parse keywords: split on commas/newlines, but preserve phrases
+                      // If no commas/newlines, treat entire input as single tag
+                      const keywordTags = npcForm.keywords.trim()
+                        ? npcForm.keywords.includes(',') || npcForm.keywords.includes('\n')
+                          ? npcForm.keywords.split(/[,\n]+/)
+                              .map(tag => tag.trim())
+                              .filter(tag => tag.length > 0)
+                          : [npcForm.keywords.trim()] // Single phrase as one tag
+                        : [];
 
                       const res = await fetch('/api/generate-world-npc', {
                         method: 'POST',

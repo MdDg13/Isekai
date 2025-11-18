@@ -130,6 +130,7 @@ export const onRequest: PagesFunction = async (context) => {
 
   // Optionally enhance with AI if enabled
   const modelEnabled = (env.WORKERS_AI_ENABLE as string | undefined)?.toLowerCase() === 'true';
+  console.log(`[NPC Generation] AI enhancement: ${modelEnabled ? 'ENABLED' : 'DISABLED'} (WORKERS_AI_ENABLE=${env.WORKERS_AI_ENABLE})`);
   if (modelEnabled) {
     try {
       // Build explicit constraints list
@@ -189,12 +190,16 @@ export const onRequest: PagesFunction = async (context) => {
 
       // Get world context and source snippets for richer generation
       let worldContextText = '';
+      let contextFetched = false;
       try {
+        console.log('[NPC Generation] Fetching world context...');
         const worldContext = await getWorldContext(supabase, body.worldId, {
           elementType: 'npc',
           includeSnippets: true,
           snippetCount: 5
         });
+        
+        console.log(`[NPC Generation] World context: ${worldContext.elements?.length || 0} elements, ${worldContext.snippets?.length || 0} snippets`);
         
         // Also get random NPC snippets for inspiration
         const randomSnippets = await getRandomSnippets(supabase, {
@@ -204,6 +209,8 @@ export const onRequest: PagesFunction = async (context) => {
           ensureDiversity: true
         });
         
+        console.log(`[NPC Generation] Random snippets: ${randomSnippets.length} snippets`);
+        
         // Combine world context with random snippets
         const combinedContext = {
           ...worldContext,
@@ -211,9 +218,12 @@ export const onRequest: PagesFunction = async (context) => {
         };
         
         worldContextText = formatContextForPrompt(combinedContext);
+        contextFetched = true;
+        console.log(`[NPC Generation] Context formatted: ${worldContextText.length} characters`);
       } catch (contextError) {
         // If context fetching fails, continue without it (graceful degradation)
-        console.warn('Failed to fetch world context:', contextError);
+        console.warn('[NPC Generation] Failed to fetch world context:', contextError);
+        console.warn('[NPC Generation] Continuing without context (graceful degradation)');
       }
 
       // Step 1: Enhancement with strict schema + examples
