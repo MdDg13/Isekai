@@ -49,7 +49,7 @@ async function analyze() {
   // Category analysis
   const categories: Record<string, number> = {};
   data?.forEach(s => {
-    s.tags?.forEach(tag => {
+    s.tags?.forEach((tag: string) => {
       if (['npc', 'location', 'conflict', 'item', 'puzzle', 'faction', 'culture', 'tone', 'biome'].includes(tag)) {
         categories[tag] = (categories[tag] || 0) + 1;
       }
