@@ -10,18 +10,20 @@
  * Source file format (JSON):
  * {
  *   "source_name": "D&D 5e SRD",
- *   "license": "OGL 1.0a",
+ *   "source_link": "https://dnd.wizards.com/resources/systems-reference-document",
+ *   "license": "open_game_license",
  *   "snippets": [
  *     {
- *       "type": "npc_archetype" | "conflict" | "location" | "item" | "puzzle" | "hook",
- *       "content": "Brief description or template",
- *       "culture_tags": ["european", "medieval"],
- *       "archetype_tags": ["hero", "mentor"],
- *       "conflict_tags": ["resource-scarcity"],
- *       "tone_tags": ["heroic"],
- *       "mechanical_tags": ["combat-focused"],
- *       "quality_score": 85,
- *       "metadata": { "class": "bard", "race": "halfling" }
+ *       "excerpt": "Brief description or template",
+ *       "tags": ["npc", "wizard", "mentor"],
+ *       "archetype": "wise mentor",
+ *       "conflict_hook": "Searching for lost artifact",
+ *       "rp_cues": ["speaks in metaphors", "taps staff for emphasis"],
+ *       "culture": "european",
+ *       "biome": "urban",
+ *       "tone": "heroic",
+ *       "mechanics": { "class": "wizard", "level": 5 },
+ *       "quality_score": 85
  *     }
  *   ]
  * }
@@ -32,21 +34,22 @@ import * as fs from 'fs';
 import * as path from 'path';
 
 interface SourceSnippet {
-  type: 'npc_archetype' | 'conflict' | 'location' | 'item' | 'puzzle' | 'hook';
-  content: string;
-  culture_tags?: string[];
-  archetype_tags?: string[];
-  conflict_tags?: string[];
-  tone_tags?: string[];
-  mechanical_tags?: string[];
+  excerpt: string;
+  tags?: string[];
+  archetype?: string;
+  conflict_hook?: string;
+  rp_cues?: string[];
+  culture?: string;
+  biome?: string;
+  tone?: string;
+  mechanics?: Record<string, unknown>;
   quality_score?: number;
-  metadata?: Record<string, unknown>;
 }
 
 interface SourceFile {
   source_name: string;
-  license: string;
-  source_url?: string;
+  source_link?: string;
+  license: 'public_domain' | 'cc0' | 'cc_by' | 'cc_by_sa' | 'open_game_license' | 'orc' | 'commercial_with_credit' | 'synthetic';
   snippets: SourceSnippet[];
 }
 
@@ -88,31 +91,31 @@ async function importSourceSnippets(
   for (const snippet of sourceData.snippets) {
     try {
       // Validate required fields
-      if (!snippet.type || !snippet.content) {
-        console.warn(`⚠️  Skipping snippet: missing type or content`);
+      if (!snippet.excerpt) {
+        console.warn(`⚠️  Skipping snippet: missing excerpt`);
         results.skipped++;
         continue;
       }
 
-      // Prepare insert data
+      // Prepare insert data matching source_snippet schema
       const insertData = {
         source_name: sourceData.source_name,
+        source_link: sourceData.source_link || null,
         license: sourceData.license,
-        source_url: sourceData.source_url || null,
-        type: snippet.type,
-        content: snippet.content,
-        culture_tags: snippet.culture_tags || [],
-        archetype_tags: snippet.archetype_tags || [],
-        conflict_tags: snippet.conflict_tags || [],
-        tone_tags: snippet.tone_tags || [],
-        mechanical_tags: snippet.mechanical_tags || [],
-        quality_score: snippet.quality_score ?? 50,
-        metadata: snippet.metadata || {},
-        extracted_at: new Date().toISOString(),
+        excerpt: snippet.excerpt,
+        tags: snippet.tags || [],
+        archetype: snippet.archetype || null,
+        conflict_hook: snippet.conflict_hook || null,
+        rp_cues: snippet.rp_cues || [],
+        culture: snippet.culture || null,
+        biome: snippet.biome || null,
+        tone: snippet.tone || null,
+        mechanics: snippet.mechanics || {},
+        quality_score: snippet.quality_score ?? 0,
       };
 
       if (dryRun) {
-        console.log(`[DRY RUN] Would insert: ${snippet.type} - ${snippet.content.substring(0, 50)}...`);
+        console.log(`[DRY RUN] Would insert: ${snippet.excerpt.substring(0, 50)}...`);
         results.inserted++;
       } else {
         const { error } = await supabase
