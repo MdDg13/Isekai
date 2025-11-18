@@ -55,12 +55,18 @@ BEGIN
   SELECT 
     array_agg(DISTINCT detail->'world_integration'->>'culture'),
     array_agg(DISTINCT detail->'geography'->>'biome'),
-    array_agg(DISTINCT tone),
-    array_agg(DISTINCT unnest(culture_tags || keywords))
-  INTO v_cultures, v_biomes, v_tones, v_tags
+    array_agg(DISTINCT tone)
+  INTO v_cultures, v_biomes, v_tones
   FROM world_element
   WHERE world_id = p_world_id
     AND detail IS NOT NULL;
+
+  -- Extract tags from arrays (must unnest first, then aggregate)
+  SELECT array_agg(DISTINCT elem)
+  INTO v_tags
+  FROM world_element,
+       unnest(COALESCE(culture_tags, ARRAY[]::TEXT[]) || COALESCE(keywords, ARRAY[]::TEXT[])) AS elem
+  WHERE world_id = p_world_id;
 
   -- Get relevant source snippets if requested
   IF p_include_snippets THEN
