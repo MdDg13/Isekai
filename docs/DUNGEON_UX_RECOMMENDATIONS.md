@@ -2,6 +2,14 @@
 
 Based on research of D&D dungeon design practices and modern UI/UX patterns for game tools.
 
+## Alignment with Project Plan
+
+- **Static Export:** All UI work stays within existing client components; no new SSR requirements, preserving `output: "export"` and Cloudflare workflow.
+- **Theme Consistency:** Token-driven approach plugs into the global `ThemeProvider`, so new map/location experiences inherit the same palette and typography already defined in `globals.css`.
+- **Performance & Build:** No additional runtime dependencies or heavy assets; textures remain SVG patterns and CSS variables, so build times and bundle size stay in budget.
+- **Accessibility Commitments:** Tasks tie directly to the project’s accessibility checklist (keyboard nav, contrast, ARIA), ensuring outcomes match the overarching roadmap.
+- **Scalability:** Planned components (layer panel, export drawer, presets) are designed as reusable modules that world map/location builders can consume later.
+
 ## Current Implementation Status
 
 ✅ **Implemented:**
@@ -202,21 +210,21 @@ Based on research of D&D dungeon design practices and modern UI/UX patterns for 
 
 ## Implementation Priority
 
-**Phase 1 (Immediate):**
+**Phase 1 (Immediate / current sprint):**
 1. Size category defaults ✅
 2. Improved textures ✅
 3. Delete functionality ✅
-4. Loading states
-5. Parameter validation
+4. Theme tokens + base component pass (in progress)
+5. Loading states & validation (next)
 
-**Phase 2 (Short-term):**
+**Phase 2 (Short-term / next sprint):**
 1. Export functionality
 2. Room editing
 3. Enhanced tooltips
 4. Keyboard navigation
 5. Statistics panel
 
-**Phase 3 (Long-term):**
+**Phase 3 (Long-term / post-MVP):**
 1. Preset templates
 2. Advanced editing
 3. VTT export

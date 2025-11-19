@@ -4,6 +4,7 @@ import { useState } from 'react';
 import { useTheme } from '../../providers/theme-context';
 import type { DungeonLevel, Room, Door, Corridor, Point } from '../../types/dungeon';
 import { generateTexturePatterns, type DungeonType } from '../../lib/dungeon-textures';
+import { getMapThemePalette, type MapThemePalette } from '../../lib/theme/map-theme';
 
 interface DungeonMapViewProps {
   level: DungeonLevel;
@@ -38,34 +39,8 @@ export default function DungeonMapView({
   const svgWidth = grid.width * cellSize;
   const svgHeight = grid.height * cellSize;
 
-  // Theme-aware colors
-  const colors = theme === 'light' ? {
-    background: '#f8fafc',
-    gridLine: 'rgba(15, 23, 42, 0.1)',
-    roomFloor: '#e2e8f0',
-    roomBorder: '#94a3b8',
-    corridor: '#cbd5e1',
-    corridorBorder: '#94a3b8',
-    door: '#8b4513',
-    doorSecret: '#f59e0b',
-    text: '#0f172a',
-    textMuted: '#475569',
-    entryMarker: '#22c55e',
-    exitMarker: '#ef4444',
-  } : {
-    background: '#0b0b10',
-    gridLine: 'rgba(255, 255, 255, 0.05)',
-    roomFloor: '#1e293b',
-    roomBorder: '#475569',
-    corridor: '#334155',
-    corridorBorder: '#475569',
-    door: '#8b4513',
-    doorSecret: '#fbbf24',
-    text: '#e5e7eb',
-    textMuted: '#94a3b8',
-    entryMarker: '#22c55e',
-    exitMarker: '#ef4444',
-  };
+  // Theme-aware colors (shared map palette)
+  const colors = getMapThemePalette(theme);
 
   // Generate improved texture patterns based on dungeon type
   const texturePatterns = generateTexturePatterns(dungeonType, theme);
@@ -381,7 +356,7 @@ export default function DungeonMapView({
   );
 }
 
-function getRoomColor(roomType: Room['type'], colors: Record<string, string>, currentTheme: 'light' | 'dark'): string {
+function getRoomColor(roomType: Room['type'], colors: MapThemePalette, currentTheme: 'light' | 'dark'): string {
   switch (roomType) {
     case 'entry':
       return currentTheme === 'light' ? '#dcfce7' : '#166534'; // Light green / Dark green
