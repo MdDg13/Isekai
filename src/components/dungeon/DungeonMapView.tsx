@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useTheme } from '../../providers/theme-context';
 import type { DungeonLevel, Room, Door, Corridor, Point } from '../../types/dungeon';
 import { generateTexturePatterns, type DungeonType } from '../../lib/dungeon-textures';
@@ -14,6 +14,8 @@ interface DungeonMapViewProps {
   interactive?: boolean;
   onRoomClick?: (room: Room) => void;
   dungeonType?: DungeonType; // For texture selection
+  showControls?: boolean;
+  onSvgReady?: (svg: SVGSVGElement | null) => void;
 }
 
 type GridType = 'square' | 'hex';
@@ -26,12 +28,23 @@ export default function DungeonMapView({
   interactive = false,
   onRoomClick,
   dungeonType = 'dungeon',
+  showControls = true,
+  onSvgReady,
 }: DungeonMapViewProps) {
   const { theme } = useTheme();
   const levelTileType = level.tile_type || 'square';
   const [gridType, setGridType] = useState<GridType>(levelTileType as GridType);
   const [showGridLines, setShowGridLines] = useState(showGrid);
   const [showRoomLabels, setShowRoomLabels] = useState(showLabels);
+  const svgRef = useRef<SVGSVGElement | null>(null);
+
+  useEffect(() => {
+    setShowGridLines(showGrid);
+  }, [showGrid]);
+
+  useEffect(() => {
+    setShowRoomLabels(showLabels);
+  }, [showLabels]);
 
   const { grid, rooms, corridors } = level;
   // Collect all doors from rooms
@@ -68,57 +81,63 @@ export default function DungeonMapView({
     );
   };
 
+  useEffect(() => {
+    onSvgReady?.(svgRef.current);
+  }, [onSvgReady, level, gridType, showGridLines, showRoomLabels, cellSize, theme, dungeonType]);
+
   return (
     <div className="w-full space-y-2">
-      {/* Controls */}
-      <div className="flex items-center justify-between gap-2 text-xs">
-        <div className="flex items-center gap-3">
-          <label className="flex items-center gap-1.5 text-gray-300">
-            <input
-              type="checkbox"
-              checked={showGridLines}
-              onChange={(e) => setShowGridLines(e.target.checked)}
-              className="w-3.5 h-3.5"
-            />
-            <span>Grid</span>
-          </label>
-          <label className="flex items-center gap-1.5 text-gray-300">
-            <input
-              type="checkbox"
-              checked={showRoomLabels}
-              onChange={(e) => setShowRoomLabels(e.target.checked)}
-              className="w-3.5 h-3.5"
-            />
-            <span>Labels</span>
-          </label>
+      {showControls && (
+        <div className="flex items-center justify-between gap-2 text-xs">
+          <div className="flex items-center gap-3">
+            <label className="flex items-center gap-1.5 text-gray-300">
+              <input
+                type="checkbox"
+                checked={showGridLines}
+                onChange={(e) => setShowGridLines(e.target.checked)}
+                className="w-3.5 h-3.5"
+              />
+              <span>Grid</span>
+            </label>
+            <label className="flex items-center gap-1.5 text-gray-300">
+              <input
+                type="checkbox"
+                checked={showRoomLabels}
+                onChange={(e) => setShowRoomLabels(e.target.checked)}
+                className="w-3.5 h-3.5"
+              />
+              <span>Labels</span>
+            </label>
+          </div>
+          <div className="flex items-center gap-2">
+            <button
+              onClick={() => setGridType('square')}
+              className={`px-2 py-1 rounded text-[10px] transition-colors ${
+                gridType === 'square'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+              }`}
+            >
+              Square
+            </button>
+            <button
+              onClick={() => setGridType('hex')}
+              className={`px-2 py-1 rounded text-[10px] transition-colors ${
+                gridType === 'hex'
+                  ? 'bg-blue-600 text-white'
+                  : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+              }`}
+            >
+              Hex
+            </button>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <button
-            onClick={() => setGridType('square')}
-            className={`px-2 py-1 rounded text-[10px] transition-colors ${
-              gridType === 'square'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-            }`}
-          >
-            Square
-          </button>
-          <button
-            onClick={() => setGridType('hex')}
-            className={`px-2 py-1 rounded text-[10px] transition-colors ${
-              gridType === 'hex'
-                ? 'bg-blue-600 text-white'
-                : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
-            }`}
-          >
-            Hex
-          </button>
-        </div>
-      </div>
+      )}
 
       {/* Map Container */}
       <div className="w-full overflow-auto rounded-lg border border-gray-700" style={{ backgroundColor: colors.background }}>
         <svg
+          ref={svgRef}
           width={svgWidth}
           height={svgHeight}
           viewBox={`0 0 ${svgWidth} ${svgHeight}`}

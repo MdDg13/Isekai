@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import DungeonGenerator from "../../../components/dungeon/DungeonGenerator";
 import DungeonDetailView from "../../../components/dungeon/DungeonDetailView";
+import DungeonExportDrawer from "../../../components/dungeon/DungeonExportDrawer";
 import type { DungeonDetail, DungeonGenerationParams, DungeonLevel } from "../../../types/dungeon";
 import { Toast, type ToastVariant } from "../../../components/ui/Toast";
 
@@ -1330,6 +1331,7 @@ function DungeonsTab({
   const [isSaving, setIsSaving] = useState(false);
   const [previewDungeon, setPreviewDungeon] = useState<PreviewDungeonState | null>(null);
   const [generationHistory, setGenerationHistory] = useState<PreviewDungeonState[]>([]);
+  const [exportDrawerOpen, setExportDrawerOpen] = useState(false);
   const [selectedDungeons, setSelectedDungeons] = useState<Set<string>>(new Set());
   const dungeonSelectAllRef = useRef<HTMLInputElement | null>(null);
 
@@ -1338,6 +1340,12 @@ function DungeonsTab({
     dungeonSelectAllRef.current.indeterminate =
       selectedDungeons.size > 0 && selectedDungeons.size < dungeons.length;
   }, [selectedDungeons, dungeons.length]);
+
+  useEffect(() => {
+    if (!previewDungeon) {
+      setExportDrawerOpen(false);
+    }
+  }, [previewDungeon]);
 
   const handleGenerate = async (params: { name?: string } & DungeonGenerationParams) => {
     setIsGenerating(true);
@@ -1486,7 +1494,7 @@ function DungeonsTab({
                   </div>
                 </div>
                 <DungeonDetailView dungeon={previewDungeon.detail} compact={true} showControls={false} />
-                <div className="flex gap-2">
+                <div className="flex flex-wrap gap-2">
                   <button
                     disabled={isSaving || previewDungeon.saved}
                     onClick={async () => {
@@ -1538,6 +1546,12 @@ function DungeonsTab({
                   >
                     {previewDungeon.saved ? 'Saved' : isSaving ? 'Saving...' : 'Save Dungeon'}
                   </button>
+                  <button
+                    onClick={() => setExportDrawerOpen(true)}
+                    className="rounded border border-gray-700 px-4 py-2 text-sm font-medium text-gray-100 hover:bg-gray-800"
+                  >
+                    Export…
+                  </button>
                 </div>
               </div>
             ) : (
@@ -1585,6 +1599,14 @@ function DungeonsTab({
             )}
           </div>
         </div>
+        {previewDungeon && (
+          <DungeonExportDrawer
+            open={exportDrawerOpen}
+            dungeon={previewDungeon.detail}
+            onClose={() => setExportDrawerOpen(false)}
+            pushToast={pushToast}
+          />
+        )}
       </div>
     );
   }
