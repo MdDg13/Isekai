@@ -846,14 +846,28 @@ export async function enhanceDungeonWithAI(
 - Map visualization (SVG)
 - Room list (sidebar)
 - Click room → Room details panel
+- **World Map Integration:** Button to "View on World Map" (if `map_location_id` set)
 
 **Dungeon Generator Form:**
 - Name input
-- Size sliders (width, height, levels)
-- Theme dropdown
-- Difficulty selector
-- Architectural style input
+- Essential settings (Type, Difficulty, Size Category, Levels)
+- Advanced settings (collapsible): Grid size, room sizes
+- **Future:** Parent location selector, entrance coordinates picker
 - "Generate" button
+
+### World Map Integration (Future)
+
+**Dungeon Entrances on World Map:**
+- Dungeon entrances appear as markers on world map
+- Click marker → Open dungeon detail view
+- Zoom in → See entrance location in detail
+- Zoom out → See dungeon in context of world
+
+**Travel Integration:**
+- Dungeon entrances are travel destinations
+- Calculate travel time/distance from any location
+- Show routes to dungeon (with terrain pathing)
+- Generate encounters along route to dungeon
 
 ### Component Structure
 

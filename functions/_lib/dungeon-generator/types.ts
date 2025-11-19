@@ -65,8 +65,21 @@ export interface DungeonDetail {
 
   // WORLD INTEGRATION
   world_integration: {
-    parent_location_id?: string;
-    connected_locations?: string[];
+    // Map positioning (for 2D world map)
+    map_location_id?: string; // References world_location.id (if dungeon entrance is on world map)
+    entrance_coordinates?: {  // World map coordinates (if standalone POI on map)
+      x: number;
+      y: number;
+      map_id?: string; // References world_map.id if multiple maps
+    };
+    
+    // Parent location (for nested dungeons or dungeons inside towns)
+    parent_location_id?: string; // References world_element.id (can be type='location' or type='dungeon')
+    parent_location_type?: 'location' | 'dungeon'; // Clarify what the parent is
+    entrance_room_id?: string; // If parent is dungeon, which room contains the entrance
+    
+    // Relationships
+    connected_locations?: string[]; // Other locations accessible from here
     associated_factions?: Array<{
       faction_id: string;
       influence: "controls" | "inhabits" | "seeks" | "guards";
