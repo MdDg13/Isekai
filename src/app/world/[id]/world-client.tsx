@@ -4,6 +4,9 @@ import { createClient } from "@supabase/supabase-js";
 import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import DungeonGenerator from "../../../components/dungeon/DungeonGenerator";
+import DungeonDetailView from "../../../components/dungeon/DungeonDetailView";
+import type { DungeonDetail, DungeonGenerationParams, DungeonLevel } from "../../../types/dungeon";
 
 interface WorldRecord {
   id: string;
@@ -163,8 +166,9 @@ export default function WorldClient({ worldId }: WorldClientProps) {
 
   const [world, setWorld] = useState<WorldRecord | null>(null);
   const [worldNpcs, setWorldNpcs] = useState<WorldNpcRecord[]>([]);
+  const [worldDungeons, setWorldDungeons] = useState<Array<{ id: string; name: string; created_at: string; detail: unknown }>>([]);
   const [status, setStatus] = useState<string>("");
-  const [activeTab, setActiveTab] = useState<'npc-generator' | 'npcs' | 'locations' | 'items'>('npc-generator');
+  const [activeTab, setActiveTab] = useState<'npc-generator' | 'npcs' | 'locations' | 'items' | 'dungeons'>('npc-generator');
   const [isRenamingWorld, setIsRenamingWorld] = useState(false);
   const [renameValue, setRenameValue] = useState('');
   const [savingWorldName, setSavingWorldName] = useState(false);
@@ -234,12 +238,28 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
     }
   }, [supabase, worldId]);
 
+  const loadWorldDungeons = useCallback(async () => {
+    if (!supabase) return;
+    const { data, error } = await supabase
+      .from('world_element')
+      .select('id,name,created_at,detail')
+      .eq('world_id', worldId)
+      .eq('type', 'dungeon')
+      .order('created_at', { ascending: false });
+    if (error) {
+      console.error('Error loading dungeons:', error);
+    } else {
+      setWorldDungeons((data || []) as Array<{ id: string; name: string; created_at: string; detail: unknown }>);
+    }
+  }, [supabase, worldId]);
+
   useEffect(() => {
     if (!supabase) return;
     
     loadWorld();
     loadWorldNpcs();
-  }, [supabase, worldId, loadWorld, loadWorldNpcs]);
+    loadWorldDungeons();
+  }, [supabase, worldId, loadWorld, loadWorldNpcs, loadWorldDungeons]);
   
   useEffect(() => {
     if (selectedNpcId && worldNpcs.length > 0) {
@@ -978,6 +998,16 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
             >
               Items
             </button>
+            <button
+              onClick={() => setActiveTab('dungeons')}
+              className={`px-4 py-3 text-sm font-medium transition-colors touch-manipulation whitespace-nowrap ${
+                activeTab === 'dungeons'
+                  ? 'text-blue-400 border-b-2 border-blue-400'
+                  : 'text-gray-400 hover:text-gray-300'
+              }`}
+            >
+              Dungeons ({worldDungeons.length})
+            </button>
           </div>
         </div>
       </div>
@@ -1165,7 +1195,182 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
             <p className="text-gray-400">Items feature coming soon</p>
           </div>
         )}
+
+        {activeTab === 'dungeons' && (
+          <DungeonsTab
+            worldId={worldId}
+            dungeons={worldDungeons}
+            onGenerate={async () => {
+              await loadWorldDungeons();
+            }}
+            status={status}
+            setStatus={setStatus}
+          />
+        )}
       </div>
+    </div>
+  );
+}
+
+// Dungeons Tab Component
+function DungeonsTab({
+  worldId,
+  dungeons,
+  onGenerate,
+  status,
+  setStatus,
+}: {
+  worldId: string;
+  dungeons: Array<{ id: string; name: string; created_at: string; detail: unknown }>;
+  onGenerate: () => Promise<void>;
+  status: string;
+  setStatus: (s: string) => void;
+}) {
+  const [viewMode, setViewMode] = useState<'generator' | 'list' | 'detail'>('generator');
+  const [selectedDungeon, setSelectedDungeon] = useState<{ id: string; name: string; created_at: string; detail: unknown } | null>(null);
+  const [isGenerating, setIsGenerating] = useState(false);
+
+  const handleGenerate = async (params: { name?: string } & DungeonGenerationParams) => {
+    setIsGenerating(true);
+    setStatus('Generating dungeon...');
+    try {
+      const res = await fetch('/api/generate-dungeon', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({
+          world_id: worldId,
+          name: params.name,
+          params: {
+            generation_mode: params.generation_mode,
+            grid_width: params.grid_width,
+            grid_height: params.grid_height,
+            num_levels: params.num_levels,
+            min_room_size: params.min_room_size,
+            max_room_size: params.max_room_size,
+            theme: params.theme,
+            difficulty: params.difficulty,
+            use_ai: params.use_ai,
+            world_id: worldId,
+          },
+        }),
+      });
+      if (!res.ok) {
+        const errorText = await res.text();
+        throw new Error(errorText);
+      }
+      await res.json();
+      setStatus('Dungeon generated successfully!');
+      await onGenerate();
+      setViewMode('list');
+    } catch (e: unknown) {
+      const message = e instanceof Error ? e.message : String(e);
+      setStatus(`Generation failed: ${message}`);
+    } finally {
+      setIsGenerating(false);
+    }
+  };
+
+  if (viewMode === 'detail' && selectedDungeon) {
+    return (
+      <div className="space-y-4">
+        <button
+          onClick={() => {
+            setViewMode('list');
+            setSelectedDungeon(null);
+          }}
+          className="text-blue-400 hover:text-blue-300 text-sm"
+        >
+          ← Back to list
+        </button>
+        <DungeonDetailView
+          dungeon={selectedDungeon.detail as DungeonDetail}
+        />
+      </div>
+    );
+  }
+
+  if (viewMode === 'generator') {
+    return (
+      <div className="space-y-6">
+        <div className="flex items-center justify-between">
+          <h2 className="text-xl font-semibold text-gray-100">Dungeon Generator</h2>
+          <button
+            onClick={() => setViewMode('list')}
+            className="text-sm text-blue-400 hover:text-blue-300"
+          >
+            View Dungeons ({dungeons.length})
+          </button>
+        </div>
+        <DungeonGenerator
+          worldId={worldId}
+          onGenerate={handleGenerate}
+          isGenerating={isGenerating}
+        />
+        {status && (
+          <div className={`rounded-lg border p-4 ${
+            status.includes('failed') || status.includes('Error')
+              ? 'border-red-800 bg-red-900/20 text-red-300'
+              : 'border-blue-800 bg-blue-900/20 text-blue-300'
+          }`}>
+            <p className="text-sm">{status}</p>
+          </div>
+        )}
+      </div>
+    );
+  }
+
+  return (
+    <div className="space-y-4">
+      <div className="flex items-center justify-between">
+        <h2 className="text-xl font-semibold text-gray-100">Dungeons</h2>
+        <button
+          onClick={() => setViewMode('generator')}
+          className="px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 active:bg-blue-800 transition-colors"
+        >
+          Generate New
+        </button>
+      </div>
+      {dungeons.length === 0 ? (
+        <div className="surface-card p-8 text-center">
+          <p className="text-gray-400">No dungeons yet. Generate your first dungeon!</p>
+          <button
+            onClick={() => setViewMode('generator')}
+            className="mt-4 px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 active:bg-blue-800 transition-colors"
+          >
+            Generate Dungeon
+          </button>
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {dungeons.map((dungeon) => {
+            const detail = dungeon.detail as DungeonDetail | null;
+            return (
+              <button
+                key={dungeon.id}
+                onClick={() => {
+                  setSelectedDungeon(dungeon);
+                  setViewMode('detail');
+                }}
+                className="surface-panel surface-bordered p-4 text-left hover:bg-gray-800 transition-colors"
+              >
+                <h3 className="font-medium text-gray-100 mb-1">{dungeon.name}</h3>
+                {detail && (
+                  <div className="text-xs text-gray-400 space-y-1">
+                    <div>{detail.identity.type} • {detail.identity.theme}</div>
+                    <div>{detail.structure.levels.length} level(s)</div>
+                    <div>
+                      {detail.structure.levels.reduce((sum: number, level: DungeonLevel) => sum + level.rooms.length, 0)} rooms
+                    </div>
+                  </div>
+                )}
+                <div className="text-xs text-gray-500 mt-2">
+                  {new Date(dungeon.created_at).toLocaleDateString()}
+                </div>
+              </button>
+            );
+          })}
+        </div>
+      )}
     </div>
   );
 }
