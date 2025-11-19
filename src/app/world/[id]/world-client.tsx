@@ -1331,29 +1331,32 @@ function DungeonsTab({
             <p className="text-sm">{status}</p>
           </div>
         )}
-        {/* Display generated dungeon visual */}
-        {lastGeneratedDungeon && lastGeneratedDungeon.detail && (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-100">
-                {lastGeneratedDungeon.name || 'Generated Dungeon'}
-              </h3>
-              <button
-                onClick={() => {
-                  setSelectedDungeon(lastGeneratedDungeon);
-                  setViewMode('detail');
-                }}
-                className="text-sm text-blue-400 hover:text-blue-300"
-              >
-                View Details →
-              </button>
+        {(() => {
+          if (!lastGeneratedDungeon || !lastGeneratedDungeon.detail) return null;
+          const dungeonDetail = lastGeneratedDungeon.detail as DungeonDetail;
+          return (
+            <div className="space-y-3">
+              <div className="flex items-center justify-between">
+                <h3 className="text-lg font-semibold text-gray-100">
+                  {lastGeneratedDungeon.name || 'Generated Dungeon'}
+                </h3>
+                <button
+                  onClick={() => {
+                    setSelectedDungeon(lastGeneratedDungeon);
+                    setViewMode('detail');
+                  }}
+                  className="text-sm text-blue-400 hover:text-blue-300"
+                >
+                  View Details →
+                </button>
+              </div>
+              <DungeonDetailView
+                dungeon={dungeonDetail}
+                compact={true}
+              />
             </div>
-            <DungeonDetailView
-              dungeon={lastGeneratedDungeon.detail as DungeonDetail}
-              compact={true}
-            />
-          </div>
-        )}
+          );
+        })()}
       </div>
     );
   }

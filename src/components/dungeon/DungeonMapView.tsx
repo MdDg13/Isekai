@@ -139,7 +139,7 @@ export default function DungeonMapView({
         >
           {/* Define patterns */}
           <defs>
-            {roomTexturePattern('normal')}
+            {roomTexturePattern('chamber')}
             {roomTexturePattern('entry')}
             {roomTexturePattern('exit')}
             {roomTexturePattern('stairwell')}
@@ -258,7 +258,7 @@ export default function DungeonMapView({
                       fontWeight="500"
                       className="pointer-events-none"
                     >
-                      {room.name || room.id}
+                      {room.id}
                     </text>
                   )}
                   {/* Entry/Exit markers */}
@@ -338,6 +338,8 @@ function getRoomColor(roomType: Room['type'], colors: Record<string, string>, cu
       return currentTheme === 'light' ? '#dbeafe' : '#1e3a8a'; // Light blue / Dark blue
     case 'special':
       return currentTheme === 'light' ? '#f3e8ff' : '#6b21a8'; // Light purple / Dark purple
+    case 'chamber':
+    case 'corridor':
     default:
       return colors.roomFloor;
   }
