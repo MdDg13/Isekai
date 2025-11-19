@@ -1205,7 +1205,7 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
             }}
             status={status}
             setStatus={setStatus}
-            supabase={supabase!}
+            supabase={supabase as ReturnType<typeof createClient>}
             loadWorldDungeons={loadWorldDungeons}
           />
         )}
@@ -1229,7 +1229,7 @@ function DungeonsTab({
   onGenerate: () => Promise<void>;
   status: string;
   setStatus: (s: string) => void;
-  supabase: ReturnType<typeof createClient> | null;
+  supabase: ReturnType<typeof createClient>;
   loadWorldDungeons: () => Promise<void>;
 }) {
   const [viewMode, setViewMode] = useState<'generator' | 'list' | 'detail'>('generator');
