@@ -7,6 +7,7 @@ import { useRouter } from "next/navigation";
 import DungeonGenerator from "../../../components/dungeon/DungeonGenerator";
 import DungeonDetailView from "../../../components/dungeon/DungeonDetailView";
 import type { DungeonDetail, DungeonGenerationParams, DungeonLevel } from "../../../types/dungeon";
+import { Toast, type ToastVariant } from "../../../components/ui/Toast";
 
 interface WorldRecord {
   id: string;
@@ -168,6 +169,7 @@ export default function WorldClient({ worldId }: WorldClientProps) {
   const [worldNpcs, setWorldNpcs] = useState<WorldNpcRecord[]>([]);
   const [worldDungeons, setWorldDungeons] = useState<Array<{ id: string; name: string; created_at: string; detail: unknown }>>([]);
   const [status, setStatus] = useState<string>("");
+  const [toast, setToast] = useState<{ message: string; variant: ToastVariant } | null>(null);
   const [activeTab, setActiveTab] = useState<'npc-generator' | 'npcs' | 'locations' | 'items' | 'dungeons'>('npc-generator');
   const [isRenamingWorld, setIsRenamingWorld] = useState(false);
   const [renameValue, setRenameValue] = useState('');
@@ -206,6 +208,13 @@ export default function WorldClient({ worldId }: WorldClientProps) {
   const [viewMode, setViewMode] = useState<'list' | 'detail'>('list');
   const [selectedNpcId, setSelectedNpcId] = useState<string | null>(null);
 const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
+
+  const pushToast = useCallback(
+    (message: string, variant: ToastVariant = 'info') => {
+      setToast({ message, variant });
+    },
+    [],
+  );
 
   const loadWorld = useCallback(async () => {
     if (!supabase) return;
@@ -1207,9 +1216,17 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
             setStatus={setStatus}
             supabase={supabase as ReturnType<typeof createClient>}
             loadWorldDungeons={loadWorldDungeons}
+            pushToast={pushToast}
           />
         )}
       </div>
+      {toast && (
+        <Toast
+          message={toast.message}
+          variant={toast.variant}
+          onDismiss={() => setToast(null)}
+        />
+      )}
     </div>
   );
 }
@@ -1223,6 +1240,7 @@ function DungeonsTab({
   setStatus,
   supabase,
   loadWorldDungeons,
+  pushToast,
 }: {
   worldId: string;
   dungeons: Array<{ id: string; name: string; created_at: string; detail: unknown }>;
@@ -1231,6 +1249,7 @@ function DungeonsTab({
   setStatus: (s: string) => void;
   supabase: ReturnType<typeof createClient>;
   loadWorldDungeons: () => Promise<void>;
+  pushToast: (message: string, variant?: ToastVariant) => void;
 }) {
   const [viewMode, setViewMode] = useState<'generator' | 'list' | 'detail'>('generator');
   const [selectedDungeon, setSelectedDungeon] = useState<{ id: string; name: string; created_at: string; detail: unknown } | null>(null);
@@ -1267,6 +1286,7 @@ function DungeonsTab({
       }
       await res.json();
       setStatus('Dungeon generated successfully!');
+      pushToast('Dungeon generated successfully!', 'success');
       await onGenerate();
       // Find the newly generated dungeon
       const supabase = createClient(
@@ -1286,7 +1306,9 @@ function DungeonsTab({
       // Don't switch to list view - stay on generator to show the visual
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : String(e);
-      setStatus(`Generation failed: ${message}`);
+      const errorMessage = `Generation failed: ${message}`;
+      setStatus(errorMessage);
+      pushToast(errorMessage, 'error');
     } finally {
       setIsGenerating(false);
     }
@@ -1430,9 +1452,13 @@ function DungeonsTab({
                           .eq('id', dungeon.id);
                         if (error) throw error;
                         await loadWorldDungeons();
-                        setStatus('Dungeon deleted successfully');
+                        const successMessage = 'Dungeon deleted successfully';
+                        setStatus(successMessage);
+                        pushToast(successMessage, 'success');
                       } catch (err) {
-                        setStatus(`Error deleting dungeon: ${err instanceof Error ? err.message : 'Unknown error'}`);
+                        const errorMessage = `Error deleting dungeon: ${err instanceof Error ? err.message : 'Unknown error'}`;
+                        setStatus(errorMessage);
+                        pushToast(errorMessage, 'error');
                       }
                     }
                   }}

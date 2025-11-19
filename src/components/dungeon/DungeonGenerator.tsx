@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import type { DungeonGenerationParams } from '../../types/dungeon';
 import { getDungeonTypeDefinition, type DungeonType } from '../../lib/dungeon-definitions';
 
@@ -15,13 +15,13 @@ type SizeCategory = 'tiny' | 'very_small' | 'small' | 'medium' | 'large' | 'huge
 // Size category presets based on D&D best practices
 // Room sizes in grid cells (1 cell = 5 feet)
 // Room counts are target ranges for generation
-const SIZE_PRESETS: Record<SizeCategory, { 
-  width: number; 
-  height: number; 
-  minRoomSize: number;  // Minimum room size in cells (5ft each)
-  maxRoomSize: number;  // Maximum room size in cells
-  targetRoomCount: { min: number; max: number }; // Target room count range
-  roomDensity: number; // Default room density (0.0-1.0)
+const SIZE_PRESETS: Record<SizeCategory, {
+  width: number;
+  height: number;
+  minRoomSize: number;
+  maxRoomSize: number;
+  targetRoomCount: { min: number; max: number };
+  roomDensity: number;
 }> = {
   tiny: { 
     width: 15, 
@@ -63,15 +63,39 @@ const SIZE_PRESETS: Record<SizeCategory, {
     targetRoomCount: { min: 20, max: 30 },
     roomDensity: 0.25,
   },
-  huge: { 
-    width: 100, 
-    height: 100, 
-    minRoomSize: 4,  // 20ft minimum
-    maxRoomSize: 12, // 60ft maximum
+  huge: {
+    width: 100,
+    height: 100,
+    minRoomSize: 4,
+    maxRoomSize: 12,
     targetRoomCount: { min: 30, max: 50 },
-    roomDensity: 0.2, // Lower density for huge dungeons (more corridors)
+    roomDensity: 0.2,
   },
 };
+
+const defaultFormState = {
+  name: '',
+  sizeCategory: 'medium' as SizeCategory,
+  grid_width: SIZE_PRESETS.medium.width,
+  grid_height: SIZE_PRESETS.medium.height,
+  num_levels: 1,
+  min_room_size: SIZE_PRESETS.medium.minRoomSize,
+  max_room_size: SIZE_PRESETS.medium.maxRoomSize,
+  theme: 'dungeon' as DungeonType,
+  difficulty: 'medium' as 'easy' | 'medium' | 'hard' | 'deadly',
+  use_ai: true,
+  tile_type: 'square' as 'square' | 'hex',
+  room_density: SIZE_PRESETS.medium.roomDensity,
+  corridor_density: 0.5,
+};
+
+type FormState = typeof defaultFormState;
+
+interface GeneratorStatsProps {
+  formData: FormState;
+  sizePreset: (typeof SIZE_PRESETS)[SizeCategory];
+  isGenerating: boolean;
+}
 
 export default function DungeonGenerator({
   worldId,
@@ -79,22 +103,7 @@ export default function DungeonGenerator({
   isGenerating = false,
 }: DungeonGeneratorProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
-  const mediumPreset = SIZE_PRESETS.medium;
-  const [formData, setFormData] = useState({
-    name: '',
-    sizeCategory: 'medium' as SizeCategory,
-    grid_width: mediumPreset.width,
-    grid_height: mediumPreset.height,
-    num_levels: 1,
-    min_room_size: mediumPreset.minRoomSize,
-    max_room_size: mediumPreset.maxRoomSize,
-    theme: 'dungeon' as DungeonType,
-    difficulty: 'medium' as 'easy' | 'medium' | 'hard' | 'deadly',
-    use_ai: true,
-    tile_type: 'square' as 'square' | 'hex',
-    room_density: mediumPreset.roomDensity,
-    corridor_density: 0.5, // 0.0 to 1.0 - how many extra corridors/connections
-  });
+  const [formData, setFormData] = useState<FormState>(defaultFormState);
 
   // Update size when category changes
   const handleSizeCategoryChange = (category: SizeCategory) => {
@@ -420,6 +429,13 @@ export default function DungeonGenerator({
           </div>
         )}
 
+        {/* Status + Stats */}
+        <GeneratorStats
+          formData={formData}
+          sizePreset={SIZE_PRESETS[formData.sizeCategory]}
+          isGenerating={isGenerating}
+        />
+
         {/* Submit */}
         <button
           type="submit"
@@ -429,6 +445,47 @@ export default function DungeonGenerator({
           {isGenerating ? 'Generating...' : 'Generate Dungeon'}
         </button>
       </form>
+    </div>
+  );
+}
+
+function GeneratorStats({ formData, sizePreset, isGenerating }: GeneratorStatsProps) {
+  const gridCells = formData.grid_width * formData.grid_height;
+  const floorArea = gridCells * 25; // 5ft squares
+  const estimatedRooms = sizePreset.targetRoomCount;
+
+  const stats = useMemo(
+    () => [
+      { label: 'Grid Size', value: `${formData.grid_width} × ${formData.grid_height} (${gridCells} cells)` },
+      { label: 'Footprint', value: `${floorArea.toLocaleString()} sq ft` },
+      { label: 'Target Rooms', value: `${estimatedRooms.min}–${estimatedRooms.max}` },
+      { label: 'Tile Type', value: formData.tile_type === 'square' ? '5 ft squares' : '5 ft hexes' },
+    ],
+    [formData.grid_width, formData.grid_height, formData.tile_type, gridCells, floorArea, estimatedRooms.min, estimatedRooms.max],
+  );
+
+  return (
+    <div className="space-y-2 rounded-lg border border-gray-800/60 bg-gray-900/40 p-3">
+      <div className="flex items-center justify-between text-sm text-gray-300">
+        <span>Generation Stats</span>
+        {isGenerating && <ProgressBar />}
+      </div>
+      <dl className="grid grid-cols-2 gap-2 text-xs text-gray-400">
+        {stats.map((stat) => (
+          <div key={stat.label} className="rounded bg-gray-900/30 px-2 py-1.5">
+            <dt className="text-[11px] uppercase tracking-wide text-gray-500">{stat.label}</dt>
+            <dd className="text-gray-200">{stat.value}</dd>
+          </div>
+        ))}
+      </dl>
+    </div>
+  );
+}
+
+function ProgressBar() {
+  return (
+    <div className="relative h-2 w-28 overflow-hidden rounded-full bg-gray-800">
+      <div className="absolute inset-0 animate-pulse rounded-full bg-blue-500/90" />
     </div>
   );
 }
