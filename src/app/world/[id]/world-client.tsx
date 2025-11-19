@@ -9,6 +9,32 @@ import DungeonDetailView from "../../../components/dungeon/DungeonDetailView";
 import type { DungeonDetail, DungeonGenerationParams, DungeonLevel } from "../../../types/dungeon";
 import { Toast, type ToastVariant } from "../../../components/ui/Toast";
 
+function generateDungeonName(theme: string, difficulty: string, worldName: string) {
+  const themeDescriptors: Record<string, string[]> = {
+    dungeon: ['Vault', 'Sanctum', 'Depths', 'Hall'],
+    cave: ['Hollow', 'Grotto', 'Delve', 'Burrow'],
+    ruin: ['Ruins', 'Remnant', 'Fallen Keep', 'Shards'],
+    fortress: ['Citadel', 'Redoubt', 'Bastion', 'Bulwark'],
+    tower: ['Spire', 'Watch', 'Needle', 'Pillar'],
+    temple: ['Shrine', 'Reliquary', 'Catacomb', 'Sanctuary'],
+    lair: ['Den', 'Nest', 'Haunt', 'Refuge'],
+  };
+  const difficultyAdjectives: Record<string, string[]> = {
+    easy: ['Quiet', 'Drifting', 'Shrouded'],
+    medium: ['Silent', 'Veiled', 'Forgotten'],
+    hard: ['Forsaken', 'Grim', 'Bloodied'],
+    deadly: ['Doomed', 'Cataclysmic', 'Blighted'],
+  };
+  const themeKey = theme in themeDescriptors ? theme : 'dungeon';
+  const diffKey = difficulty in difficultyAdjectives ? difficulty : 'medium';
+  const descriptor =
+    difficultyAdjectives[diffKey][Math.floor(Math.random() * difficultyAdjectives[diffKey].length)];
+  const noun =
+    themeDescriptors[themeKey][Math.floor(Math.random() * themeDescriptors[themeKey].length)];
+  const worldFragment = worldName.split(' ')[0] || 'Wandering';
+  return `${descriptor} ${noun} of ${worldFragment}`;
+}
+
 interface PreviewDungeonState {
   id: string;
   name: string;
@@ -1243,6 +1269,7 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
         {activeTab === 'dungeons' && (
           <DungeonsTab
             worldId={worldId}
+            worldName={world?.name || 'Dungeon'}
             dungeons={worldDungeons}
             onGenerate={async () => {
               await loadWorldDungeons();
@@ -1269,6 +1296,7 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
 // Dungeons Tab Component
 function DungeonsTab({
   worldId,
+  worldName,
   dungeons,
   onGenerate,
   status,
@@ -1278,6 +1306,7 @@ function DungeonsTab({
   pushToast,
 }: {
   worldId: string;
+  worldName: string;
   dungeons: Array<{ id: string; name: string; created_at: string; detail: unknown }>;
   onGenerate: () => Promise<void>;
   status: string;
@@ -1305,13 +1334,17 @@ function DungeonsTab({
     setIsGenerating(true);
     setStatus('Generating preview...');
     try {
+      const resolvedName =
+        params.name && params.name.trim().length > 0
+          ? params.name
+          : generateDungeonName(params.theme ?? 'dungeon', params.difficulty ?? 'medium', worldName);
       const res = await fetch('/api/generate-dungeon', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
         body: JSON.stringify({
           world_id: worldId,
-          name: params.name,
-          params,
+          name: resolvedName,
+          params: { ...params, name: resolvedName },
           preview: true,
         }),
       });
@@ -1325,10 +1358,10 @@ function DungeonsTab({
       const createdAt = new Date().toISOString();
       const entry: PreviewDungeonState = {
         id: previewId,
-        name: params.name || detail.identity.name || 'Preview Dungeon',
+        name: resolvedName || detail.identity.name || 'Preview Dungeon',
         created_at: createdAt,
         detail,
-        params,
+        params: { ...params, name: resolvedName },
         saved: false,
       };
       setPreviewDungeon(entry);
@@ -1390,8 +1423,11 @@ function DungeonsTab({
   if (viewMode === 'generator') {
     return (
       <div className="space-y-6">
-        <div className="flex items-center justify-between">
-          <h2 className="text-xl font-semibold text-gray-100">Dungeon Generator</h2>
+        <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
+          <div>
+            <h2 className="text-xl font-semibold text-gray-100">Dungeon Generator</h2>
+            <p className="text-xs text-gray-500">Preview layouts instantly, save only when ready.</p>
+          </div>
           <button
             onClick={() => setViewMode('list')}
             className="text-sm text-blue-400 hover:text-blue-300"
@@ -1399,145 +1435,151 @@ function DungeonsTab({
             View Dungeons ({dungeons.length})
           </button>
         </div>
-        <DungeonGenerator
-          worldId={worldId}
-          onGenerate={handleGenerate}
-          isGenerating={isGenerating}
-        />
-        {status && (
-          <div className={`rounded-lg border p-4 ${
-            status.includes('failed') || status.includes('Error')
-              ? 'border-red-800 bg-red-900/20 text-red-300'
-              : 'border-blue-800 bg-blue-900/20 text-blue-300'
-          }`}>
-            <p className="text-sm">{status}</p>
-          </div>
-        )}
-        {previewDungeon && (
-          <div className="space-y-3">
-            <div className="flex items-center justify-between">
-              <h3 className="text-lg font-semibold text-gray-100">
-                {previewDungeon.name || 'Previewed Dungeon'}
-              </h3>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => {
-                    setSelectedDungeon({
-                      id: previewDungeon.id,
-                      name: previewDungeon.name,
-                      created_at: previewDungeon.created_at,
-                      detail: previewDungeon.detail,
-                    });
-                    setViewMode('detail');
-                  }}
-                  className="text-sm text-blue-400 hover:text-blue-300"
-                >
-                  View Details →
-                </button>
-                <button
-                  onClick={() => {
-                    setPreviewDungeon(null);
-                  }}
-                  className="text-xs text-gray-400 hover:text-gray-200"
-                >
-                  Discard
-                </button>
-              </div>
-            </div>
-            <DungeonDetailView dungeon={previewDungeon.detail} compact={true} />
-            <div className="flex gap-2">
-              <button
-                disabled={isSaving || previewDungeon.saved}
-                onClick={async () => {
-                  if (!previewDungeon) return;
-                  setIsSaving(true);
-                  setStatus('Saving dungeon...');
-                  try {
-                    const res = await fetch('/api/generate-dungeon', {
-                      method: 'POST',
-                      headers: { 'content-type': 'application/json' },
-                      body: JSON.stringify({
-                        world_id: worldId,
-                        name: previewDungeon.name,
-                        params: previewDungeon.params,
-                        detail: previewDungeon.detail,
-                      }),
-                    });
-                    if (!res.ok) {
-                      const errorText = await res.text();
-                      throw new Error(errorText);
-                    }
-                    const data = await res.json();
-                    const successMessage = 'Dungeon saved successfully!';
-                    setStatus(successMessage);
-                    pushToast(successMessage, 'success');
-                    await onGenerate();
-                    const previousId = previewDungeon.id;
-                    const savedPreview = {
-                      ...previewDungeon,
-                      id: data.dungeon_id || previewDungeon.id,
-                      created_at: new Date().toISOString(),
-                      detail: (data.dungeon as DungeonDetail) || previewDungeon.detail,
-                      saved: true,
-                    };
-                    setPreviewDungeon(savedPreview);
-                    setGenerationHistory((prev) =>
-                      prev.map((entry) => (entry.id === previousId ? savedPreview : entry))
-                    );
-                  } catch (err) {
-                    const message = err instanceof Error ? err.message : String(err);
-                    const errorMessage = `Save failed: ${message}`;
-                    setStatus(errorMessage);
-                    pushToast(errorMessage, 'error');
-                  } finally {
-                    setIsSaving(false);
-                  }
-                }}
-                className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+        <div className="grid gap-6 lg:grid-cols-2">
+          <div className="space-y-4">
+            <DungeonGenerator worldId={worldId} onGenerate={handleGenerate} isGenerating={isGenerating} />
+            {status && (
+              <div
+                className={`rounded-lg border p-4 ${
+                  status.includes('failed') || status.includes('Error')
+                    ? 'border-red-800 bg-red-900/20 text-red-300'
+                    : 'border-blue-800 bg-blue-900/20 text-blue-300'
+                }`}
               >
-                {previewDungeon.saved ? 'Saved' : isSaving ? 'Saving...' : 'Save Dungeon'}
-              </button>
-            </div>
+                <p className="text-sm">{status}</p>
+              </div>
+            )}
           </div>
-        )}
-        {generationHistory.length > 0 && (
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <h3 className="text-sm font-semibold text-gray-300">Recent Runs</h3>
-              <span className="text-xs text-gray-500">Showing {generationHistory.length}</span>
-            </div>
-            <div className="space-y-2">
-              {generationHistory.map((entry) => (
-                <div
-                  key={`${entry.id}-${entry.created_at}`}
-                  className="flex items-center justify-between rounded-lg border border-gray-800/70 bg-gray-900/40 p-2 text-xs"
-                >
-                  <div>
-                    <p className="font-medium text-gray-100">{entry.name}</p>
-                    <p className="text-gray-500">{new Date(entry.created_at).toLocaleString()}</p>
-                  </div>
-                  <div className="flex items-center gap-2">
+          <div className="space-y-4">
+            {previewDungeon ? (
+              <div className="space-y-3 rounded-xl border border-gray-800 bg-gray-900/40 p-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-lg font-semibold text-gray-100">
+                    {previewDungeon.name || 'Previewed Dungeon'}
+                  </h3>
+                  <div className="flex items-center gap-2 text-xs">
                     <button
                       onClick={() => {
-                        setPreviewDungeon(entry);
+                        setSelectedDungeon({
+                          id: previewDungeon.id,
+                          name: previewDungeon.name,
+                          created_at: previewDungeon.created_at,
+                          detail: previewDungeon.detail,
+                        });
+                        setViewMode('detail');
                       }}
-                      className="rounded border border-gray-700 px-2 py-1 text-gray-200 hover:bg-gray-800"
+                      className="text-blue-400 hover:text-blue-300"
                     >
-                      Load
+                      View Details →
                     </button>
                     <button
-                      disabled={isGenerating}
-                      onClick={() => handleGenerate(entry.params)}
-                      className="rounded bg-blue-600 px-2 py-1 text-white hover:bg-blue-700 disabled:opacity-50"
+                      onClick={() => setPreviewDungeon(null)}
+                      className="text-gray-400 hover:text-gray-200"
                     >
-                      Regenerate
+                      Discard
                     </button>
                   </div>
                 </div>
-              ))}
-            </div>
+                <DungeonDetailView dungeon={previewDungeon.detail} compact={true} />
+                <div className="flex gap-2">
+                  <button
+                    disabled={isSaving || previewDungeon.saved}
+                    onClick={async () => {
+                      if (!previewDungeon) return;
+                      setIsSaving(true);
+                      setStatus('Saving dungeon...');
+                      try {
+                        const res = await fetch('/api/generate-dungeon', {
+                          method: 'POST',
+                          headers: { 'content-type': 'application/json' },
+                          body: JSON.stringify({
+                            world_id: worldId,
+                            name: previewDungeon.name,
+                            params: previewDungeon.params,
+                            detail: previewDungeon.detail,
+                          }),
+                        });
+                        if (!res.ok) {
+                          const errorText = await res.text();
+                          throw new Error(errorText);
+                        }
+                        const data = await res.json();
+                        const successMessage = 'Dungeon saved successfully!';
+                        setStatus(successMessage);
+                        pushToast(successMessage, 'success');
+                        await onGenerate();
+                        const previousId = previewDungeon.id;
+                        const savedPreview = {
+                          ...previewDungeon,
+                          id: data.dungeon_id || previewDungeon.id,
+                          created_at: new Date().toISOString(),
+                          detail: (data.dungeon as DungeonDetail) || previewDungeon.detail,
+                          saved: true,
+                        };
+                        setPreviewDungeon(savedPreview);
+                        setGenerationHistory((prev) =>
+                          prev.map((entry) => (entry.id === previousId ? savedPreview : entry))
+                        );
+                      } catch (err) {
+                        const message = err instanceof Error ? err.message : String(err);
+                        const errorMessage = `Save failed: ${message}`;
+                        setStatus(errorMessage);
+                        pushToast(errorMessage, 'error');
+                      } finally {
+                        setIsSaving(false);
+                      }
+                    }}
+                    className="rounded bg-emerald-600 px-4 py-2 text-sm font-medium text-white hover:bg-emerald-500 disabled:opacity-50"
+                  >
+                    {previewDungeon.saved ? 'Saved' : isSaving ? 'Saving...' : 'Save Dungeon'}
+                  </button>
+                </div>
+              </div>
+            ) : (
+              <div className="rounded-xl border border-dashed border-gray-700 p-6 text-center text-sm text-gray-500">
+                Generate to see a live preview here.
+              </div>
+            )}
+            {generationHistory.length > 0 && (
+              <div className="space-y-2">
+                <div className="flex items-center justify-between">
+                  <h3 className="text-sm font-semibold text-gray-300">Recent Runs</h3>
+                  <span className="text-xs text-gray-500">Showing {generationHistory.length}</span>
+                </div>
+                <div className="space-y-2">
+                  {generationHistory.map((entry) => (
+                    <div
+                      key={`${entry.id}-${entry.created_at}`}
+                      className="flex items-center justify-between rounded-lg border border-gray-800/70 bg-gray-900/40 p-2 text-xs"
+                    >
+                      <div>
+                        <p className="font-medium text-gray-100">{entry.name}</p>
+                        <p className="text-gray-500">{new Date(entry.created_at).toLocaleString()}</p>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <button
+                          onClick={() => {
+                            setPreviewDungeon(entry);
+                          }}
+                          className="rounded border border-gray-700 px-2 py-1 text-gray-200 hover:bg-gray-800"
+                        >
+                          Load
+                        </button>
+                        <button
+                          disabled={isGenerating}
+                          onClick={() => handleGenerate(entry.params)}
+                          className="rounded bg-blue-600 px-2 py-1 text-white hover:bg-blue-700 disabled:opacity-50"
+                        >
+                          Regenerate
+                        </button>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
-        )}
+        </div>
       </div>
     );
   }

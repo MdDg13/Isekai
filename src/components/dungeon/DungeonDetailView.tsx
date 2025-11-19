@@ -28,71 +28,73 @@ export default function DungeonDetailView({
   };
 
   const mapCellSize = useMemo(() => {
-    if (!compact) {
-      return 20;
-    }
     const maxDimension = Math.max(currentLevel.grid.width, currentLevel.grid.height);
+    if (!compact) {
+      return 24;
+    }
     if (maxDimension === 0) {
       return 16;
     }
-    const targetPixels = 360;
-    return Math.max(8, Math.min(24, Math.floor(targetPixels / maxDimension)));
+    const targetPixels = 520;
+    return Math.max(12, Math.min(32, Math.floor(targetPixels / maxDimension)));
   }, [compact, currentLevel.grid.width, currentLevel.grid.height]);
 
   return (
     <div className={`space-y-4 ${compact ? 'space-y-2' : ''}`}>
-      {/* Header */}
-      {!compact && (
-        <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between">
+        {!compact ? (
           <div>
             <h2 className="text-2xl font-bold text-gray-100">{dungeon.identity.name}</h2>
             <p className="text-sm text-gray-400">
               {dungeon.identity.type} • {dungeon.identity.theme} • {dungeon.identity.difficulty}
             </p>
           </div>
-          <div className="flex items-center gap-2">
-            <label className="flex items-center gap-2 text-sm text-gray-300">
-              <input
-                type="checkbox"
-                checked={showGrid}
-                onChange={(e) => setShowGrid(e.target.checked)}
-                className="w-4 h-4"
-              />
-              Grid
-            </label>
-            <label className="flex items-center gap-2 text-sm text-gray-300">
-              <input
-                type="checkbox"
-                checked={showLabels}
-                onChange={(e) => setShowLabels(e.target.checked)}
-                className="w-4 h-4"
-              />
-              Labels
-            </label>
+        ) : (
+          <div>
+            <p className="text-xs uppercase text-gray-500">Preview</p>
+            <p className="text-sm font-semibold text-gray-100">{dungeon.identity.name}</p>
           </div>
-        </div>
-      )}
-
-      {/* Level Selector */}
-      {dungeon.structure.levels.length > 1 && !compact && (
-        <div>
-          <label className="block text-sm font-medium text-gray-300 mb-1">
-            Level
+        )}
+        <div className="flex items-center gap-2">
+          <label className="flex items-center gap-2 text-sm text-gray-300">
+            <input
+              type="checkbox"
+              checked={showGrid}
+              onChange={(e) => setShowGrid(e.target.checked)}
+              className="w-4 h-4"
+            />
+            Grid
           </label>
-          <select
-            value={selectedLevelIndex}
-            onChange={(e) => {
-              setSelectedLevelIndex(Number.parseInt(e.target.value, 10));
-              setSelectedRoom(null);
-            }}
-            className="px-3 py-2 bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-          >
-            {dungeon.structure.levels.map((level: DungeonLevel, idx: number) => (
-              <option key={level.level_index} value={idx}>
-                {level.name} (Level {level.level_index})
-              </option>
-            ))}
-          </select>
+          <label className="flex items-center gap-2 text-sm text-gray-300">
+            <input
+              type="checkbox"
+              checked={showLabels}
+              onChange={(e) => setShowLabels(e.target.checked)}
+              className="w-4 h-4"
+            />
+            Labels
+          </label>
+        </div>
+      </div>
+
+      {dungeon.structure.levels.length > 1 && (
+        <div className="flex flex-wrap gap-2 text-sm">
+          {dungeon.structure.levels.map((level: DungeonLevel, idx: number) => (
+            <button
+              key={level.level_index}
+              onClick={() => {
+                setSelectedLevelIndex(idx);
+                setSelectedRoom(null);
+              }}
+              className={`rounded-md border px-3 py-1 ${
+                selectedLevelIndex === idx
+                  ? 'border-blue-500 bg-blue-600/20 text-blue-200'
+                  : 'border-gray-700 bg-gray-900/40 text-gray-300 hover:border-gray-500'
+              }`}
+            >
+              {compact ? `L${level.level_index}` : `${level.name}`}
+            </button>
+          ))}
         </div>
       )}
 
