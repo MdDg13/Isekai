@@ -21,7 +21,7 @@ export async function generateWorkersAIImage(options: GenerateOptions) {
     prompt: options.prompt,
     width: options.width ?? 512,
     height: options.height ?? 512,
-    num_steps: options.numSteps ?? 25,
+    num_steps: Math.min(options.numSteps ?? 20, 20), // Max 20 for Workers AI
     guidance: options.guidance ?? 7.5,
     seed: options.seed ?? undefined,
   };
@@ -42,14 +42,24 @@ export async function generateWorkersAIImage(options: GenerateOptions) {
     throw new Error(await response.text());
   }
 
-  const data = await response.json();
-  const imageBase64 =
-    data?.result?.image || data?.result?.[0]?.image || data?.result?.[0]?.img || data?.result;
+  // Check content type - Workers AI can return binary PNG or JSON
+  const contentType = response.headers.get("content-type") || "";
+  
+  if (contentType.includes("application/json")) {
+    // JSON response with base64 image
+    const data = await response.json();
+    const imageBase64 =
+      data?.result?.image || data?.result?.[0]?.image || data?.result?.[0]?.img || data?.result;
 
-  if (!imageBase64) {
-    throw new Error("Workers AI response contained no image data.");
+    if (!imageBase64) {
+      throw new Error("Workers AI response contained no image data.");
+    }
+
+    return Buffer.from(imageBase64, "base64");
+  } else {
+    // Binary PNG response
+    const arrayBuffer = await response.arrayBuffer();
+    return Buffer.from(arrayBuffer);
   }
-
-  return Buffer.from(imageBase64, "base64");
 }
 

@@ -4,14 +4,22 @@ This project can now auto-generate textures, portraits, icons, and other art usi
 
 ### 1. Configure secrets
 
-Create `.env.local` (Next.js) and add:
+You must create a `.env.local` file in the repo root **before** running any AI generation.
 
-```
-CF_ACCOUNT_ID=9b19a6844783aa1bc6a7ee3e978cfcad
-CF_WORKERS_AI_TOKEN=<your-workers-ai-token>
-```
+1. In Cursor’s terminal, make sure you’re in the project root (`C:\Users\Alex\Projects\App Development\Isekai`).
+2. Run:
+   ```
+   New-Item -Path .env.local -ItemType File -Force
+   ```
+   (This creates an empty file; re-running overwrites nothing because `-Force` just keeps it.)
+3. Open `.env.local` in Cursor (or any editor) and paste:
+   ```
+   CF_ACCOUNT_ID=9b19a6844783aa1bc6a7ee3e978cfcad
+   CF_WORKERS_AI_TOKEN=QFygAQpOipm9V_ruUeqvRTWKUl5gioYmahkXTy0v
+   ```
+4. Save. The file is git-ignored, so the token stays local.
 
-Never commit the actual token to git.
+If the token ever changes, edit `.env.local` with the new value and save.
 
 ### 2. Define assets
 

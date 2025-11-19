@@ -3,6 +3,7 @@ import { runWorkersAIJSON } from '../_lib/ai';
 import { generateNPC, type GenerateNPCOptions, type GeneratedNPC } from '../_lib/npc-procedural';
 import { getWorldContext, getRandomSnippets, formatContextForPrompt } from '../_lib/context-builder';
 import { GenerationLogger } from '../_lib/generation-logger';
+import { generateNPCPortrait, uploadPortraitToStorage } from '../_lib/npc-portrait';
 
 interface GenerateWorldNpcBody {
   worldId: string;
@@ -893,9 +894,58 @@ Backstory: "${npcDraft.backstory || ''}"`;
     }
   }
 
+  // Generate portrait if Workers AI is enabled (store buffer for upload after NPC creation)
+  let portraitBuffer: Buffer | null = null;
+  const portraitEnabled = (env.WORKERS_AI_ENABLE as string | undefined)?.toLowerCase() === 'true';
+  
+  if (portraitEnabled) {
+    try {
+      logger.startStep('portrait_generation');
+      logger.log({
+        step: 'portrait_generation',
+        logType: 'info',
+        message: 'Starting NPC portrait generation'
+      });
+      
+      portraitBuffer = await generateNPCPortrait(npcDraft, {
+        CF_ACCOUNT_ID: env.CLOUDFLARE_ACCOUNT_ID as string | undefined,
+        CF_WORKERS_AI_TOKEN: env.CLOUDFLARE_API_TOKEN as string | undefined,
+      });
+      
+      if (portraitBuffer) {
+        logger.log({
+          step: 'portrait_generation',
+          logType: 'info',
+          message: 'Portrait generated successfully',
+          data: { size: portraitBuffer.length }
+        });
+      } else {
+        logger.log({
+          step: 'portrait_generation',
+          logType: 'warn',
+          message: 'Portrait generation returned null (credentials may be missing)'
+        });
+      }
+      
+      logger.endStep('portrait_generation');
+    } catch (portraitError) {
+      logger.log({
+        step: 'portrait_generation',
+        logType: 'error',
+        message: 'Portrait generation failed',
+        data: {
+          error: portraitError instanceof Error ? portraitError.message : String(portraitError)
+        }
+      });
+      logger.endStep('portrait_generation');
+      // Continue without portrait - not critical
+      console.warn('Portrait generation failed:', portraitError);
+    }
+  }
+
   // Add metadata (extend GeneratedNPC with additional fields)
   interface ExtendedNPC extends GeneratedNPC {
-    image_url: null;
+    image_url: string | null;
     voice_id: null;
     ruleset: string;
     location_id: string | null;
@@ -906,7 +956,7 @@ Backstory: "${npcDraft.backstory || ''}"`;
   
   const finalNpc: ExtendedNPC = {
     ...npcDraft,
-    image_url: null,
+    image_url: null, // Will be set after upload
     voice_id: null,
     ruleset: body.ruleset ?? 'DND5E_2024',
     location_id: body.locationId ?? null,
@@ -1006,6 +1056,7 @@ Backstory: "${npcDraft.backstory || ''}"`;
       affiliations: finalNpc.affiliations ?? [],
       relationships: finalNpc.relationships ?? {},
       connections: finalNpc.connections ?? [],
+      image_url: null, // Will be updated after upload
       visibility: 'public',
       created_at: new Date().toISOString(),
     })
@@ -1017,6 +1068,67 @@ Backstory: "${npcDraft.backstory || ''}"`;
       status: 500,
       headers: { 'content-type': 'application/json' },
     });
+  }
+
+  // Upload portrait to Supabase Storage if generated
+  let portraitUrl: string | null = null;
+  if (portraitBuffer && npcRow.id) {
+    try {
+      logger.startStep('portrait_upload');
+      logger.log({
+        step: 'portrait_upload',
+        logType: 'info',
+        message: 'Uploading portrait to Supabase Storage',
+        data: { npcId: npcRow.id }
+      });
+      
+      portraitUrl = await uploadPortraitToStorage(supabase, npcRow.id, portraitBuffer);
+      
+      if (portraitUrl) {
+        // Update NPC with portrait URL
+        const { error: updateErr } = await supabase
+          .from('world_npc')
+          .update({ image_url: portraitUrl })
+          .eq('id', npcRow.id);
+        
+        if (updateErr) {
+          logger.log({
+            step: 'portrait_upload',
+            logType: 'error',
+            message: 'Failed to update NPC with portrait URL',
+            data: { error: updateErr.message }
+          });
+        } else {
+          npcRow.image_url = portraitUrl;
+          logger.log({
+            step: 'portrait_upload',
+            logType: 'info',
+            message: 'Portrait uploaded and NPC updated successfully',
+            data: { url: portraitUrl }
+          });
+        }
+      } else {
+        logger.log({
+          step: 'portrait_upload',
+          logType: 'warn',
+          message: 'Portrait upload returned null (bucket may not exist)'
+        });
+      }
+      
+      logger.endStep('portrait_upload');
+    } catch (uploadError) {
+      logger.log({
+        step: 'portrait_upload',
+        logType: 'error',
+        message: 'Portrait upload failed',
+        data: {
+          error: uploadError instanceof Error ? uploadError.message : String(uploadError)
+        }
+      });
+      logger.endStep('portrait_upload');
+      // Continue without portrait URL - not critical
+      console.warn('Portrait upload failed:', uploadError);
+    }
   }
 
   // Final logging

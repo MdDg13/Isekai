@@ -6,25 +6,81 @@
       "category": "textures/floor",
       "type": "dungeon",
       "model": "@cf/stabilityai/stable-diffusion-xl-base-1.0",
-      "prompt": "Top-down tileable stone dungeon floor, modular 5ft squares, beveled edges, subtle cracks, soft cinematic lighting, seamless 512x512 texture, fantasy tabletop map style",
-      "width": 512,
-      "height": 512
+      "prompt": "Top-down view, tileable stone dungeon floor, clear 5ft square grid pattern, simple beveled edges, minimal detail, high contrast, game-ready texture, seamless 256x256",
+      "width": 256,
+      "height": 256
+    },
+    {
+      "id": "stone_floor_wet",
+      "category": "textures/floor",
+      "type": "dungeon",
+      "prompt": "Top-down view, tileable wet stone floor, simple puddles, clear grid pattern, minimal detail, high contrast, game-ready, seamless 256x256",
+      "width": 256,
+      "height": 256
+    },
+    {
+      "id": "fortress_floor_metal",
+      "category": "textures/floor",
+      "type": "fortress",
+      "prompt": "Top-down view, tileable iron floor plates, clear rivet pattern, simple geometric design, high contrast, game-ready texture, seamless 256x256",
+      "width": 256,
+      "height": 256
     },
     {
       "id": "cave_wall_organic",
       "category": "textures/wall",
       "type": "cave",
-      "prompt": "Tileable top-down cave wall texture with organic jagged edges, damp stone, moss patches, seamless 512x512, fantasy battle map shading",
-      "width": 512,
-      "height": 512
+      "prompt": "Top-down view, tileable cave wall edge, simple jagged rock outline, clear boundary, minimal detail, high contrast, game-ready, seamless 256x256",
+      "width": 256,
+      "height": 256
+    },
+    {
+      "id": "ruin_wall_cracked",
+      "category": "textures/wall",
+      "type": "ruin",
+      "prompt": "Top-down view, tileable cracked stone wall edge, simple cracks pattern, clear boundary, minimal detail, high contrast, game-ready, seamless 256x256",
+      "width": 256,
+      "height": 256
+    },
+    {
+      "id": "temple_wall_gilded",
+      "category": "textures/wall",
+      "type": "temple",
+      "prompt": "Top-down view, tileable temple wall edge, simple gilded pattern, clear boundary, minimal detail, high contrast, game-ready, seamless 256x256",
+      "width": 256,
+      "height": 256
     },
     {
       "id": "temple_floor_marble",
       "category": "textures/floor",
       "type": "temple",
-      "prompt": "Tileable top-down polished marble floor with gold inlays and subtle wear, 512x512 seamless, high detail fantasy temple interior",
-      "width": 512,
-      "height": 512
+      "prompt": "Top-down view, tileable polished marble floor, simple geometric inlay pattern, clear grid, minimal detail, high contrast, game-ready, seamless 256x256",
+      "width": 256,
+      "height": 256
+    },
+    {
+      "id": "cave_water_pool",
+      "category": "textures/terrain",
+      "type": "cave",
+      "prompt": "Top-down view, tileable water pool, simple blue circle with fade edge, clear boundary, minimal detail, high contrast, game-ready icon, seamless 256x256",
+      "width": 256,
+      "height": 256
+    },
+    {
+      "id": "lava_river",
+      "category": "textures/terrain",
+      "type": "lair",
+      "prompt": "Top-down view, tileable lava flow, simple bright orange-red pattern, clear boundary, minimal detail, high contrast, game-ready icon, seamless 256x256",
+      "width": 256,
+      "height": 256
+    },
+    {
+      "id": "forest_floor_moss",
+      "category": "textures/floor",
+      "type": "lair",
+      "prompt": "Top-down view, tileable mossy ground, simple green-brown pattern, clear texture, minimal detail, high contrast, game-ready, seamless 256x256",
+      "width": 256,
+      "height": 256
     },
     {
       "id": "npc_portrait_base",
@@ -35,20 +91,92 @@
       "height": 1024
     },
     {
+      "id": "npc_portrait_mage",
+      "category": "portraits/npc",
+      "type": "elf",
+      "prompt": "High quality portrait of an elven mage, glowing staff, arcane robes, painterly style, magical particles",
+      "width": 768,
+      "height": 1024
+    },
+    {
       "id": "monster_icon_drake",
       "category": "icons/monster",
       "type": "drake",
-      "prompt": "Top-down sprite of a crimson drake ready for battle, clean silhouette, transparent background, 512x512, suited for fantasy VTT tokens",
-      "width": 512,
-      "height": 512
+      "prompt": "Top-down view, simple crimson drake silhouette, clear shape, minimal detail, high contrast, game token style, transparent background, 256x256",
+      "width": 256,
+      "height": 256
+    },
+    {
+      "id": "monster_icon_golem",
+      "category": "icons/monster",
+      "type": "golem",
+      "prompt": "Top-down view, simple stone golem shape, clear outline, minimal detail, high contrast, game token style, transparent background, 256x256",
+      "width": 256,
+      "height": 256
+    },
+    {
+      "id": "monster_icon_spider_queen",
+      "category": "icons/monster",
+      "type": "arachnid",
+      "prompt": "Top-down view, simple spider shape, clear outline, minimal detail, high contrast, game token style, transparent background, 256x256",
+      "width": 256,
+      "height": 256
+    },
+    {
+      "id": "item_icon_treasure_chest",
+      "category": "icons/item",
+      "type": "treasure",
+      "prompt": "Top-down view, simple treasure chest icon, clear shape, minimal detail, high contrast, game icon style, transparent background, 256x256",
+      "width": 256,
+      "height": 256
+    },
+    {
+      "id": "item_icon_magic_scroll",
+      "category": "icons/item",
+      "type": "scroll",
+      "prompt": "Top-down view, simple scroll icon, clear shape, minimal detail, high contrast, game icon style, transparent background, 256x256",
+      "width": 256,
+      "height": 256
+    },
+    {
+      "id": "item_icon_potion_set",
+      "category": "icons/item",
+      "type": "potion",
+      "prompt": "Top-down view, simple potion bottles icon, clear shapes, minimal detail, high contrast, game icon style, transparent background, 256x256",
+      "width": 256,
+      "height": 256
     },
     {
       "id": "ui_emblem_arcane",
       "category": "ui/icons",
       "type": "arcane",
-      "prompt": "Vector-like glowing arcane emblem, circular glyphs, teal and gold palette, transparent background, 512x512, UI friendly",
-      "width": 512,
-      "height": 512
+      "prompt": "Simple arcane emblem icon, circular glyphs, teal and gold, clear design, minimal detail, high contrast, UI friendly, transparent background, 256x256",
+      "width": 256,
+      "height": 256
+    },
+    {
+      "id": "ui_button_gold",
+      "category": "ui/elements",
+      "type": "button",
+      "prompt": "Simple fantasy UI button, gold trim, blue center, clear design, minimal detail, high contrast, transparent background, 256x256",
+      "width": 256,
+      "height": 256
+    },
+    {
+      "id": "spell_card_fire",
+      "category": "ui/cards",
+      "type": "spell",
+      "prompt": "Illustrated card art for a fire spell with phoenix motif, card border included, 768x1024, fantasy art",
+      "width": 768,
+      "height": 1024
+    },
+    {
+      "id": "spell_card_water",
+      "category": "ui/cards",
+      "type": "spell",
+      "prompt": "Illustrated card art for a water spell with cresting waves, card border included, 768x1024",
+      "width": 768,
+      "height": 1024
     }
   ]
 }
