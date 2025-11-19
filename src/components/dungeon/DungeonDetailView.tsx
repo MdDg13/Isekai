@@ -95,6 +95,7 @@ export default function DungeonDetailView({
             showLabels={showLabels}
             interactive={!compact}
             onRoomClick={handleRoomClick}
+            dungeonType={dungeon.identity.theme as 'dungeon' | 'cave' | 'ruin' | 'fortress' | 'tower' | 'temple' | 'lair'}
           />
         </div>
 

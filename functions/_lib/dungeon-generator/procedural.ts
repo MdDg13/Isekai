@@ -55,8 +55,12 @@ export function generateSingleLevel(
   const roomDensity = params.room_density ?? DEFAULT_PARAMS.room_density;
   
   // Adjust number of rooms based on density
-  const targetRoomCount = Math.max(1, Math.floor(leafNodes.length * roomDensity));
-  const selectedNodes = leafNodes.slice(0, targetRoomCount);
+  // For very small dungeons, ensure we get a reasonable minimum
+  const baseRoomCount = Math.max(1, Math.floor(leafNodes.length * roomDensity));
+  // Apply density more intelligently - ensure at least 1 room per 10% density
+  const minRoomsFromDensity = Math.max(1, Math.floor(roomDensity * 10));
+  const targetRoomCount = Math.max(minRoomsFromDensity, baseRoomCount);
+  const selectedNodes = leafNodes.slice(0, Math.min(targetRoomCount, leafNodes.length));
   
   const rooms = placeRooms(selectedNodes, {
     minRoomSize: min_room_size,

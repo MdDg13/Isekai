@@ -3,6 +3,7 @@
 import { useState } from 'react';
 import { useTheme } from '../../providers/theme-context';
 import type { DungeonLevel, Room, Door, Corridor, Point } from '../../types/dungeon';
+import { generateTexturePatterns, type DungeonType } from '../../lib/dungeon-textures';
 
 interface DungeonMapViewProps {
   level: DungeonLevel;
@@ -11,6 +12,7 @@ interface DungeonMapViewProps {
   showLabels?: boolean;
   interactive?: boolean;
   onRoomClick?: (room: Room) => void;
+  dungeonType?: DungeonType; // For texture selection
 }
 
 type GridType = 'square' | 'hex';
@@ -22,6 +24,7 @@ export default function DungeonMapView({
   showLabels = false,
   interactive = false,
   onRoomClick,
+  dungeonType = 'dungeon',
 }: DungeonMapViewProps) {
   const { theme } = useTheme();
   const levelTileType = level.tile_type || 'square';
@@ -64,20 +67,28 @@ export default function DungeonMapView({
     exitMarker: '#ef4444',
   };
 
-  // Generate texture pattern for rooms
+  // Generate improved texture patterns based on dungeon type
+  const texturePatterns = generateTexturePatterns(dungeonType, theme);
+  
+  // Generate texture pattern for rooms (fallback for room types)
   const roomTexturePattern = (roomType: Room['type']) => {
     const patternId = `room-texture-${roomType}`;
     const baseColor = getRoomColor(roomType, colors, theme);
+    // Use improved textures for chambers, simple patterns for special rooms
+    if (roomType === 'chamber' || roomType === 'corridor') {
+      // Will use dungeon-type textures via pattern references
+      return null; // Handled by texturePatterns
+    }
     return (
       <pattern
         id={patternId}
         patternUnits="userSpaceOnUse"
-        width="8"
-        height="8"
+        width="12"
+        height="12"
         key={patternId}
       >
-        <rect width="8" height="8" fill={baseColor} />
-        <circle cx="4" cy="4" r="0.5" fill={theme === 'light' ? 'rgba(0,0,0,0.05)' : 'rgba(255,255,255,0.05)'} />
+        <rect width="12" height="12" fill={baseColor} />
+        <circle cx="6" cy="6" r="1" fill={theme === 'light' ? 'rgba(0,0,0,0.08)' : 'rgba(255,255,255,0.08)'} />
       </pattern>
     );
   };
@@ -140,20 +151,32 @@ export default function DungeonMapView({
         >
           {/* Define patterns */}
           <defs>
-            {roomTexturePattern('chamber')}
+            {/* Improved textures from texture library */}
+            <g dangerouslySetInnerHTML={{ __html: texturePatterns }} />
+            {/* Room-specific patterns */}
             {roomTexturePattern('entry')}
             {roomTexturePattern('exit')}
             {roomTexturePattern('stairwell')}
             {roomTexturePattern('special')}
+            {/* Chamber/corridor use dungeon-type floor textures */}
+            <pattern
+              id="room-texture-chamber"
+              patternUnits="userSpaceOnUse"
+              width="20"
+              height="20"
+            >
+              <rect width="20" height="20" fill={colors.roomFloor} />
+            </pattern>
             {/* Corridor texture */}
             <pattern
               id="corridor-texture"
               patternUnits="userSpaceOnUse"
-              width="4"
-              height="4"
+              width="8"
+              height="8"
             >
-              <rect width="4" height="4" fill={colors.corridor} />
-              <line x1="0" y1="2" x2="4" y2="2" stroke={theme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.1)'} strokeWidth="0.5" />
+              <rect width="8" height="8" fill={colors.corridor} />
+              <line x1="0" y1="4" x2="8" y2="4" stroke={theme === 'light' ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.12)'} strokeWidth="0.8" />
+              <line x1="4" y1="0" x2="4" y2="8" stroke={theme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.08)'} strokeWidth="0.5" />
             </pattern>
           </defs>
 
@@ -250,7 +273,18 @@ export default function DungeonMapView({
           {/* Rooms */}
           <g className="rooms">
             {rooms.map((room: Room) => {
-              const patternId = `room-texture-${room.type}`;
+              // Use appropriate texture based on room type and dungeon type
+              let patternId = `room-texture-${room.type}`;
+              let fillColor = getRoomColor(room.type, colors, theme);
+              
+              // For chambers, use dungeon-type floor texture
+              if (room.type === 'chamber' || room.type === 'corridor') {
+                const floorPatternId = `${dungeonType}-floor-stone`;
+                // Check if pattern exists, otherwise use base color
+                patternId = floorPatternId;
+                fillColor = colors.roomFloor;
+              }
+              
               return (
                 <g key={room.id}>
                   {/* Room floor with texture */}
@@ -259,7 +293,7 @@ export default function DungeonMapView({
                     y={room.y * cellSize}
                     width={room.width * cellSize}
                     height={room.height * cellSize}
-                    fill={`url(#${patternId})`}
+                    fill={patternId.startsWith(`${dungeonType}-`) ? `url(#${patternId})` : fillColor}
                     stroke={colors.roomBorder}
                     strokeWidth={theme === 'light' ? '2.5' : '2'}
                     className={interactive ? 'cursor-pointer hover:opacity-80' : ''}

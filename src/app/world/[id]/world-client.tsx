@@ -1219,12 +1219,16 @@ function DungeonsTab({
   onGenerate,
   status,
   setStatus,
+  supabase,
+  loadWorldDungeons,
 }: {
   worldId: string;
   dungeons: Array<{ id: string; name: string; created_at: string; detail: unknown }>;
   onGenerate: () => Promise<void>;
   status: string;
   setStatus: (s: string) => void;
+  supabase: ReturnType<typeof createClient>;
+  loadWorldDungeons: () => Promise<void>;
 }) {
   const [viewMode, setViewMode] = useState<'generator' | 'list' | 'detail'>('generator');
   const [selectedDungeon, setSelectedDungeon] = useState<{ id: string; name: string; created_at: string; detail: unknown } | null>(null);
@@ -1387,28 +1391,56 @@ function DungeonsTab({
           {dungeons.map((dungeon) => {
             const detail = dungeon.detail as DungeonDetail | null;
             return (
-              <button
+              <div
                 key={dungeon.id}
-                onClick={() => {
-                  setSelectedDungeon(dungeon);
-                  setViewMode('detail');
-                }}
-                className="surface-panel surface-bordered p-4 text-left hover:bg-gray-800 transition-colors"
+                className="surface-panel surface-bordered p-4 relative group"
               >
-                <h3 className="font-medium text-gray-100 mb-1">{dungeon.name}</h3>
-                {detail && (
-                  <div className="text-xs text-gray-400 space-y-1">
-                    <div>{detail.identity.type} • {detail.identity.theme}</div>
-                    <div>{detail.structure.levels.length} level(s)</div>
-                    <div>
-                      {detail.structure.levels.reduce((sum: number, level: DungeonLevel) => sum + level.rooms.length, 0)} rooms
+                <button
+                  onClick={() => {
+                    setSelectedDungeon(dungeon);
+                    setViewMode('detail');
+                  }}
+                  className="w-full text-left hover:bg-gray-800 transition-colors"
+                >
+                  <h3 className="font-medium text-gray-100 mb-1">{dungeon.name}</h3>
+                  {detail && (
+                    <div className="text-xs text-gray-400 space-y-1">
+                      <div>{detail.identity.type} • {detail.identity.theme}</div>
+                      <div>{detail.structure.levels.length} level(s)</div>
+                      <div>
+                        {detail.structure.levels.reduce((sum: number, level: DungeonLevel) => sum + level.rooms.length, 0)} rooms
+                      </div>
                     </div>
+                  )}
+                  <div className="text-xs text-gray-500 mt-2">
+                    {new Date(dungeon.created_at).toLocaleDateString()}
                   </div>
-                )}
-                <div className="text-xs text-gray-500 mt-2">
-                  {new Date(dungeon.created_at).toLocaleDateString()}
-                </div>
-              </button>
+                </button>
+                <button
+                  onClick={async (e) => {
+                    e.stopPropagation();
+                    if (confirm(`Delete "${dungeon.name}"? This cannot be undone.`)) {
+                      try {
+                        const { error } = await supabase
+                          .from('world_element')
+                          .delete()
+                          .eq('id', dungeon.id);
+                        if (error) throw error;
+                        await loadWorldDungeons();
+                        setStatus('Dungeon deleted successfully');
+                      } catch (err) {
+                        setStatus(`Error deleting dungeon: ${err instanceof Error ? err.message : 'Unknown error'}`);
+                      }
+                    }
+                  }}
+                  className="absolute top-2 right-2 p-1.5 text-red-400 hover:text-red-300 hover:bg-red-900/20 rounded opacity-0 group-hover:opacity-100 transition-opacity"
+                  title="Delete dungeon"
+                >
+                  <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  </svg>
+                </button>
+              </div>
             );
           })}
         </div>
