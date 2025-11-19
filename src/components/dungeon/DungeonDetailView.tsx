@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import DungeonMapView from './DungeonMapView';
 import type { DungeonDetail, Room, DungeonLevel, Door } from '../../types/dungeon';
+import { FeatureLegendIcon, FEATURE_ICON_LABELS, type FeatureIconKey } from './feature-icons';
 
 interface DungeonDetailViewProps {
   dungeon: DungeonDetail;
@@ -23,6 +24,18 @@ export default function DungeonDetailView({
   const [showLabels, setShowLabels] = useState(false);
 
   const currentLevel = dungeon.structure.levels[selectedLevelIndex];
+  const featureLegend = useMemo(() => {
+    const legends = new Map<FeatureIconKey, string>();
+    currentLevel.rooms.forEach((room) => {
+      room.features?.forEach((feature) => {
+        const icon = feature.icon as FeatureIconKey | undefined;
+        if (icon && FEATURE_ICON_LABELS[icon] && !legends.has(icon)) {
+          legends.set(icon, FEATURE_ICON_LABELS[icon]);
+        }
+      });
+    });
+    return Array.from(legends.entries());
+  }, [currentLevel.rooms]);
 
   const handleRoomClick = (room: Room) => {
     setSelectedRoom(room);
@@ -113,7 +126,8 @@ export default function DungeonDetailView({
             showLabels={showLabels}
             interactive={!compact}
             onRoomClick={handleRoomClick}
-            dungeonType={dungeon.identity.theme as 'dungeon' | 'cave' | 'ruin' | 'fortress' | 'tower' | 'temple' | 'lair'}
+            dungeonType={dungeon.identity.type as 'dungeon' | 'cave' | 'ruin' | 'fortress' | 'tower' | 'temple' | 'lair'}
+            showControls={showControls}
           />
         </div>
 
@@ -214,6 +228,20 @@ export default function DungeonDetailView({
           </div>
         )}
       </div>
+
+      {featureLegend.length > 0 && (
+        <div className="surface-panel surface-bordered p-4">
+          <h3 className="text-sm font-semibold text-gray-100 mb-2">Legend</h3>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-3 text-xs text-gray-300">
+            {featureLegend.map(([icon, label]) => (
+              <div key={icon} className="flex items-center gap-2">
+                <FeatureLegendIcon icon={icon} />
+                <span>{label}</span>
+              </div>
+            ))}
+          </div>
+        </div>
+      )}
     </div>
   );
 }

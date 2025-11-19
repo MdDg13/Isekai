@@ -7,6 +7,8 @@ import { createBSPTree, getLeafNodes } from './bsp';
 import { placeRooms } from './room-placer';
 import { buildCorridors } from './corridor-builder';
 import { placeDoors } from './door-placer';
+import { addRoomFeatures } from './feature-generator';
+import { getLayoutProfile } from './layout-profiles';
 import type {
   DungeonGenerationParams,
   DungeonDetail,
@@ -20,6 +22,8 @@ const DEFAULT_PARAMS: Required<Omit<DungeonGenerationParams, 'world_id' | 'theme
   num_levels: 1,
   min_room_size: 2,
   max_room_size: 10,
+  min_tile_span: 2,
+  max_tile_span: 2,
   room_density: 0.3,
   extra_connections_ratio: 0.25,
   secret_door_ratio: 0.1,
@@ -38,21 +42,31 @@ export function generateSingleLevel(
   const {
     min_room_size = DEFAULT_PARAMS.min_room_size,
     max_room_size = DEFAULT_PARAMS.max_room_size,
-    extra_connections_ratio = DEFAULT_PARAMS.extra_connections_ratio,
     secret_door_ratio = DEFAULT_PARAMS.secret_door_ratio,
+    min_tile_span = DEFAULT_PARAMS.min_tile_span,
+    max_tile_span = DEFAULT_PARAMS.max_tile_span,
   } = params;
+
+  const { profile, type: dungeonType } = getLayoutProfile(params.theme);
+  const tileSpanMin = Math.max(1, min_tile_span ?? profile.defaultTileSpan);
+  const tileSpanMax = Math.max(tileSpanMin, max_tile_span ?? tileSpanMin);
+
+  const resolvedMinRoomSize = Math.max(profile.minRoomSize, min_room_size);
+  const resolvedMaxRoomSize = Math.max(resolvedMinRoomSize, Math.min(profile.maxRoomSize, max_room_size));
+  const resolvedDensity = params.room_density ?? profile.roomDensity;
+  const resolvedExtraConnections = params.extra_connections_ratio ?? profile.extraConnections;
 
   // Step 1: Create BSP tree
   const bspTree = createBSPTree(width, height, {
-    minRoomSize: min_room_size,
-    maxRoomSize: max_room_size,
-    splitRatio: 0.5,
-    minSplitSize: min_room_size * 2,
+    minRoomSize: resolvedMinRoomSize,
+    maxRoomSize: resolvedMaxRoomSize,
+    splitRatio: profile.splitRatio,
+    minSplitSize: Math.max(profile.minSplitSize, resolvedMinRoomSize * 2, tileSpanMin * 2),
   });
 
   // Step 2: Get leaf nodes and place rooms
   const leafNodes = getLeafNodes(bspTree);
-  const roomDensity = params.room_density ?? DEFAULT_PARAMS.room_density;
+  const roomDensity = resolvedDensity;
   
   // Calculate target room count based on density and available leaf nodes
   // Use density to determine how many leaf nodes to use for rooms
@@ -66,9 +80,11 @@ export function generateSingleLevel(
   const selectedNodes = leafNodes.slice(0, Math.min(targetRoomCount, leafNodes.length));
   
   const rooms = placeRooms(selectedNodes, {
-    minRoomSize: min_room_size,
-    maxRoomSize: max_room_size,
-    roomPadding: 1,
+    minRoomSize: resolvedMinRoomSize,
+    maxRoomSize: resolvedMaxRoomSize,
+    roomPadding: profile.roomPadding,
+    minTileSpan: tileSpanMin,
+    maxTileSpan: tileSpanMax,
   });
 
   if (rooms.length === 0) {
@@ -86,7 +102,8 @@ export function generateSingleLevel(
   }
 
   // Step 5: Build corridors
-  const { corridors } = buildCorridors(rooms, extra_connections_ratio);
+  const corridorStyle = profile.featureBias === 'organic' || profile.featureBias === 'wild' ? 'organic' : 'straight';
+  const { corridors } = buildCorridors(rooms, resolvedExtraConnections, corridorStyle);
 
   // Step 6: Place doors
   const { updatedRooms, updatedCorridors } = placeDoors(
@@ -94,6 +111,8 @@ export function generateSingleLevel(
     corridors,
     { secretDoorRatio: secret_door_ratio }
   );
+
+  const featuredRooms = addRoomFeatures(updatedRooms, profile, params.difficulty ?? 'medium');
 
   // Step 7: Create level
   const tileType = params.tile_type || 'square';
@@ -105,10 +124,11 @@ export function generateSingleLevel(
       height,
       cell_size: 5, // 5 feet per cell
     },
-    rooms: updatedRooms,
+    rooms: featuredRooms,
     corridors: updatedCorridors,
     stairs: [],
     tile_type: tileType,
+    texture_set: dungeonType,
   };
 
   return level;
@@ -130,6 +150,8 @@ export function generateDungeonProcedural(
 
   // Generate levels
   const levels: DungeonLevel[] = [];
+  const { type: identityType } = getLayoutProfile(theme);
+
   for (let i = 0; i < num_levels; i++) {
     const level = generateSingleLevel(grid_width, grid_height, params);
     level.level_index = i;
@@ -147,7 +169,7 @@ export function generateDungeonProcedural(
   const dungeon: DungeonDetail = {
     identity: {
       name: `${theme} ${Math.floor(Math.random() * 1000)}`,
-      type: theme.includes('cave') ? 'cave' : theme.includes('ruin') ? 'ruin' : theme.includes('fortress') ? 'fortress' : theme.includes('tower') ? 'tower' : 'dungeon',
+      type: identityType,
       theme,
       difficulty,
       recommended_level: difficulty === 'easy' ? 1 : difficulty === 'medium' ? 5 : difficulty === 'hard' ? 10 : 15,

@@ -10,7 +10,8 @@ import { getRoomCenter } from './room-placer';
  */
 export function buildCorridors(
   rooms: Room[],
-  extraConnectionsRatio: number
+  extraConnectionsRatio: number,
+  style: 'straight' | 'organic' = 'straight'
 ): { corridors: Corridor[]; connections: RoomConnection[] } {
   if (rooms.length === 0) {
     return { corridors: [], connections: [] };
@@ -110,7 +111,7 @@ export function buildCorridors(
     const center2 = getRoomCenter(room2);
 
     // Create L-shaped path (horizontal then vertical, or vice versa)
-    const path = createLShapedPath(center1, center2);
+    const path = createLShapedPath(center1, center2, style);
 
     const corridor: Corridor = {
       id: `corridor-${i}`,
@@ -137,7 +138,7 @@ export function buildCorridors(
  * Create an L-shaped path between two points
  * Randomly chooses horizontal-first or vertical-first
  */
-function createLShapedPath(start: Point, end: Point): Point[] {
+function createLShapedPath(start: Point, end: Point, style: 'straight' | 'organic'): Point[] {
   const path: Point[] = [start];
 
   // Randomly choose direction (horizontal-first or vertical-first)
@@ -151,6 +152,22 @@ function createLShapedPath(start: Point, end: Point): Point[] {
     // Move vertically first, then horizontally
     path.push({ x: start.x, y: end.y });
     path.push(end);
+  }
+
+  if (style === 'organic') {
+    // Insert slight deviations to simulate winding tunnels
+    const jittered: Point[] = [path[0]];
+    for (let i = 1; i < path.length; i++) {
+      const prev = jittered[jittered.length - 1];
+      const current = path[i];
+      const midX = Math.round((prev.x + current.x) / 2);
+      const midY = Math.round((prev.y + current.y) / 2);
+      const offsetX = Math.round((Math.random() - 0.5) * 2);
+      const offsetY = Math.round((Math.random() - 0.5) * 2);
+      jittered.push({ x: midX + offsetX, y: midY + offsetY });
+      jittered.push(current);
+    }
+    return jittered;
   }
 
   return path;

@@ -82,6 +82,8 @@ const defaultFormState = {
   num_levels: 1,
   min_room_size: SIZE_PRESETS.medium.minRoomSize,
   max_room_size: SIZE_PRESETS.medium.maxRoomSize,
+  min_tile_span: 2,
+  max_tile_span: 2,
   theme: 'dungeon' as DungeonType,
   difficulty: 'medium' as 'easy' | 'medium' | 'hard' | 'deadly',
   use_ai: true,
@@ -129,6 +131,8 @@ export default function DungeonGenerator({
       num_levels: formData.num_levels,
       min_room_size: formData.min_room_size,
       max_room_size: formData.max_room_size,
+      min_tile_span: formData.min_tile_span,
+      max_tile_span: formData.max_tile_span,
       theme: formData.theme,
       difficulty: formData.difficulty,
       use_ai: formData.use_ai,
@@ -154,8 +158,20 @@ export default function DungeonGenerator({
     if (formData.num_levels < 1 || formData.num_levels > 5) {
       messages.push('Levels must be between 1 and 5.');
     }
+    if (formData.min_tile_span > formData.max_tile_span) {
+      messages.push('Minimum tile span cannot exceed maximum tile span.');
+    }
     return messages;
-  }, [formData.min_room_size, formData.max_room_size, formData.grid_width, formData.grid_height, formData.room_density, formData.num_levels]);
+  }, [
+    formData.min_room_size,
+    formData.max_room_size,
+    formData.grid_width,
+    formData.grid_height,
+    formData.room_density,
+    formData.num_levels,
+    formData.min_tile_span,
+    formData.max_tile_span,
+  ]);
 
   const isFormValid = validationMessages.length === 0;
 
@@ -363,6 +379,44 @@ export default function DungeonGenerator({
                 <option value="square">Square (5ft × 5ft)</option>
                 <option value="hex">Hexagonal (5ft)</option>
               </select>
+            </div>
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-300 mb-1">
+                  Min Tile Span (cells)
+                </label>
+                <input
+                  type="number"
+                  min={1}
+                  max={10}
+                  value={formData.min_tile_span}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      min_tile_span: Number.parseInt(e.target.value, 10),
+                    })
+                  }
+                  className="w-full rounded-md border border-gray-700 bg-gray-900/60 px-3 py-2 text-sm text-gray-100 focus:border-blue-500 focus:outline-none"
+                />
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-300 mb-1">
+                  Max Tile Span (cells)
+                </label>
+                <input
+                  type="number"
+                  min={formData.min_tile_span}
+                  max={12}
+                  value={formData.max_tile_span}
+                  onChange={(e) =>
+                    setFormData({
+                      ...formData,
+                      max_tile_span: Number.parseInt(e.target.value, 10),
+                    })
+                  }
+                  className="w-full rounded-md border border-gray-700 bg-gray-900/60 px-3 py-2 text-sm text-gray-100 focus:border-blue-500 focus:outline-none"
+                />
+              </div>
             </div>
 
             {/* Room vs Corridor Density */}

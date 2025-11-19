@@ -14,6 +14,8 @@ export interface DungeonGenerationParams {
   // Room Generation (for random mode)
   min_room_size?: number; // Default: 2 cells (10 feet)
   max_room_size?: number; // Default: 10 cells (50 feet)
+  min_tile_span?: number; // Minimum tile span (in cells) for rooms/corridors
+  max_tile_span?: number; // Maximum tile span (in cells)
   room_density?: number; // 0.0-1.0, default: 0.3 (30% of space is rooms)
   
   // Connectivity
@@ -37,7 +39,7 @@ export interface DungeonDetail {
   // IDENTITY
   identity: {
     name: string;
-    type: "dungeon" | "cave" | "ruin" | "fortress" | "tower";
+    type: "dungeon" | "cave" | "ruin" | "fortress" | "tower" | "temple" | "lair";
     theme: string;
     difficulty: "easy" | "medium" | "hard" | "deadly";
     recommended_level: number;
@@ -157,6 +159,7 @@ export interface RoomFeature {
   y?: number;
   description: string;
   metadata?: Record<string, unknown>;
+  icon?: "trap" | "treasure" | "altar" | "lair" | "encounter";
 }
 
 export interface FogOfWarState {

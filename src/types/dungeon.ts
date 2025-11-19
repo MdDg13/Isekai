@@ -8,6 +8,8 @@ export interface DungeonGenerationParams {
   num_levels?: number;
   min_room_size?: number;
   max_room_size?: number;
+  min_tile_span?: number;
+  max_tile_span?: number;
   room_density?: number;
   extra_connections_ratio?: number;
   secret_door_ratio?: number;
@@ -22,7 +24,7 @@ export interface DungeonGenerationParams {
 export interface DungeonDetail {
   identity: {
     name: string;
-    type: "dungeon" | "cave" | "ruin" | "fortress" | "tower";
+    type: "dungeon" | "cave" | "ruin" | "fortress" | "tower" | "temple" | "lair";
     theme: string;
     difficulty: "easy" | "medium" | "hard" | "deadly";
     recommended_level: number;
@@ -136,6 +138,7 @@ export interface RoomFeature {
   y?: number;
   description: string;
   metadata?: Record<string, unknown>;
+  icon?: "trap" | "treasure" | "altar" | "lair" | "encounter";
 }
 
 export interface FogOfWarState {

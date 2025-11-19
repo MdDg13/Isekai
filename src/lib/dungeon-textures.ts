@@ -28,6 +28,48 @@ export interface TextureSet {
   };
 }
 
+interface ColorSwatch {
+  base: string;
+  detail: string;
+  highlight: string;
+  shadow: string;
+}
+
+const TEXTURE_PALETTES: Record<DungeonType, { floor: ColorSwatch; wall: ColorSwatch }> = {
+  dungeon: {
+    floor: { base: '#323741', detail: 'rgba(9,9,11,0.35)', highlight: 'rgba(255,255,255,0.15)', shadow: 'rgba(0,0,0,0.45)' },
+    wall: { base: '#4b5563', detail: 'rgba(15,23,42,0.45)', highlight: 'rgba(255,255,255,0.2)', shadow: 'rgba(0,0,0,0.4)' },
+  },
+  cave: {
+    floor: { base: '#2f261d', detail: 'rgba(0,0,0,0.4)', highlight: 'rgba(255,255,255,0.08)', shadow: 'rgba(0,0,0,0.55)' },
+    wall: { base: '#3b3025', detail: 'rgba(0,0,0,0.5)', highlight: 'rgba(255,255,255,0.07)', shadow: 'rgba(0,0,0,0.6)' },
+  },
+  ruin: {
+    floor: { base: '#4a402f', detail: 'rgba(0,0,0,0.3)', highlight: 'rgba(255,255,255,0.12)', shadow: 'rgba(0,0,0,0.5)' },
+    wall: { base: '#5f5c54', detail: 'rgba(0,0,0,0.45)', highlight: 'rgba(255,255,255,0.15)', shadow: 'rgba(0,0,0,0.55)' },
+  },
+  fortress: {
+    floor: { base: '#3c4453', detail: 'rgba(14,23,38,0.4)', highlight: 'rgba(255,255,255,0.12)', shadow: 'rgba(0,0,0,0.45)' },
+    wall: { base: '#515d6d', detail: 'rgba(15,23,42,0.4)', highlight: 'rgba(255,255,255,0.18)', shadow: 'rgba(0,0,0,0.45)' },
+  },
+  tower: {
+    floor: { base: '#3a3645', detail: 'rgba(15,15,23,0.38)', highlight: 'rgba(255,255,255,0.15)', shadow: 'rgba(0,0,0,0.45)' },
+    wall: { base: '#5b5375', detail: 'rgba(31,24,44,0.45)', highlight: 'rgba(255,255,255,0.2)', shadow: 'rgba(0,0,0,0.55)' },
+  },
+  temple: {
+    floor: { base: '#4f3a2e', detail: 'rgba(0,0,0,0.35)', highlight: 'rgba(255,237,213,0.2)', shadow: 'rgba(59,7,4,0.3)' },
+    wall: { base: '#6b4e54', detail: 'rgba(45,7,45,0.4)', highlight: 'rgba(255,255,255,0.18)', shadow: 'rgba(0,0,0,0.4)' },
+  },
+  lair: {
+    floor: { base: '#2e3a2a', detail: 'rgba(0,0,0,0.4)', highlight: 'rgba(255,255,255,0.08)', shadow: 'rgba(0,0,0,0.55)' },
+    wall: { base: '#3f4d39', detail: 'rgba(0,0,0,0.45)', highlight: 'rgba(255,255,255,0.1)', shadow: 'rgba(0,0,0,0.5)' },
+  },
+};
+
+function getTexturePalette(type: DungeonType) {
+  return TEXTURE_PALETTES[type] ?? TEXTURE_PALETTES.dungeon;
+}
+
 // Generate SVG pattern IDs for each texture type
 export function getTexturePatternId(type: DungeonType, element: 'floor' | 'wall' | 'feature', variant: string): string {
   return `${type}-${element}-${variant}`;
@@ -35,11 +77,11 @@ export function getTexturePatternId(type: DungeonType, element: 'floor' | 'wall'
 
 // Create SVG pattern definitions for stone floor (improved with rock texture)
 // Classic dungeon style: cut stone tiles with natural variations
-export function createStoneFloorPattern(id: string, theme: 'light' | 'dark'): string {
-  const baseColor = theme === 'light' ? '#e2e8f0' : '#1e293b';
-  const detailColor = theme === 'light' ? 'rgba(0,0,0,0.18)' : 'rgba(255,255,255,0.15)';
-  const highlightColor = theme === 'light' ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.08)';
-  const shadowColor = theme === 'light' ? 'rgba(0,0,0,0.08)' : 'rgba(0,0,0,0.2)';
+export function createStoneFloorPattern(id: string, theme: 'light' | 'dark', palette?: ColorSwatch): string {
+  const baseColor = palette?.base ?? (theme === 'light' ? '#e2e8f0' : '#1e293b');
+  const detailColor = palette?.detail ?? (theme === 'light' ? 'rgba(0,0,0,0.18)' : 'rgba(255,255,255,0.15)');
+  const highlightColor = palette?.highlight ?? (theme === 'light' ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.08)');
+  const shadowColor = palette?.shadow ?? (theme === 'light' ? 'rgba(0,0,0,0.08)' : 'rgba(0,0,0,0.2)');
   return `
     <pattern id="${id}" patternUnits="userSpaceOnUse" width="24" height="24">
       <rect width="24" height="24" fill="${baseColor}"/>
@@ -67,10 +109,10 @@ export function createStoneFloorPattern(id: string, theme: 'light' | 'dark'): st
 }
 
 // Create SVG pattern for dirt/earth floor (improved with earth texture)
-export function createDirtFloorPattern(id: string, theme: 'light' | 'dark'): string {
-  const baseColor = theme === 'light' ? '#d4a574' : '#5c4a2a';
-  const detailColor = theme === 'light' ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.4)';
-  const lightColor = theme === 'light' ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.05)';
+export function createDirtFloorPattern(id: string, theme: 'light' | 'dark', palette?: ColorSwatch): string {
+  const baseColor = palette?.base ?? (theme === 'light' ? '#d4a574' : '#5c4a2a');
+  const detailColor = palette?.detail ?? (theme === 'light' ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.4)');
+  const lightColor = palette?.highlight ?? (theme === 'light' ? 'rgba(255,255,255,0.1)' : 'rgba(255,255,255,0.05)');
   return `
     <pattern id="${id}" patternUnits="userSpaceOnUse" width="16" height="16">
       <rect width="16" height="16" fill="${baseColor}"/>
@@ -95,11 +137,11 @@ export function createDirtFloorPattern(id: string, theme: 'light' | 'dark'): str
 
 // Create SVG pattern for cave/rock wall (improved with natural rock texture)
 // Based on natural cave formations: irregular, organic shapes with protrusions
-export function createCaveWallPattern(id: string, theme: 'light' | 'dark'): string {
-  const baseColor = theme === 'light' ? '#9ca3af' : '#374151';
-  const detailColor = theme === 'light' ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.6)';
-  const highlightColor = theme === 'light' ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.1)';
-  const shadowColor = theme === 'light' ? 'rgba(0,0,0,0.15)' : 'rgba(0,0,0,0.4)';
+export function createCaveWallPattern(id: string, theme: 'light' | 'dark', palette?: ColorSwatch): string {
+  const baseColor = palette?.base ?? (theme === 'light' ? '#9ca3af' : '#374151');
+  const detailColor = palette?.detail ?? (theme === 'light' ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.6)');
+  const highlightColor = palette?.highlight ?? (theme === 'light' ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.1)');
+  const shadowColor = palette?.shadow ?? (theme === 'light' ? 'rgba(0,0,0,0.15)' : 'rgba(0,0,0,0.4)');
   return `
     <pattern id="${id}" patternUnits="userSpaceOnUse" width="28" height="28">
       <rect width="28" height="28" fill="${baseColor}"/>
@@ -130,11 +172,11 @@ export function createCaveWallPattern(id: string, theme: 'light' | 'dark'): stri
 
 // Create SVG pattern for stone wall (improved with brick/stone blocks)
 // Classic dungeon/fortress style: regular blocks with mortar
-export function createStoneWallPattern(id: string, theme: 'light' | 'dark'): string {
-  const baseColor = theme === 'light' ? '#cbd5e1' : '#475569';
-  const mortarColor = theme === 'light' ? 'rgba(0,0,0,0.25)' : 'rgba(0,0,0,0.5)';
-  const highlightColor = theme === 'light' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.12)';
-  const shadowColor = theme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(0,0,0,0.3)';
+export function createStoneWallPattern(id: string, theme: 'light' | 'dark', palette?: ColorSwatch): string {
+  const baseColor = palette?.base ?? (theme === 'light' ? '#cbd5e1' : '#475569');
+  const mortarColor = palette?.detail ?? (theme === 'light' ? 'rgba(0,0,0,0.25)' : 'rgba(0,0,0,0.5)');
+  const highlightColor = palette?.highlight ?? (theme === 'light' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.12)');
+  const shadowColor = palette?.shadow ?? (theme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(0,0,0,0.3)');
   return `
     <pattern id="${id}" patternUnits="userSpaceOnUse" width="36" height="22">
       <rect width="36" height="22" fill="${baseColor}"/>
@@ -234,14 +276,15 @@ export function getTextureSetForType(type: DungeonType): Record<string, string> 
 // Generate all texture patterns for a dungeon type
 export function generateTexturePatterns(type: DungeonType, theme: 'light' | 'dark'): string {
   const patterns: string[] = [];
+  const palette = getTexturePalette(type);
   
   // Floor patterns
-  patterns.push(createStoneFloorPattern(getTexturePatternId(type, 'floor', 'stone'), theme));
-  patterns.push(createDirtFloorPattern(getTexturePatternId(type, 'floor', 'dirt'), theme));
+  patterns.push(createStoneFloorPattern(getTexturePatternId(type, 'floor', 'stone'), theme, palette.floor));
+  patterns.push(createDirtFloorPattern(getTexturePatternId(type, 'floor', 'dirt'), theme, palette.floor));
   
   // Wall patterns
-  patterns.push(createStoneWallPattern(getTexturePatternId(type, 'wall', 'stone'), theme));
-  patterns.push(createCaveWallPattern(getTexturePatternId(type, 'wall', 'cave'), theme));
+  patterns.push(createStoneWallPattern(getTexturePatternId(type, 'wall', 'stone'), theme, palette.wall));
+  patterns.push(createCaveWallPattern(getTexturePatternId(type, 'wall', 'cave'), theme, palette.wall));
   
   // Stairs patterns
   patterns.push(createStairsPattern(getTexturePatternId(type, 'feature', 'stairs_up'), 'up', theme));

@@ -2,9 +2,10 @@
 
 import { useEffect, useRef, useState } from 'react';
 import { useTheme } from '../../providers/theme-context';
-import type { DungeonLevel, Room, Door, Corridor, Point } from '../../types/dungeon';
+import type { DungeonLevel, Room, Door, Corridor, Point, RoomFeature } from '../../types/dungeon';
 import { generateTexturePatterns, type DungeonType } from '../../lib/dungeon-textures';
 import { getMapThemePalette, type MapThemePalette } from '../../lib/theme/map-theme';
+import { FEATURE_ICON_DEFS, type FeatureIconKey } from './feature-icons';
 
 interface DungeonMapViewProps {
   level: DungeonLevel;
@@ -154,6 +155,10 @@ export default function DungeonMapView({
           <defs>
             {/* Improved textures from texture library */}
             <g dangerouslySetInnerHTML={{ __html: texturePatterns }} />
+            <radialGradient id={`vignette-${level.level_index}`} cx="50%" cy="50%" r="70%">
+              <stop offset="0%" stopColor="rgba(0,0,0,0)" />
+              <stop offset="100%" stopColor={theme === 'light' ? 'rgba(0,0,0,0.25)' : 'rgba(0,0,0,0.55)'} />
+            </radialGradient>
             {/* Room-specific patterns */}
             {roomTexturePattern('entry')}
             {roomTexturePattern('exit')}
@@ -180,6 +185,7 @@ export default function DungeonMapView({
               <line x1="4" y1="0" x2="4" y2="8" stroke={theme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(255,255,255,0.08)'} strokeWidth="0.5" />
             </pattern>
           </defs>
+          <rect width="100%" height="100%" fill={`url(#vignette-${level.level_index})`} opacity="0.35" pointerEvents="none" />
 
           {/* Grid lines - clearly visible tiles for gameplay */}
           {showGridLines && gridType === 'square' && (
@@ -338,6 +344,7 @@ export default function DungeonMapView({
                       className="pointer-events-none"
                     />
                   )}
+                  {renderRoomFeatures(room, cellSize)}
                 </g>
               );
             })}
@@ -397,4 +404,29 @@ function getRoomColor(roomType: Room['type'], colors: MapThemePalette, currentTh
     default:
       return colors.roomFloor;
   }
+}
+
+function renderRoomFeatures(room: Room, cellSize: number) {
+  if (!room.features || room.features.length === 0) return null;
+  const features = room.features.filter((feature) => feature.icon) as Array<RoomFeature & { icon: FeatureIconKey }>;
+  if (features.length === 0) return null;
+  const renderCount = Math.min(features.length, 3);
+  const centerX = (room.x + room.width / 2) * cellSize;
+  const centerY = (room.y + room.height / 2) * cellSize;
+
+  return features.slice(0, renderCount).map((feature, idx) => {
+    const icon = FEATURE_ICON_DEFS[feature.icon];
+    if (!icon) return null;
+    const offset = (idx - (renderCount - 1) / 2) * 14;
+    const scale = Math.min(cellSize / 18, 1.15);
+    return (
+      <g
+        key={`${room.id}-feature-${idx}`}
+        transform={`translate(${centerX}, ${centerY + offset}) scale(${scale}) translate(-8, -8)`}
+        className="pointer-events-none"
+      >
+        <path d={icon.path} fill={icon.fill} stroke={icon.stroke} strokeWidth={1.2} strokeLinecap="round" strokeLinejoin="round" />
+      </g>
+    );
+  });
 }
