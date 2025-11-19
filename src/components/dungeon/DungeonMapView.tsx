@@ -24,7 +24,8 @@ export default function DungeonMapView({
   onRoomClick,
 }: DungeonMapViewProps) {
   const { theme } = useTheme();
-  const [gridType, setGridType] = useState<GridType>('square');
+  const levelTileType = level.tile_type || 'square';
+  const [gridType, setGridType] = useState<GridType>(levelTileType as GridType);
   const [showGridLines, setShowGridLines] = useState(showGrid);
   const [showRoomLabels, setShowRoomLabels] = useState(showLabels);
 
@@ -156,28 +157,46 @@ export default function DungeonMapView({
             </pattern>
           </defs>
 
-          {/* Grid lines */}
+          {/* Grid lines - clearly visible tiles for gameplay */}
           {showGridLines && gridType === 'square' && (
-            <g className="grid-lines" stroke={colors.gridLine} strokeWidth="0.5">
-              {Array.from({ length: grid.width + 1 }).map((_, i) => (
-                <line
-                  key={`v-${i}`}
-                  x1={i * cellSize}
-                  y1={0}
-                  x2={i * cellSize}
-                  y2={svgHeight}
-                />
-              ))}
-              {Array.from({ length: grid.height + 1 }).map((_, i) => (
-                <line
-                  key={`h-${i}`}
-                  x1={0}
-                  y1={i * cellSize}
-                  x2={svgWidth}
-                  y2={i * cellSize}
-                />
-              ))}
-            </g>
+            <>
+              <g className="grid-lines" stroke={colors.gridLine} strokeWidth={theme === 'light' ? '1' : '0.8'} opacity={theme === 'light' ? '0.3' : '0.4'}>
+                {Array.from({ length: grid.width + 1 }).map((_, i) => (
+                  <line
+                    key={`v-${i}`}
+                    x1={i * cellSize}
+                    y1={0}
+                    x2={i * cellSize}
+                    y2={svgHeight}
+                  />
+                ))}
+                {Array.from({ length: grid.height + 1 }).map((_, i) => (
+                  <line
+                    key={`h-${i}`}
+                    x1={0}
+                    y1={i * cellSize}
+                    x2={svgWidth}
+                    y2={i * cellSize}
+                  />
+                ))}
+              </g>
+              {/* Tile borders for clearer visibility */}
+              {Array.from({ length: grid.width }, (_, x) =>
+                Array.from({ length: grid.height }, (_, y) => (
+                  <rect
+                    key={`tile-${x}-${y}`}
+                    x={x * cellSize}
+                    y={y * cellSize}
+                    width={cellSize}
+                    height={cellSize}
+                    fill="none"
+                    stroke={colors.gridLine}
+                    strokeWidth="0.3"
+                    opacity={theme === 'light' ? '0.2' : '0.25'}
+                  />
+                ))
+              )}
+            </>
           )}
 
           {/* Hex grid (simplified - shows as square for now, full hex implementation would be more complex) */}
@@ -242,7 +261,7 @@ export default function DungeonMapView({
                     height={room.height * cellSize}
                     fill={`url(#${patternId})`}
                     stroke={colors.roomBorder}
-                    strokeWidth="2"
+                    strokeWidth={theme === 'light' ? '2.5' : '2'}
                     className={interactive ? 'cursor-pointer hover:opacity-80' : ''}
                     onClick={() => interactive && onRoomClick?.(room)}
                   />
@@ -294,15 +313,15 @@ export default function DungeonMapView({
             {doors.map((door: Door) => (
               <g key={door.id}>
                 <rect
-                  x={door.x * cellSize - cellSize * 0.25}
-                  y={door.y * cellSize - cellSize * 0.25}
-                  width={cellSize * 0.5}
-                  height={cellSize * 0.5}
+                  x={door.x * cellSize - cellSize * 0.3}
+                  y={door.y * cellSize - cellSize * 0.3}
+                  width={cellSize * 0.6}
+                  height={cellSize * 0.6}
                   fill={door.type === 'secret' ? colors.doorSecret : colors.door}
-                  stroke={door.type === 'secret' ? colors.doorSecret : colors.door}
-                  strokeWidth={door.type === 'secret' ? '2' : '1.5'}
+                  stroke={colors.roomBorder}
+                  strokeWidth={door.type === 'secret' ? '2' : theme === 'light' ? '1.8' : '1.5'}
                   strokeDasharray={door.type === 'secret' ? '2,2' : 'none'}
-                  className="pointer-events-none"
+                  className="pointer-events-none drop-shadow-sm"
                   rx="1"
                 />
                 {/* Door state indicator */}

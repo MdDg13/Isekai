@@ -14,6 +14,7 @@ export interface DungeonGenerationParams {
   theme?: string;
   difficulty?: "easy" | "medium" | "hard" | "deadly";
   architectural_style?: string;
+  tile_type?: "square" | "hex";
   use_ai?: boolean;
   world_id?: string;
 }
@@ -81,6 +82,7 @@ export interface DungeonLevel {
   stairs: Stair[];
   texture_set?: string;
   fog_of_war?: FogOfWarState;
+  tile_type?: "square" | "hex";
 }
 
 export interface Room {

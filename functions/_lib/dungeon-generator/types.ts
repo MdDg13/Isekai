@@ -25,6 +25,9 @@ export interface DungeonGenerationParams {
   difficulty?: "easy" | "medium" | "hard" | "deadly";
   architectural_style?: string; // "gothic", "dwarven", "natural cave"
   
+  // Tile Type
+  tile_type?: "square" | "hex"; // Default: "square"
+  
   // AI Enhancement
   use_ai?: boolean; // Default: true
   world_id?: string; // For context fetching
@@ -100,6 +103,7 @@ export interface DungeonLevel {
   stairs: Stair[];
   texture_set?: string;
   fog_of_war?: FogOfWarState;
+  tile_type?: "square" | "hex"; // Grid tile shape
 }
 
 export interface Room {

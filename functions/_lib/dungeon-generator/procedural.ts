@@ -23,6 +23,7 @@ const DEFAULT_PARAMS: Required<Omit<DungeonGenerationParams, 'world_id' | 'theme
   room_density: 0.3,
   extra_connections_ratio: 0.25,
   secret_door_ratio: 0.1,
+  tile_type: 'square',
   use_ai: true,
 };
 
@@ -51,7 +52,13 @@ export function generateSingleLevel(
 
   // Step 2: Get leaf nodes and place rooms
   const leafNodes = getLeafNodes(bspTree);
-  const rooms = placeRooms(leafNodes, {
+  const roomDensity = params.room_density ?? DEFAULT_PARAMS.room_density;
+  
+  // Adjust number of rooms based on density
+  const targetRoomCount = Math.max(1, Math.floor(leafNodes.length * roomDensity));
+  const selectedNodes = leafNodes.slice(0, targetRoomCount);
+  
+  const rooms = placeRooms(selectedNodes, {
     minRoomSize: min_room_size,
     maxRoomSize: max_room_size,
     roomPadding: 1,
@@ -82,6 +89,7 @@ export function generateSingleLevel(
   );
 
   // Step 7: Create level
+  const tileType = params.tile_type || 'square';
   const level: DungeonLevel = {
     level_index: 0,
     name: 'Main Level',
@@ -93,6 +101,7 @@ export function generateSingleLevel(
     rooms: updatedRooms,
     corridors: updatedCorridors,
     stairs: [],
+    tile_type: tileType,
   };
 
   return level;

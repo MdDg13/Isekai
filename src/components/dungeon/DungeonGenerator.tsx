@@ -2,6 +2,7 @@
 
 import { useState } from 'react';
 import type { DungeonGenerationParams } from '../../types/dungeon';
+import { getDungeonTypeDefinition, type DungeonType } from '../../lib/dungeon-definitions';
 
 interface DungeonGeneratorProps {
   worldId: string;
@@ -9,9 +10,11 @@ interface DungeonGeneratorProps {
   isGenerating?: boolean;
 }
 
-type SizeCategory = 'small' | 'medium' | 'large' | 'huge';
+type SizeCategory = 'tiny' | 'very_small' | 'small' | 'medium' | 'large' | 'huge';
 
 const SIZE_PRESETS: Record<SizeCategory, { width: number; height: number; minRoom: number; maxRoom: number }> = {
+  tiny: { width: 15, height: 15, minRoom: 1, maxRoom: 3 },
+  very_small: { width: 20, height: 20, minRoom: 1, maxRoom: 5 },
   small: { width: 30, height: 30, minRoom: 2, maxRoom: 6 },
   medium: { width: 50, height: 50, minRoom: 2, maxRoom: 10 },
   large: { width: 70, height: 70, minRoom: 3, maxRoom: 12 },
@@ -32,9 +35,12 @@ export default function DungeonGenerator({
     num_levels: 1,
     min_room_size: 2,
     max_room_size: 10,
-    theme: 'dungeon',
+    theme: 'dungeon' as DungeonType,
     difficulty: 'medium' as 'easy' | 'medium' | 'hard' | 'deadly',
     use_ai: true,
+    tile_type: 'square' as 'square' | 'hex',
+    room_density: 0.3, // 0.0 to 1.0 - ratio of space that is rooms (vs corridors)
+    corridor_density: 0.5, // 0.0 to 1.0 - how many extra corridors/connections
   });
 
   // Update size when category changes
@@ -63,6 +69,9 @@ export default function DungeonGenerator({
       difficulty: formData.difficulty,
       use_ai: formData.use_ai,
       world_id: worldId,
+      room_density: formData.room_density,
+      extra_connections_ratio: formData.corridor_density,
+      tile_type: formData.tile_type,
     };
     await onGenerate({ ...params, name: formData.name || undefined });
   };
@@ -94,23 +103,44 @@ export default function DungeonGenerator({
         {/* Minimal Mode - Essential Settings */}
         <div className="grid grid-cols-2 sm:grid-cols-4 gap-3">
           {/* Type/Theme */}
-          <div>
+          <div className="relative">
             <label className="block text-xs font-medium text-gray-300 mb-1">
               Type
             </label>
-            <select
-              value={formData.theme}
-              onChange={(e) => setFormData({ ...formData, theme: e.target.value })}
-              className="w-full px-2 py-1.5 text-sm bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
-            >
-              <option value="dungeon">Dungeon</option>
-              <option value="cave">Cave</option>
-              <option value="ruin">Ruin</option>
-              <option value="fortress">Fortress</option>
-              <option value="tower">Tower</option>
-              <option value="temple">Temple</option>
-              <option value="lair">Lair</option>
-            </select>
+            <div className="relative group">
+              <select
+                value={formData.theme}
+                onChange={(e) => setFormData({ ...formData, theme: e.target.value as DungeonType })}
+                className="w-full px-2 py-1.5 text-sm bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="dungeon">Dungeon</option>
+                <option value="cave">Cave</option>
+                <option value="ruin">Ruin</option>
+                <option value="fortress">Fortress</option>
+                <option value="tower">Tower</option>
+                <option value="temple">Temple</option>
+                <option value="lair">Lair</option>
+              </select>
+              {/* Tooltip */}
+              <div className="absolute left-0 top-full mt-1 w-80 p-3 bg-gray-900 border border-gray-700 rounded-md shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-opacity z-50 pointer-events-none">
+                <h4 className="text-sm font-semibold text-gray-100 mb-1">
+                  {getDungeonTypeDefinition(formData.theme).name}
+                </h4>
+                <p className="text-xs text-gray-300 mb-2">
+                  {getDungeonTypeDefinition(formData.theme).description}
+                </p>
+                <div className="text-xs text-gray-400 space-y-1">
+                  <p className="font-medium text-gray-300">Generation:</p>
+                  <p>{getDungeonTypeDefinition(formData.theme).generationNotes}</p>
+                  <p className="font-medium text-gray-300 mt-2">Typical Features:</p>
+                  <ul className="list-disc list-inside">
+                    {getDungeonTypeDefinition(formData.theme).typicalFeatures.map((feature, idx) => (
+                      <li key={idx}>{feature}</li>
+                    ))}
+                  </ul>
+                </div>
+              </div>
+            </div>
           </div>
 
           {/* Difficulty */}
@@ -140,10 +170,12 @@ export default function DungeonGenerator({
               onChange={(e) => handleSizeCategoryChange(e.target.value as SizeCategory)}
               className="w-full px-2 py-1.5 text-sm bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="small">Small</option>
-              <option value="medium">Medium</option>
-              <option value="large">Large</option>
-              <option value="huge">Huge</option>
+              <option value="tiny">Tiny (~3 rooms)</option>
+              <option value="very_small">Very Small (~5 rooms)</option>
+              <option value="small">Small (~6 rooms)</option>
+              <option value="medium">Medium (~10 rooms)</option>
+              <option value="large">Large (~12 rooms)</option>
+              <option value="huge">Huge (~15 rooms)</option>
             </select>
           </div>
 
@@ -232,6 +264,63 @@ export default function DungeonGenerator({
                   <span>20</span>
                   <span>100</span>
                 </div>
+              </div>
+            </div>
+
+            {/* Tile Type */}
+            <div>
+              <label className="block text-xs font-medium text-gray-300 mb-1">
+                Tile Type
+              </label>
+              <select
+                value={formData.tile_type}
+                onChange={(e) => setFormData({ ...formData, tile_type: e.target.value as 'square' | 'hex' })}
+                className="w-full px-2 py-1.5 text-sm bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
+              >
+                <option value="square">Square (5ft × 5ft)</option>
+                <option value="hex">Hexagonal (5ft)</option>
+              </select>
+            </div>
+
+            {/* Room vs Corridor Density */}
+            <div className="grid grid-cols-2 gap-3">
+              <div>
+                <label className="block text-xs font-medium text-gray-300 mb-1">
+                  Room Density: {Math.round(formData.room_density * 100)}% (0.0-1.0)
+                </label>
+                <input
+                  type="range"
+                  min="0.1"
+                  max="0.8"
+                  step="0.05"
+                  value={formData.room_density}
+                  onChange={(e) => setFormData({ ...formData, room_density: Number.parseFloat(e.target.value) })}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-[10px] text-gray-500 mt-0.5">
+                  <span>0.1</span>
+                  <span>0.8</span>
+                </div>
+                <p className="text-[10px] text-gray-500 mt-1">Higher = more rooms, less corridors</p>
+              </div>
+              <div>
+                <label className="block text-xs font-medium text-gray-300 mb-1">
+                  Corridor Density: {Math.round(formData.corridor_density * 100)}% (0.0-1.0)
+                </label>
+                <input
+                  type="range"
+                  min="0.0"
+                  max="1.0"
+                  step="0.05"
+                  value={formData.corridor_density}
+                  onChange={(e) => setFormData({ ...formData, corridor_density: Number.parseFloat(e.target.value) })}
+                  className="w-full"
+                />
+                <div className="flex justify-between text-[10px] text-gray-500 mt-0.5">
+                  <span>0.0</span>
+                  <span>1.0</span>
+                </div>
+                <p className="text-[10px] text-gray-500 mt-1">Extra connections between rooms</p>
               </div>
             </div>
 
