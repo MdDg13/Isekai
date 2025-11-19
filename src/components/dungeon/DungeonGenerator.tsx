@@ -355,7 +355,9 @@ export default function DungeonGenerator({
                   <span>0.1</span>
                   <span>0.8</span>
                 </div>
-                <p className="text-[10px] text-gray-500 mt-1">Higher = more rooms, less corridors</p>
+                <p className="text-[10px] text-gray-500 mt-1">
+                  Target: ~{SIZE_PRESETS[formData.sizeCategory].targetRoomCount.min}-{SIZE_PRESETS[formData.sizeCategory].targetRoomCount.max} rooms
+                </p>
               </div>
               <div>
                 <label className="block text-xs font-medium text-gray-300 mb-1">
