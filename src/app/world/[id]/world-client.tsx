@@ -9,6 +9,11 @@ import DungeonDetailView from "../../../components/dungeon/DungeonDetailView";
 import type { DungeonDetail, DungeonGenerationParams, DungeonLevel } from "../../../types/dungeon";
 import { Toast, type ToastVariant } from "../../../components/ui/Toast";
 
+interface GenerationHistoryEntry {
+  dungeon: { id: string; name: string; created_at: string; detail: unknown };
+  params: DungeonGenerationParams & { name?: string };
+}
+
 interface WorldRecord {
   id: string;
   name: string;
@@ -1255,6 +1260,7 @@ function DungeonsTab({
   const [selectedDungeon, setSelectedDungeon] = useState<{ id: string; name: string; created_at: string; detail: unknown } | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
   const [lastGeneratedDungeon, setLastGeneratedDungeon] = useState<{ id: string; name: string; created_at: string; detail: unknown } | null>(null);
+  const [generationHistory, setGenerationHistory] = useState<GenerationHistoryEntry[]>([]);
 
   const handleGenerate = async (params: { name?: string } & DungeonGenerationParams) => {
     setIsGenerating(true);
@@ -1289,10 +1295,6 @@ function DungeonsTab({
       pushToast('Dungeon generated successfully!', 'success');
       await onGenerate();
       // Find the newly generated dungeon
-      const supabase = createClient(
-        process.env.NEXT_PUBLIC_SUPABASE_URL!,
-        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
-      );
       const { data: newDungeons } = await supabase
         .from('world_element')
         .select('id, name, created_at, detail')
@@ -1301,7 +1303,15 @@ function DungeonsTab({
         .order('created_at', { ascending: false })
         .limit(1);
       if (newDungeons && newDungeons.length > 0) {
-        setLastGeneratedDungeon(newDungeons[0] as { id: string; name: string; created_at: string; detail: unknown });
+        const latest = newDungeons[0] as { id: string; name: string; created_at: string; detail: unknown };
+        setLastGeneratedDungeon(latest);
+        setGenerationHistory((prev) => {
+          const entry: GenerationHistoryEntry = {
+            dungeon: latest,
+            params,
+          };
+          return [entry, ...prev].slice(0, 5);
+        });
       }
       // Don't switch to list view - stay on generator to show the visual
     } catch (e: unknown) {
@@ -1385,6 +1395,49 @@ function DungeonsTab({
             </div>
           );
         })()}
+        {generationHistory.length > 0 && (
+          <div className="space-y-2">
+            <div className="flex items-center justify-between">
+              <h3 className="text-sm font-semibold text-gray-300">Recent Generations</h3>
+              <span className="text-xs text-gray-500">Last {generationHistory.length}</span>
+            </div>
+            <div className="space-y-2">
+              {generationHistory.map((entry) => {
+                const detail = entry.dungeon.detail as DungeonDetail | null;
+                return (
+                  <div
+                    key={`${entry.dungeon.id}-${entry.dungeon.created_at}`}
+                    className="flex items-center justify-between rounded-lg border border-gray-800/70 bg-gray-900/40 p-2 text-xs"
+                  >
+                    <div>
+                      <p className="font-medium text-gray-100">{entry.dungeon.name || 'Untitled Dungeon'}</p>
+                      <p className="text-gray-500">{new Date(entry.dungeon.created_at).toLocaleString()}</p>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <button
+                        onClick={() => {
+                          if (detail) {
+                            setLastGeneratedDungeon(entry.dungeon);
+                          }
+                        }}
+                        className="rounded border border-gray-700 px-2 py-1 text-gray-200 hover:bg-gray-800"
+                      >
+                        Load
+                      </button>
+                      <button
+                        disabled={isGenerating}
+                        onClick={() => handleGenerate(entry.params)}
+                        className="rounded bg-blue-600 px-2 py-1 text-white hover:bg-blue-700 disabled:opacity-50"
+                      >
+                        Regenerate
+                      </button>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          </div>
+        )}
       </div>
     );
   }
