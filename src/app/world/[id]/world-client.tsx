@@ -1431,7 +1431,7 @@ function DungeonsTab({
 
   if (viewMode === 'generator') {
     return (
-      <div className="space-y-6">
+      <div className="space-y-4">
         <div className="flex justify-end">
           <button
             onClick={() => setViewMode('list')}
@@ -1440,8 +1440,8 @@ function DungeonsTab({
             View Dungeons ({dungeons.length})
           </button>
         </div>
-        <div className="grid gap-6 lg:grid-cols-2">
-          <div className="space-y-4">
+        <div className="grid gap-4 lg:grid-cols-[0.32fr_0.68fr] items-start">
+          <div className="space-y-3">
             <DungeonGenerator worldId={worldId} onGenerate={handleGenerate} isGenerating={isGenerating} />
             {status && (
               <div
