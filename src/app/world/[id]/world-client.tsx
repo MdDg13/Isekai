@@ -769,27 +769,6 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
           </div>
         </div>
 
-        {filtered.length > 0 && (
-          <div className="flex justify-end text-xs text-gray-400">
-            <label className="flex items-center gap-2">
-              <input
-                ref={npcSelectAllRef}
-                type="checkbox"
-                className="h-4 w-4 rounded border-gray-600 bg-gray-900 text-blue-500 focus:ring-blue-500"
-                checked={npcSelectAllChecked}
-                onChange={(e) => {
-                  if (e.target.checked) {
-                    setSelectedNpcs(new Set(filtered.map((npc) => npc.id)));
-                  } else {
-                    setSelectedNpcs(new Set());
-                  }
-                }}
-              />
-              <span>Select all ({filtered.length})</span>
-            </label>
-          </div>
-        )}
-
         {selectedNpcs.size > 0 && (
           <div className="surface-card flex items-center justify-between p-4 mb-4">
             <span className="text-sm text-gray-300">
@@ -801,11 +780,9 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
                 if (!confirm(`Delete ${selectedNpcs.size} NPC${selectedNpcs.size !== 1 ? 's' : ''}? This cannot be undone.`)) return;
                 setStatus('Deleting NPCs...');
                 try {
-                  const deletePromises = Array.from(selectedNpcs).map((id) =>
-                    supabase.from('world_npc').delete().eq('id', id)
-                  );
-                  await Promise.all(deletePromises);
-                  setStatus(`${selectedNpcs.size} NPC${selectedNpcs.size !== 1 ? 's' : ''} deleted`);
+                  const ids = Array.from(selectedNpcs);
+                  await Promise.all(ids.map((id) => supabase.from('world_npc').delete().eq('id', id)));
+                  setStatus(`${ids.length} NPC${ids.length !== 1 ? 's' : ''} deleted`);
                   setSelectedNpcs(new Set());
                   loadWorldNpcs();
                 } catch (e: unknown) {
@@ -825,88 +802,120 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
             <p className="text-gray-400">No NPCs match the current filters.</p>
           </div>
         ) : (
-          <div className="grid gap-4">
-            {filtered.map((npc) => {
-              const quality = evaluateNpcQuality(npc);
-              const traits = quality.traits;
-              const stats = quality.stats;
-              const summary = quality.summary;
-              return (
-                <article
-                  key={npc.id}
-                  className="rounded-2xl border border-gray-800 bg-gray-900/50 p-5 space-y-4"
-                >
-                  <div className="flex flex-wrap items-center justify-between gap-3">
-                    <div className="flex items-center gap-3">
-                      <input
-                        type="checkbox"
-                        checked={selectedNpcs.has(npc.id)}
-                        onChange={(e) => {
-                          const updated = new Set(selectedNpcs);
-                          if (e.target.checked) {
-                            updated.add(npc.id);
-                          } else {
-                            updated.delete(npc.id);
-                          }
-                          setSelectedNpcs(updated);
-                        }}
-                        className="w-4 h-4 rounded border-gray-700 bg-gray-900 text-blue-600 focus:ring-blue-600 focus:ring-offset-gray-900"
-                      />
-                      <div>
-                        <h3 className="text-lg font-medium text-white">{npc.name}</h3>
-                        <p className="text-xs text-gray-500">{formatDateTime(npc.created_at)}</p>
-                      </div>
-                    </div>
-                    <span
-                      className={`text-xs px-3 py-1 rounded-full ${
-                        quality.tier === 'excellent'
-                          ? 'bg-green-500/15 text-green-200 border border-green-500/30'
-                          : quality.tier === 'solid'
-                          ? 'bg-amber-500/15 text-amber-200 border border-amber-500/30'
-                          : 'bg-red-500/15 text-red-200 border border-red-500/30'
-                      }`}
-                    >
-                      Quality {quality.score}%
-                    </span>
-                  </div>
-                  {summary?.oneLiner && <p className="text-sm text-gray-200 italic">{summary.oneLiner}</p>}
-                  {summary?.keyPoints && summary.keyPoints.length > 0 && (
-                    <ul className="text-xs text-gray-300 space-y-1 list-disc list-inside">
-                      {summary.keyPoints.slice(0, 3).map((point, idx) => (
-                        <li key={idx}>{point}</li>
-                      ))}
-                    </ul>
-                  )}
-                  <div className="grid gap-2 text-sm text-gray-300 sm:grid-cols-3">
-                    <p>Race: {traits.race || '-'}</p>
-                    <p>Class: {traits.class || '-'}</p>
-                    <p>Level: {stats.level ?? 0}</p>
-                  </div>
-                  {quality.warnings.length > 0 && (
-                    <div className="rounded-md border border-amber-500/20 bg-amber-500/5 p-3 text-xs text-amber-200">
-                      {quality.warnings[0]}
-                    </div>
-                  )}
-                  <div className="flex flex-wrap gap-3">
-                    <button
-                      onClick={() => {
-                        setSelectedNpcId(npc.id);
-                        setViewMode('detail');
+          <div className="overflow-x-auto rounded-xl border border-gray-800 bg-gray-900/30">
+            <table className="min-w-full divide-y divide-gray-800 text-sm">
+              <thead className="bg-gray-900/60 text-gray-400">
+                <tr>
+                  <th className="px-4 py-3">
+                    <input
+                      ref={npcSelectAllRef}
+                      type="checkbox"
+                      className="h-4 w-4 rounded border-gray-600 bg-gray-900 text-blue-500 focus:ring-blue-500"
+                      checked={npcSelectAllChecked}
+                      onChange={(e) => {
+                        if (e.target.checked) {
+                          setSelectedNpcs(new Set(filtered.map((npc) => npc.id)));
+                        } else {
+                          setSelectedNpcs(new Set());
+                        }
                       }}
-                      className="rounded-md bg-blue-600 px-4 py-2 text-sm font-medium text-white hover:bg-blue-700 transition-colors"
-                    >
-                      Open Detail
-                    </button>
-                    <Link
-                      href={`/report-error?item_type=npc&item_name=${encodeURIComponent(npc.name)}`}
-                      className="rounded-md border border-gray-700 px-4 py-2 text-sm text-gray-200 hover:bg-gray-800 transition-colors"
-                    >
-                      Report Issue
-                    </Link>
-                  </div>
-                </article>
-              );
-            })}
+                    />
+                  </th>
+                  <th className="px-4 py-3 text-left font-semibold">Name</th>
+                  <th className="px-4 py-3 text-left font-semibold">Race</th>
+                  <th className="px-4 py-3 text-left font-semibold">Class</th>
+                  <th className="px-4 py-3 text-left font-semibold">Level</th>
+                  <th className="px-4 py-3 text-left font-semibold">Created</th>
+                  <th className="px-4 py-3 text-left font-semibold">Quality</th>
+                  <th className="px-4 py-3 text-left font-semibold">Actions</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-gray-800 text-gray-200">
+                {filtered.map((npc) => {
+                  const quality = evaluateNpcQuality(npc);
+                  const traits = quality.traits;
+                  const stats = quality.stats;
+                  return (
+                    <tr key={npc.id} className="bg-gray-900/30 hover:bg-gray-900/60">
+                      <td className="px-4 py-3">
+                        <input
+                          type="checkbox"
+                          className="h-4 w-4 rounded border-gray-600 bg-gray-900 text-blue-500 focus:ring-blue-500"
+                          checked={selectedNpcs.has(npc.id)}
+                          onChange={(e) => {
+                            const updated = new Set(selectedNpcs);
+                            if (e.target.checked) {
+                              updated.add(npc.id);
+                            } else {
+                              updated.delete(npc.id);
+                            }
+                            setSelectedNpcs(updated);
+                          }}
+                        />
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="font-medium">{npc.name}</div>
+                        <div className="text-xs text-gray-500">{formatDateTime(npc.created_at)}</div>
+                      </td>
+                      <td className="px-4 py-3">{traits.race || '-'}</td>
+                      <td className="px-4 py-3">{traits.class || '-'}</td>
+                      <td className="px-4 py-3">{stats.level ?? 0}</td>
+                      <td className="px-4 py-3 text-gray-400">{new Date(npc.created_at).toLocaleDateString()}</td>
+                      <td className="px-4 py-3">
+                        <span
+                          className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
+                            quality.tier === 'excellent'
+                              ? 'bg-green-500/15 text-green-200 border border-green-500/30'
+                              : quality.tier === 'solid'
+                              ? 'bg-amber-500/15 text-amber-200 border border-amber-500/30'
+                              : 'bg-red-500/15 text-red-200 border border-red-500/30'
+                          }`}
+                        >
+                          {quality.score}%
+                        </span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex flex-wrap gap-2">
+                          <button
+                            onClick={() => {
+                              setSelectedNpcId(npc.id);
+                              setViewMode('detail');
+                            }}
+                            className="rounded border border-gray-700 px-3 py-1 text-xs hover:bg-gray-800"
+                          >
+                            View
+                          </button>
+                          <button
+                            onClick={async () => {
+                              if (!supabase) return;
+                              if (!confirm(`Delete NPC "${npc.name}"? This cannot be undone.`)) return;
+                              setStatus('Deleting NPC...');
+                              try {
+                                const { error } = await supabase.from('world_npc').delete().eq('id', npc.id);
+                                if (error) throw error;
+                                setStatus(`NPC "${npc.name}" deleted`);
+                                setSelectedNpcs((prev) => {
+                                  const updated = new Set(prev);
+                                  updated.delete(npc.id);
+                                  return updated;
+                                });
+                                loadWorldNpcs();
+                              } catch (e: unknown) {
+                                const message = e instanceof Error ? e.message : String(e);
+                                setStatus(`Delete failed: ${message}`);
+                              }
+                            }}
+                            className="rounded bg-red-600 px-3 py-1 text-xs text-white hover:bg-red-700"
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         )}
       </>
@@ -1423,11 +1432,7 @@ function DungeonsTab({
   if (viewMode === 'generator') {
     return (
       <div className="space-y-6">
-        <div className="flex flex-col gap-2 lg:flex-row lg:items-center lg:justify-between">
-          <div>
-            <h2 className="text-xl font-semibold text-gray-100">Dungeon Generator</h2>
-            <p className="text-xs text-gray-500">Preview layouts instantly, save only when ready.</p>
-          </div>
+        <div className="flex justify-end">
           <button
             onClick={() => setViewMode('list')}
             className="text-sm text-blue-400 hover:text-blue-300"
@@ -1480,7 +1485,7 @@ function DungeonsTab({
                     </button>
                   </div>
                 </div>
-                <DungeonDetailView dungeon={previewDungeon.detail} compact={true} />
+                <DungeonDetailView dungeon={previewDungeon.detail} compact={true} showControls={false} />
                 <div className="flex gap-2">
                   <button
                     disabled={isSaving || previewDungeon.saved}

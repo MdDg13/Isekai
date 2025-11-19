@@ -8,12 +8,14 @@ interface DungeonDetailViewProps {
   dungeon: DungeonDetail;
   onRoomClick?: (room: Room) => void;
   compact?: boolean;
+  showControls?: boolean;
 }
 
 export default function DungeonDetailView({
   dungeon,
   onRoomClick,
   compact = false,
+  showControls = true,
 }: DungeonDetailViewProps) {
   const [selectedLevelIndex, setSelectedLevelIndex] = useState(0);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
@@ -55,26 +57,28 @@ export default function DungeonDetailView({
             <p className="text-sm font-semibold text-gray-100">{dungeon.identity.name}</p>
           </div>
         )}
-        <div className="flex items-center gap-2">
-          <label className="flex items-center gap-2 text-sm text-gray-300">
-            <input
-              type="checkbox"
-              checked={showGrid}
-              onChange={(e) => setShowGrid(e.target.checked)}
-              className="w-4 h-4"
-            />
-            Grid
-          </label>
-          <label className="flex items-center gap-2 text-sm text-gray-300">
-            <input
-              type="checkbox"
-              checked={showLabels}
-              onChange={(e) => setShowLabels(e.target.checked)}
-              className="w-4 h-4"
-            />
-            Labels
-          </label>
-        </div>
+        {showControls && (
+          <div className="flex items-center gap-2">
+            <label className="flex items-center gap-2 text-sm text-gray-300">
+              <input
+                type="checkbox"
+                checked={showGrid}
+                onChange={(e) => setShowGrid(e.target.checked)}
+                className="w-4 h-4"
+              />
+              Grid
+            </label>
+            <label className="flex items-center gap-2 text-sm text-gray-300">
+              <input
+                type="checkbox"
+                checked={showLabels}
+                onChange={(e) => setShowLabels(e.target.checked)}
+                className="w-4 h-4"
+              />
+              Labels
+            </label>
+          </div>
+        )}
       </div>
 
       {dungeon.structure.levels.length > 1 && (
