@@ -54,12 +54,15 @@ export function generateSingleLevel(
   const leafNodes = getLeafNodes(bspTree);
   const roomDensity = params.room_density ?? DEFAULT_PARAMS.room_density;
   
-  // Adjust number of rooms based on density
-  // For very small dungeons, ensure we get a reasonable minimum
+  // Calculate target room count based on density and available leaf nodes
+  // Use density to determine how many leaf nodes to use for rooms
   const baseRoomCount = Math.max(1, Math.floor(leafNodes.length * roomDensity));
-  // Apply density more intelligently - ensure at least 1 room per 10% density
-  const minRoomsFromDensity = Math.max(1, Math.floor(roomDensity * 10));
-  const targetRoomCount = Math.max(minRoomsFromDensity, baseRoomCount);
+  
+  // Ensure minimum viable room count (at least 2 for entry/exit, or 1 for single-room)
+  const minRooms = Math.max(1, Math.floor(roomDensity * 5)); // At least 1 room per 20% density
+  const targetRoomCount = Math.max(minRooms, baseRoomCount);
+  
+  // Select nodes up to target, but don't exceed available leaf nodes
   const selectedNodes = leafNodes.slice(0, Math.min(targetRoomCount, leafNodes.length));
   
   const rooms = placeRooms(selectedNodes, {

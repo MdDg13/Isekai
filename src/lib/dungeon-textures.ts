@@ -34,24 +34,34 @@ export function getTexturePatternId(type: DungeonType, element: 'floor' | 'wall'
 }
 
 // Create SVG pattern definitions for stone floor (improved with rock texture)
+// Classic dungeon style: cut stone tiles with natural variations
 export function createStoneFloorPattern(id: string, theme: 'light' | 'dark'): string {
   const baseColor = theme === 'light' ? '#e2e8f0' : '#1e293b';
-  const detailColor = theme === 'light' ? 'rgba(0,0,0,0.15)' : 'rgba(255,255,255,0.12)';
-  const highlightColor = theme === 'light' ? 'rgba(255,255,255,0.3)' : 'rgba(255,255,255,0.05)';
+  const detailColor = theme === 'light' ? 'rgba(0,0,0,0.18)' : 'rgba(255,255,255,0.15)';
+  const highlightColor = theme === 'light' ? 'rgba(255,255,255,0.35)' : 'rgba(255,255,255,0.08)';
+  const shadowColor = theme === 'light' ? 'rgba(0,0,0,0.08)' : 'rgba(0,0,0,0.2)';
   return `
-    <pattern id="${id}" patternUnits="userSpaceOnUse" width="20" height="20">
-      <rect width="20" height="20" fill="${baseColor}"/>
-      <!-- Stone tile grid -->
-      <rect x="0" y="0" width="10" height="10" fill="${baseColor}" stroke="${detailColor}" strokeWidth="0.3" opacity="0.4"/>
-      <rect x="10" y="10" width="10" height="10" fill="${baseColor}" stroke="${detailColor}" strokeWidth="0.3" opacity="0.4"/>
-      <!-- Rock texture details -->
-      <path d="M2,2 Q4,1 6,2 T10,2 Q12,3 14,2" stroke="${detailColor}" strokeWidth="0.8" fill="none" opacity="0.5"/>
-      <path d="M2,8 Q4,7 6,8 T10,8 Q12,9 14,8" stroke="${detailColor}" strokeWidth="0.6" fill="none" opacity="0.4"/>
-      <path d="M12,2 Q14,1 16,2 T18,2" stroke="${detailColor}" strokeWidth="0.7" fill="none" opacity="0.4"/>
-      <path d="M12,8 Q14,7 16,8 T18,8" stroke="${detailColor}" strokeWidth="0.6" fill="none" opacity="0.4"/>
-      <!-- Highlights -->
-      <ellipse cx="5" cy="5" rx="1.5" ry="1" fill="${highlightColor}" opacity="0.3"/>
-      <ellipse cx="15" cy="15" rx="1.2" ry="0.8" fill="${highlightColor}" opacity="0.3"/>
+    <pattern id="${id}" patternUnits="userSpaceOnUse" width="24" height="24">
+      <rect width="24" height="24" fill="${baseColor}"/>
+      <!-- Stone tile grid (offset pattern for visual interest) -->
+      <rect x="0" y="0" width="12" height="12" fill="${baseColor}" stroke="${detailColor}" strokeWidth="0.4" opacity="0.5"/>
+      <rect x="12" y="12" width="12" height="12" fill="${baseColor}" stroke="${detailColor}" strokeWidth="0.4" opacity="0.5"/>
+      <!-- Individual stone texture with cracks and grain -->
+      <path d="M2,3 Q4,2 6,3 Q8,4 10,3" stroke="${detailColor}" strokeWidth="0.9" fill="none" opacity="0.6"/>
+      <path d="M2,9 Q4,8 6,9 Q8,10 10,9" stroke="${detailColor}" strokeWidth="0.7" fill="none" opacity="0.5"/>
+      <path d="M14,3 Q16,2 18,3 Q20,4 22,3" stroke="${detailColor}" strokeWidth="0.9" fill="none" opacity="0.6"/>
+      <path d="M14,9 Q16,8 18,9 Q20,10 22,9" stroke="${detailColor}" strokeWidth="0.7" fill="none" opacity="0.5"/>
+      <path d="M14,15 Q16,14 18,15 Q20,16 22,15" stroke="${detailColor}" strokeWidth="0.8" fill="none" opacity="0.5"/>
+      <path d="M2,15 Q4,14 6,15 Q8,16 10,15" stroke="${detailColor}" strokeWidth="0.8" fill="none" opacity="0.5"/>
+      <!-- Stone imperfections and cracks -->
+      <line x1="6" y1="2" x2="6" y2="6" stroke="${detailColor}" strokeWidth="0.5" opacity="0.4"/>
+      <line x1="18" y1="14" x2="18" y2="18" stroke="${detailColor}" strokeWidth="0.5" opacity="0.4"/>
+      <!-- Highlights on stone surfaces (light reflection) -->
+      <ellipse cx="6" cy="6" rx="2" ry="1.5" fill="${highlightColor}" opacity="0.4"/>
+      <ellipse cx="18" cy="18" rx="1.8" ry="1.3" fill="${highlightColor}" opacity="0.4"/>
+      <!-- Shadows for depth -->
+      <ellipse cx="4" cy="8" rx="1" ry="0.8" fill="${shadowColor}" opacity="0.3"/>
+      <ellipse cx="16" cy="20" rx="1" ry="0.8" fill="${shadowColor}" opacity="0.3"/>
     </pattern>
   `;
 }
@@ -84,57 +94,71 @@ export function createDirtFloorPattern(id: string, theme: 'light' | 'dark'): str
 }
 
 // Create SVG pattern for cave/rock wall (improved with natural rock texture)
+// Based on natural cave formations: irregular, organic shapes with protrusions
 export function createCaveWallPattern(id: string, theme: 'light' | 'dark'): string {
   const baseColor = theme === 'light' ? '#9ca3af' : '#374151';
-  const detailColor = theme === 'light' ? 'rgba(0,0,0,0.25)' : 'rgba(0,0,0,0.5)';
-  const highlightColor = theme === 'light' ? 'rgba(255,255,255,0.15)' : 'rgba(255,255,255,0.08)';
+  const detailColor = theme === 'light' ? 'rgba(0,0,0,0.3)' : 'rgba(0,0,0,0.6)';
+  const highlightColor = theme === 'light' ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.1)';
+  const shadowColor = theme === 'light' ? 'rgba(0,0,0,0.15)' : 'rgba(0,0,0,0.4)';
   return `
-    <pattern id="${id}" patternUnits="userSpaceOnUse" width="24" height="24">
-      <rect width="24" height="24" fill="${baseColor}"/>
-      <!-- Natural rock formations -->
-      <path d="M2,2 Q5,1 8,3 T14,2 Q17,4 18,7 T20,10" stroke="${detailColor}" strokeWidth="1.8" fill="none" opacity="0.7"/>
-      <path d="M4,8 Q7,6 10,8 T16,7 Q18,9 19,12 T20,16" stroke="${detailColor}" strokeWidth="1.4" fill="none" opacity="0.6"/>
-      <path d="M3,14 Q6,12 9,14 T15,13 Q17,15 18,18 T19,22" stroke="${detailColor}" strokeWidth="1.6" fill="none" opacity="0.6"/>
-      <path d="M6,4 Q9,3 12,5 T17,4" stroke="${detailColor}" strokeWidth="1.2" fill="none" opacity="0.5"/>
-      <!-- Rock protrusions -->
-      <circle cx="6" cy="5" r="2" fill="${detailColor}" opacity="0.4"/>
-      <circle cx="14" cy="15" r="1.5" fill="${detailColor}" opacity="0.4"/>
-      <circle cx="18" cy="8" r="1.2" fill="${detailColor}" opacity="0.35"/>
-      <circle cx="10" cy="19" r="1.8" fill="${detailColor}" opacity="0.4"/>
-      <!-- Cracks and fissures -->
-      <line x1="8" y1="2" x2="8" y2="8" stroke="${detailColor}" strokeWidth="0.8" opacity="0.5"/>
-      <line x1="16" y1="6" x2="16" y2="12" stroke="${detailColor}" strokeWidth="0.7" opacity="0.5"/>
-      <line x1="12" y1="14" x2="12" y2="20" stroke="${detailColor}" strokeWidth="0.8" opacity="0.5"/>
-      <!-- Highlights on rock faces -->
-      <ellipse cx="7" cy="6" rx="1.5" ry="1" fill="${highlightColor}" opacity="0.4"/>
-      <ellipse cx="15" cy="16" rx="1.2" ry="0.8" fill="${highlightColor}" opacity="0.3"/>
+    <pattern id="${id}" patternUnits="userSpaceOnUse" width="28" height="28">
+      <rect width="28" height="28" fill="${baseColor}"/>
+      <!-- Natural rock formations - organic, flowing lines -->
+      <path d="M2,3 Q4,1 7,3 Q10,5 12,3 Q15,1 18,3 Q21,5 24,3" stroke="${detailColor}" strokeWidth="2" fill="none" opacity="0.7"/>
+      <path d="M3,10 Q6,8 9,10 Q12,12 15,10 Q18,8 21,10 Q24,12 26,10" stroke="${detailColor}" strokeWidth="1.6" fill="none" opacity="0.6"/>
+      <path d="M4,17 Q7,15 10,17 Q13,19 16,17 Q19,15 22,17 Q25,19 27,17" stroke="${detailColor}" strokeWidth="1.8" fill="none" opacity="0.6"/>
+      <path d="M5,24 Q8,22 11,24 Q14,26 17,24 Q20,22 23,24" stroke="${detailColor}" strokeWidth="1.4" fill="none" opacity="0.5"/>
+      <!-- Rock protrusions and formations -->
+      <ellipse cx="7" cy="6" rx="2.5" ry="1.8" fill="${detailColor}" opacity="0.5"/>
+      <ellipse cx="16" cy="14" rx="2" ry="2.5" fill="${detailColor}" opacity="0.5"/>
+      <ellipse cx="21" cy="9" rx="1.8" ry="1.5" fill="${detailColor}" opacity="0.45"/>
+      <ellipse cx="11" cy="20" rx="2.2" ry="2" fill="${detailColor}" opacity="0.5"/>
+      <!-- Stalactite-like formations (hanging) -->
+      <path d="M9,2 Q9,4 9,6" stroke="${shadowColor}" strokeWidth="1.5" fill="none" opacity="0.6"/>
+      <path d="M19,4 Q19,6 19,8" stroke="${shadowColor}" strokeWidth="1.2" fill="none" opacity="0.5"/>
+      <!-- Cracks and fissures (vertical) -->
+      <line x1="8" y1="2" x2="8" y2="10" stroke="${detailColor}" strokeWidth="1" opacity="0.5"/>
+      <line x1="17" y1="5" x2="17" y2="13" stroke="${detailColor}" strokeWidth="0.9" opacity="0.5"/>
+      <line x1="13" y1="15" x2="13" y2="23" stroke="${detailColor}" strokeWidth="1" opacity="0.5"/>
+      <!-- Highlights on rock faces (light reflection) -->
+      <ellipse cx="8" cy="7" rx="1.8" ry="1.2" fill="${highlightColor}" opacity="0.5"/>
+      <ellipse cx="17" cy="15" rx="1.5" ry="1" fill="${highlightColor}" opacity="0.4"/>
+      <ellipse cx="22" cy="10" rx="1.2" ry="0.9" fill="${highlightColor}" opacity="0.4"/>
     </pattern>
   `;
 }
 
 // Create SVG pattern for stone wall (improved with brick/stone blocks)
+// Classic dungeon/fortress style: regular blocks with mortar
 export function createStoneWallPattern(id: string, theme: 'light' | 'dark'): string {
   const baseColor = theme === 'light' ? '#cbd5e1' : '#475569';
-  const mortarColor = theme === 'light' ? 'rgba(0,0,0,0.2)' : 'rgba(0,0,0,0.4)';
-  const highlightColor = theme === 'light' ? 'rgba(255,255,255,0.2)' : 'rgba(255,255,255,0.1)';
+  const mortarColor = theme === 'light' ? 'rgba(0,0,0,0.25)' : 'rgba(0,0,0,0.5)';
+  const highlightColor = theme === 'light' ? 'rgba(255,255,255,0.25)' : 'rgba(255,255,255,0.12)';
+  const shadowColor = theme === 'light' ? 'rgba(0,0,0,0.1)' : 'rgba(0,0,0,0.3)';
   return `
-    <pattern id="${id}" patternUnits="userSpaceOnUse" width="32" height="20">
-      <rect width="32" height="20" fill="${baseColor}"/>
-      <!-- Mortar lines -->
-      <line x1="0" y1="10" x2="32" y2="10" stroke="${mortarColor}" strokeWidth="1.2"/>
-      <line x1="16" y1="0" x2="16" y2="20" stroke="${mortarColor}" strokeWidth="1.2"/>
-      <!-- Stone blocks with offset pattern -->
-      <rect x="0" y="0" width="16" height="10" fill="${baseColor}" stroke="${mortarColor}" strokeWidth="0.8"/>
-      <rect x="16" y="10" width="16" height="10" fill="${baseColor}" stroke="${mortarColor}" strokeWidth="0.8"/>
-      <!-- Individual stone texture -->
-      <rect x="2" y="2" width="12" height="6" fill="${baseColor}" stroke="${mortarColor}" strokeWidth="0.5" opacity="0.6"/>
-      <rect x="18" y="12" width="12" height="6" fill="${baseColor}" stroke="${mortarColor}" strokeWidth="0.5" opacity="0.6"/>
-      <!-- Highlights on stones -->
-      <line x1="3" y1="3" x2="13" y2="3" stroke="${highlightColor}" strokeWidth="0.5" opacity="0.4"/>
-      <line x1="19" y1="13" x2="29" y2="13" stroke="${highlightColor}" strokeWidth="0.5" opacity="0.4"/>
-      <!-- Stone grain -->
-      <path d="M4,5 Q6,4 8,5" stroke="${mortarColor}" strokeWidth="0.3" fill="none" opacity="0.3"/>
-      <path d="M20,15 Q22,14 24,15" stroke="${mortarColor}" strokeWidth="0.3" fill="none" opacity="0.3"/>
+    <pattern id="${id}" patternUnits="userSpaceOnUse" width="36" height="22">
+      <rect width="36" height="22" fill="${baseColor}"/>
+      <!-- Mortar lines (running bond pattern) -->
+      <line x1="0" y1="11" x2="36" y2="11" stroke="${mortarColor}" strokeWidth="1.5"/>
+      <line x1="18" y1="0" x2="18" y2="22" stroke="${mortarColor}" strokeWidth="1.5"/>
+      <!-- Stone blocks with offset pattern (running bond) -->
+      <rect x="0" y="0" width="18" height="11" fill="${baseColor}" stroke="${mortarColor}" strokeWidth="1"/>
+      <rect x="18" y="11" width="18" height="11" fill="${baseColor}" stroke="${mortarColor}" strokeWidth="1"/>
+      <!-- Individual stone blocks with depth -->
+      <rect x="1" y="1" width="16" height="9" fill="${baseColor}" stroke="${mortarColor}" strokeWidth="0.6" opacity="0.7"/>
+      <rect x="19" y="12" width="16" height="9" fill="${baseColor}" stroke="${mortarColor}" strokeWidth="0.6" opacity="0.7"/>
+      <!-- 3D effect: highlights on top edges -->
+      <line x1="1" y1="1" x2="17" y2="1" stroke="${highlightColor}" strokeWidth="1" opacity="0.5"/>
+      <line x1="19" y1="12" x2="35" y2="12" stroke="${highlightColor}" strokeWidth="1" opacity="0.5"/>
+      <!-- 3D effect: shadows on bottom edges -->
+      <line x1="1" y1="10" x2="17" y2="10" stroke="${shadowColor}" strokeWidth="0.8" opacity="0.4"/>
+      <line x1="19" y1="21" x2="35" y2="21" stroke="${shadowColor}" strokeWidth="0.8" opacity="0.4"/>
+      <!-- Stone texture/grain -->
+      <path d="M3,4 Q5,3 7,4 Q9,5 11,4" stroke="${mortarColor}" strokeWidth="0.4" fill="none" opacity="0.3"/>
+      <path d="M21,15 Q23,14 25,15 Q27,16 29,15" stroke="${mortarColor}" strokeWidth="0.4" fill="none" opacity="0.3"/>
+      <!-- Small imperfections -->
+      <circle cx="6" cy="5" r="0.5" fill="${shadowColor}" opacity="0.3"/>
+      <circle cx="24" cy="16" r="0.5" fill="${shadowColor}" opacity="0.3"/>
     </pattern>
   `;
 }

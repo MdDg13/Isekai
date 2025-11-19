@@ -12,13 +12,65 @@ interface DungeonGeneratorProps {
 
 type SizeCategory = 'tiny' | 'very_small' | 'small' | 'medium' | 'large' | 'huge';
 
-const SIZE_PRESETS: Record<SizeCategory, { width: number; height: number; minRoom: number; maxRoom: number }> = {
-  tiny: { width: 15, height: 15, minRoom: 1, maxRoom: 3 },
-  very_small: { width: 20, height: 20, minRoom: 1, maxRoom: 5 },
-  small: { width: 30, height: 30, minRoom: 2, maxRoom: 6 },
-  medium: { width: 50, height: 50, minRoom: 2, maxRoom: 10 },
-  large: { width: 70, height: 70, minRoom: 3, maxRoom: 12 },
-  huge: { width: 100, height: 100, minRoom: 4, maxRoom: 15 },
+// Size category presets based on D&D best practices
+// Room sizes in grid cells (1 cell = 5 feet)
+// Room counts are target ranges for generation
+const SIZE_PRESETS: Record<SizeCategory, { 
+  width: number; 
+  height: number; 
+  minRoomSize: number;  // Minimum room size in cells (5ft each)
+  maxRoomSize: number;  // Maximum room size in cells
+  targetRoomCount: { min: number; max: number }; // Target room count range
+  roomDensity: number; // Default room density (0.0-1.0)
+}> = {
+  tiny: { 
+    width: 15, 
+    height: 15, 
+    minRoomSize: 2,  // 10ft minimum
+    maxRoomSize: 4,  // 20ft maximum
+    targetRoomCount: { min: 3, max: 5 },
+    roomDensity: 0.4, // Higher density for small dungeons
+  },
+  very_small: { 
+    width: 20, 
+    height: 20, 
+    minRoomSize: 2,  // 10ft minimum
+    maxRoomSize: 5,  // 25ft maximum
+    targetRoomCount: { min: 5, max: 8 },
+    roomDensity: 0.35,
+  },
+  small: { 
+    width: 30, 
+    height: 30, 
+    minRoomSize: 2,  // 10ft minimum
+    maxRoomSize: 6,  // 30ft maximum
+    targetRoomCount: { min: 8, max: 12 },
+    roomDensity: 0.3,
+  },
+  medium: { 
+    width: 50, 
+    height: 50, 
+    minRoomSize: 3,  // 15ft minimum
+    maxRoomSize: 8,  // 40ft maximum
+    targetRoomCount: { min: 12, max: 20 },
+    roomDensity: 0.3,
+  },
+  large: { 
+    width: 70, 
+    height: 70, 
+    minRoomSize: 3,  // 15ft minimum
+    maxRoomSize: 10, // 50ft maximum
+    targetRoomCount: { min: 20, max: 30 },
+    roomDensity: 0.25,
+  },
+  huge: { 
+    width: 100, 
+    height: 100, 
+    minRoomSize: 4,  // 20ft minimum
+    maxRoomSize: 12, // 60ft maximum
+    targetRoomCount: { min: 30, max: 50 },
+    roomDensity: 0.2, // Lower density for huge dungeons (more corridors)
+  },
 };
 
 export default function DungeonGenerator({
@@ -27,19 +79,20 @@ export default function DungeonGenerator({
   isGenerating = false,
 }: DungeonGeneratorProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
+  const mediumPreset = SIZE_PRESETS.medium;
   const [formData, setFormData] = useState({
     name: '',
     sizeCategory: 'medium' as SizeCategory,
-    grid_width: 50,
-    grid_height: 50,
+    grid_width: mediumPreset.width,
+    grid_height: mediumPreset.height,
     num_levels: 1,
-    min_room_size: 2,
-    max_room_size: 10,
+    min_room_size: mediumPreset.minRoomSize,
+    max_room_size: mediumPreset.maxRoomSize,
     theme: 'dungeon' as DungeonType,
     difficulty: 'medium' as 'easy' | 'medium' | 'hard' | 'deadly',
     use_ai: true,
     tile_type: 'square' as 'square' | 'hex',
-    room_density: 0.3, // 0.0 to 1.0 - ratio of space that is rooms (vs corridors)
+    room_density: mediumPreset.roomDensity,
     corridor_density: 0.5, // 0.0 to 1.0 - how many extra corridors/connections
   });
 
@@ -51,8 +104,9 @@ export default function DungeonGenerator({
       sizeCategory: category,
       grid_width: preset.width,
       grid_height: preset.height,
-      min_room_size: preset.minRoom,
-      max_room_size: preset.maxRoom,
+      min_room_size: preset.minRoomSize,
+      max_room_size: preset.maxRoomSize,
+      room_density: preset.roomDensity,
     });
   };
 
@@ -170,12 +224,12 @@ export default function DungeonGenerator({
               onChange={(e) => handleSizeCategoryChange(e.target.value as SizeCategory)}
               className="w-full px-2 py-1.5 text-sm bg-gray-800 border border-gray-700 rounded-md text-gray-100 focus:outline-none focus:ring-2 focus:ring-blue-500"
             >
-              <option value="tiny">Tiny (~3 rooms)</option>
-              <option value="very_small">Very Small (~5 rooms)</option>
-              <option value="small">Small (~6 rooms)</option>
-              <option value="medium">Medium (~10 rooms)</option>
-              <option value="large">Large (~12 rooms)</option>
-              <option value="huge">Huge (~15 rooms)</option>
+              <option value="tiny">Tiny (3-5 rooms, 10-20ft)</option>
+              <option value="very_small">Very Small (5-8 rooms, 10-25ft)</option>
+              <option value="small">Small (8-12 rooms, 10-30ft)</option>
+              <option value="medium">Medium (12-20 rooms, 15-40ft)</option>
+              <option value="large">Large (20-30 rooms, 15-50ft)</option>
+              <option value="huge">Huge (30-50 rooms, 20-60ft)</option>
             </select>
           </div>
 
