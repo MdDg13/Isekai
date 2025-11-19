@@ -28,7 +28,8 @@
     "qc-retrieve": "powershell -ExecutionPolicy Bypass -File scripts/retrieve-qc-feedback.ps1",
     "update-existing-data": "tsx scripts/update-existing-data.ts",
     "validate-extracted": "tsx scripts/validate-extracted-data.ts",
-    "sample-data": "tsx scripts/sample-and-validate.ts"
+    "sample-data": "tsx scripts/sample-and-validate.ts",
+    "generate:ai": "node scripts/generate-ai-assets.mjs"
   },
   "dependencies": {
     "@supabase/supabase-js": "^2.75.0",
