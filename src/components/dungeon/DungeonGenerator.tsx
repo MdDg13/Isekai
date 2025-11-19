@@ -25,24 +25,24 @@ const SIZE_PRESETS: Record<SizeCategory, {
   roomDensity: number;
 }> = {
   tiny: { 
-    width: 15, 
-    height: 15, 
+    width: 24, 
+    height: 24, 
     minRoomSize: 2,  // 10ft minimum
     maxRoomSize: 4,  // 20ft maximum
     targetRoomCount: { min: 3, max: 5 },
     roomDensity: 0.4, // Higher density for small dungeons
   },
   very_small: { 
-    width: 20, 
-    height: 20, 
+    width: 32, 
+    height: 32, 
     minRoomSize: 2,  // 10ft minimum
     maxRoomSize: 5,  // 25ft maximum
     targetRoomCount: { min: 5, max: 8 },
     roomDensity: 0.35,
   },
   small: { 
-    width: 30, 
-    height: 30, 
+    width: 44, 
+    height: 44, 
     minRoomSize: 2,  // 10ft minimum
     maxRoomSize: 6,  // 30ft maximum
     targetRoomCount: { min: 8, max: 12 },
