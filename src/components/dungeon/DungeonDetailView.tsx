@@ -7,11 +7,13 @@ import type { DungeonDetail, Room, DungeonLevel, Door } from '../../types/dungeo
 interface DungeonDetailViewProps {
   dungeon: DungeonDetail;
   onRoomClick?: (room: Room) => void;
+  compact?: boolean;
 }
 
 export default function DungeonDetailView({
   dungeon,
   onRoomClick,
+  compact = false,
 }: DungeonDetailViewProps) {
   const [selectedLevelIndex, setSelectedLevelIndex] = useState(0);
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
@@ -26,39 +28,41 @@ export default function DungeonDetailView({
   };
 
   return (
-    <div className="space-y-4">
+    <div className={`space-y-4 ${compact ? 'space-y-2' : ''}`}>
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold text-gray-100">{dungeon.identity.name}</h2>
-          <p className="text-sm text-gray-400">
-            {dungeon.identity.type} • {dungeon.identity.theme} • {dungeon.identity.difficulty}
-          </p>
+      {!compact && (
+        <div className="flex items-center justify-between">
+          <div>
+            <h2 className="text-2xl font-bold text-gray-100">{dungeon.identity.name}</h2>
+            <p className="text-sm text-gray-400">
+              {dungeon.identity.type} • {dungeon.identity.theme} • {dungeon.identity.difficulty}
+            </p>
+          </div>
+          <div className="flex items-center gap-2">
+            <label className="flex items-center gap-2 text-sm text-gray-300">
+              <input
+                type="checkbox"
+                checked={showGrid}
+                onChange={(e) => setShowGrid(e.target.checked)}
+                className="w-4 h-4"
+              />
+              Grid
+            </label>
+            <label className="flex items-center gap-2 text-sm text-gray-300">
+              <input
+                type="checkbox"
+                checked={showLabels}
+                onChange={(e) => setShowLabels(e.target.checked)}
+                className="w-4 h-4"
+              />
+              Labels
+            </label>
+          </div>
         </div>
-        <div className="flex items-center gap-2">
-          <label className="flex items-center gap-2 text-sm text-gray-300">
-            <input
-              type="checkbox"
-              checked={showGrid}
-              onChange={(e) => setShowGrid(e.target.checked)}
-              className="w-4 h-4"
-            />
-            Grid
-          </label>
-          <label className="flex items-center gap-2 text-sm text-gray-300">
-            <input
-              type="checkbox"
-              checked={showLabels}
-              onChange={(e) => setShowLabels(e.target.checked)}
-              className="w-4 h-4"
-            />
-            Labels
-          </label>
-        </div>
-      </div>
+      )}
 
       {/* Level Selector */}
-      {dungeon.structure.levels.length > 1 && (
+      {dungeon.structure.levels.length > 1 && !compact && (
         <div>
           <label className="block text-sm font-medium text-gray-300 mb-1">
             Level
@@ -81,21 +85,22 @@ export default function DungeonDetailView({
       )}
 
       {/* Map and Details */}
-      <div className="grid grid-cols-1 lg:grid-cols-3 gap-4">
+      <div className={`grid grid-cols-1 ${compact ? '' : 'lg:grid-cols-3'} gap-4`}>
         {/* Map */}
-        <div className="lg:col-span-2">
+        <div className={compact ? '' : 'lg:col-span-2'}>
           <DungeonMapView
             level={currentLevel}
-            cellSize={20}
+            cellSize={compact ? 16 : 20}
             showGrid={showGrid}
             showLabels={showLabels}
-            interactive={true}
+            interactive={!compact}
             onRoomClick={handleRoomClick}
           />
         </div>
 
         {/* Room List / Details */}
-        <div className="space-y-4">
+        {!compact && (
+          <div className="space-y-4">
           {selectedRoom ? (
             <div className="surface-panel surface-bordered p-4">
               <h3 className="text-lg font-semibold text-gray-100 mb-2">
@@ -175,19 +180,20 @@ export default function DungeonDetailView({
             </div>
           )}
 
-          {/* Level Stats */}
-          <div className="surface-panel surface-bordered p-4">
-            <h3 className="text-sm font-semibold text-gray-100 mb-2">Level Stats</h3>
-            <div className="space-y-1 text-sm text-gray-400">
-              <div>Rooms: {currentLevel.rooms.length}</div>
-              <div>Corridors: {currentLevel.corridors.length}</div>
-              <div>
-                Doors:{' '}
-                {currentLevel.rooms.reduce((sum: number, r: Room) => sum + r.doors.length, 0)}
+            {/* Level Stats */}
+            <div className="surface-panel surface-bordered p-4">
+              <h3 className="text-sm font-semibold text-gray-100 mb-2">Level Stats</h3>
+              <div className="space-y-1 text-sm text-gray-400">
+                <div>Rooms: {currentLevel.rooms.length}</div>
+                <div>Corridors: {currentLevel.corridors.length}</div>
+                <div>
+                  Doors:{' '}
+                  {currentLevel.rooms.reduce((sum: number, r: Room) => sum + r.doors.length, 0)}
+                </div>
               </div>
             </div>
           </div>
-        </div>
+        )}
       </div>
     </div>
   );

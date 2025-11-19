@@ -1229,6 +1229,7 @@ function DungeonsTab({
   const [viewMode, setViewMode] = useState<'generator' | 'list' | 'detail'>('generator');
   const [selectedDungeon, setSelectedDungeon] = useState<{ id: string; name: string; created_at: string; detail: unknown } | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
+  const [lastGeneratedDungeon, setLastGeneratedDungeon] = useState<{ id: string; name: string; created_at: string; detail: unknown } | null>(null);
 
   const handleGenerate = async (params: { name?: string } & DungeonGenerationParams) => {
     setIsGenerating(true);
@@ -1261,7 +1262,22 @@ function DungeonsTab({
       await res.json();
       setStatus('Dungeon generated successfully!');
       await onGenerate();
-      setViewMode('list');
+      // Find the newly generated dungeon
+      const supabase = createClient(
+        process.env.NEXT_PUBLIC_SUPABASE_URL!,
+        process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!
+      );
+      const { data: newDungeons } = await supabase
+        .from('world_element')
+        .select('id, name, created_at, detail')
+        .eq('world_id', worldId)
+        .eq('type', 'dungeon')
+        .order('created_at', { ascending: false })
+        .limit(1);
+      if (newDungeons && newDungeons.length > 0) {
+        setLastGeneratedDungeon(newDungeons[0] as { id: string; name: string; created_at: string; detail: unknown });
+      }
+      // Don't switch to list view - stay on generator to show the visual
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : String(e);
       setStatus(`Generation failed: ${message}`);
@@ -1313,6 +1329,29 @@ function DungeonsTab({
               : 'border-blue-800 bg-blue-900/20 text-blue-300'
           }`}>
             <p className="text-sm">{status}</p>
+          </div>
+        )}
+        {/* Display generated dungeon visual */}
+        {lastGeneratedDungeon && lastGeneratedDungeon.detail && (
+          <div className="space-y-3">
+            <div className="flex items-center justify-between">
+              <h3 className="text-lg font-semibold text-gray-100">
+                {lastGeneratedDungeon.name || 'Generated Dungeon'}
+              </h3>
+              <button
+                onClick={() => {
+                  setSelectedDungeon(lastGeneratedDungeon);
+                  setViewMode('detail');
+                }}
+                className="text-sm text-blue-400 hover:text-blue-300"
+              >
+                View Details →
+              </button>
+            </div>
+            <DungeonDetailView
+              dungeon={lastGeneratedDungeon.detail as DungeonDetail}
+              compact={true}
+            />
           </div>
         )}
       </div>
