@@ -1205,6 +1205,8 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
             }}
             status={status}
             setStatus={setStatus}
+            supabase={supabase!}
+            loadWorldDungeons={loadWorldDungeons}
           />
         )}
       </div>
@@ -1227,7 +1229,7 @@ function DungeonsTab({
   onGenerate: () => Promise<void>;
   status: string;
   setStatus: (s: string) => void;
-  supabase: ReturnType<typeof createClient>;
+  supabase: ReturnType<typeof createClient> | null;
   loadWorldDungeons: () => Promise<void>;
 }) {
   const [viewMode, setViewMode] = useState<'generator' | 'list' | 'detail'>('generator');
@@ -1419,6 +1421,7 @@ function DungeonsTab({
                 <button
                   onClick={async (e) => {
                     e.stopPropagation();
+                    if (!supabase) return;
                     if (confirm(`Delete "${dungeon.name}"? This cannot be undone.`)) {
                       try {
                         const { error } = await supabase
