@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from 'react';
+import { useMemo, useState } from 'react';
 import DungeonMapView from './DungeonMapView';
 import type { DungeonDetail, Room, DungeonLevel, Door } from '../../types/dungeon';
 
@@ -26,6 +26,18 @@ export default function DungeonDetailView({
     setSelectedRoom(room);
     onRoomClick?.(room);
   };
+
+  const mapCellSize = useMemo(() => {
+    if (!compact) {
+      return 20;
+    }
+    const maxDimension = Math.max(currentLevel.grid.width, currentLevel.grid.height);
+    if (maxDimension === 0) {
+      return 16;
+    }
+    const targetPixels = 360;
+    return Math.max(8, Math.min(24, Math.floor(targetPixels / maxDimension)));
+  }, [compact, currentLevel.grid.width, currentLevel.grid.height]);
 
   return (
     <div className={`space-y-4 ${compact ? 'space-y-2' : ''}`}>
@@ -90,7 +102,7 @@ export default function DungeonDetailView({
         <div className={compact ? '' : 'lg:col-span-2'}>
           <DungeonMapView
             level={currentLevel}
-            cellSize={compact ? 16 : 20}
+            cellSize={mapCellSize}
             showGrid={showGrid}
             showLabels={showLabels}
             interactive={!compact}

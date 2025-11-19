@@ -142,8 +142,8 @@ export default function DungeonGenerator({
 
   const validationMessages = useMemo(() => {
     const messages: string[] = [];
-    if (formData.min_room_size >= formData.max_room_size) {
-      messages.push('Minimum room size must be smaller than maximum room size.');
+    if (formData.min_room_size > formData.max_room_size) {
+      messages.push('Minimum room size cannot exceed maximum room size.');
     }
     if (formData.grid_width < 20 || formData.grid_width > 100 || formData.grid_height < 20 || formData.grid_height > 100) {
       messages.push('Grid width/height must stay between 20 and 100 cells.');

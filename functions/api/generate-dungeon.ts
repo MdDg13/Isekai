@@ -6,7 +6,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { generateDungeonProcedural } from '../_lib/dungeon-generator/procedural';
 import { GenerationLogger } from '../_lib/generation-logger';
-import type { DungeonGenerationParams } from '../_lib/dungeon-generator/types';
+import type { DungeonGenerationParams, DungeonDetail } from '../_lib/dungeon-generator/types';
 import type { PagesFunction } from '@cloudflare/workers-types';
 
 interface GenerateDungeonBody {
@@ -14,6 +14,8 @@ interface GenerateDungeonBody {
   name?: string;
   params: DungeonGenerationParams;
   use_ai?: boolean;
+  preview?: boolean;
+  detail?: DungeonDetail;
 }
 
 export const onRequest: PagesFunction = async (context) => {
@@ -78,35 +80,47 @@ export const onRequest: PagesFunction = async (context) => {
   const logger = new GenerationLogger(supabase, reqRow.id, body.world_id);
 
   try {
-    await logger.startStep('procedural_generation');
+    let dungeon: DungeonDetail;
+    const usingProvidedDetail = Boolean(body.detail);
 
-    // Generate dungeon procedurally
-    const dungeon = generateDungeonProcedural({
-      ...body.params,
-      world_id: body.world_id,
-    });
+    if (!usingProvidedDetail) {
+      await logger.startStep('procedural_generation');
+      dungeon = generateDungeonProcedural({
+        ...body.params,
+        world_id: body.world_id,
+      });
+      await logger.endStep('procedural_generation', {
+        total_rooms: dungeon.structure.levels.reduce((sum, level) => sum + level.rooms.length, 0),
+        total_corridors: dungeon.structure.levels.reduce((sum, level) => sum + level.corridors.length, 0),
+        total_doors: dungeon.structure.levels.reduce(
+          (sum, level) => sum + level.rooms.reduce((roomSum, room) => roomSum + room.doors.length, 0),
+          0
+        ),
+        num_levels: dungeon.structure.levels.length,
+      });
+    } else {
+      dungeon = body.detail!;
+    }
 
     // Update dungeon name if provided
     if (body.name) {
       dungeon.identity.name = body.name;
     }
 
-    await logger.endStep('procedural_generation', {
-      total_rooms: dungeon.structure.levels.reduce((sum, level) => sum + level.rooms.length, 0),
-      total_corridors: dungeon.structure.levels.reduce((sum, level) => sum + level.corridors.length, 0),
-      total_doors: dungeon.structure.levels.reduce(
-        (sum, level) => sum + level.rooms.reduce((roomSum, room) => roomSum + room.doors.length, 0),
-        0
-      ),
-      num_levels: dungeon.structure.levels.length,
-    });
-
-    // TODO: AI Enhancement (Phase 4)
-    // if (body.use_ai !== false && body.params.use_ai !== false) {
-    //   await logger.startStep('ai_enhancement');
-    //   // Enhance dungeon with AI
-    //   await logger.endStep('ai_enhancement');
-    // }
+    if (body.preview) {
+      await logger.flush();
+      return new Response(
+        JSON.stringify({
+          preview: true,
+          dungeon,
+          generation_log: { request_id: reqRow.id },
+        }),
+        {
+          status: 200,
+          headers: { 'content-type': 'application/json' },
+        }
+      );
+    }
 
     // Save to world_element
     await logger.startStep('save_dungeon');
