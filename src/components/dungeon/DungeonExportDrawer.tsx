@@ -22,18 +22,16 @@ export default function DungeonExportDrawer({
   onClose,
   pushToast,
 }: DungeonExportDrawerProps) {
-  const [selectedFormats, setSelectedFormats] = useState<Record<ExportFormat, boolean>>({
-    svg: true,
-    png: true,
-    pdf: false,
-    json: false,
-  });
+  const [selectedFormat, setSelectedFormat] = useState<ExportFormat>("svg");
   const [viewMode, setViewMode] = useState<ViewMode>("dm");
   const [showGrid, setShowGrid] = useState(true);
   const [showLabels, setShowLabels] = useState(true);
   const [levelIndex, setLevelIndex] = useState(0);
   const [svgElement, setSvgElement] = useState<SVGSVGElement | null>(null);
   const [exporting, setExporting] = useState(false);
+  useEffect(() => {
+    setSvgElement(null);
+  }, [levelIndex, showGrid, showLabels, viewMode]);
 
   useEffect(() => {
     if (!open) {
@@ -46,6 +44,11 @@ export default function DungeonExportDrawer({
       setShowLabels(false);
     }
   }, [viewMode]);
+  useEffect(() => {
+    if (viewMode === "player" && showLabels) {
+      setShowLabels(false);
+    }
+  }, [showLabels, viewMode]);
 
   const currentLevel = dungeon.structure.levels[levelIndex];
 
@@ -54,38 +57,28 @@ export default function DungeonExportDrawer({
     return `${safeName || "dungeon"}-l${levelIndex + 1}-${viewMode}`;
   }, [dungeon.identity.name, levelIndex, viewMode]);
 
-  const handleToggleFormat = (format: ExportFormat) => {
-    setSelectedFormats((prev) => ({ ...prev, [format]: !prev[format] }));
-  };
-
   const handleExport = async () => {
-    if (!svgElement) {
+    if (!svgElement && selectedFormat !== "json") {
       pushToast?.("Preparing map for export...", "info");
-      return;
-    }
-    const targets = (Object.keys(selectedFormats) as ExportFormat[]).filter((fmt) => selectedFormats[fmt]);
-    if (targets.length === 0) {
-      pushToast?.("Select at least one format", "error");
       return;
     }
     setExporting(true);
     try {
-      const clone = cloneSvg(svgElement);
-      const tasks = targets.map((format) => {
-        switch (format) {
-          case "svg":
-            return exportSvg(clone, filenameBase);
-          case "png":
-            return exportPng(clone, filenameBase);
-          case "json":
-            return exportJson(dungeon, levelIndex, filenameBase);
-          case "pdf":
-            return exportPdf(clone, filenameBase);
-          default:
-            return Promise.resolve();
-        }
-      });
-      await Promise.all(tasks);
+      const clone = svgElement ? cloneSvg(svgElement) : null;
+      switch (selectedFormat) {
+        case "svg":
+          await exportSvg(clone!, filenameBase);
+          break;
+        case "png":
+          await exportPng(clone!, filenameBase);
+          break;
+        case "pdf":
+          await exportPdf(clone!, filenameBase);
+          break;
+        case "json":
+          await exportJson(dungeon, levelIndex, filenameBase);
+          break;
+      }
       pushToast?.("Export complete", "success");
       onClose();
     } catch (error) {
@@ -118,20 +111,21 @@ export default function DungeonExportDrawer({
 
         <div className="mt-6 space-y-4">
           <section className="space-y-2">
-            <h3 className="text-sm font-semibold text-gray-200">Formats</h3>
+            <h3 className="text-sm font-semibold text-gray-200">Format</h3>
             <div className="grid grid-cols-2 gap-2 text-sm">
               {(["svg", "png", "pdf", "json"] as ExportFormat[]).map((format) => (
                 <label
                   key={format}
                   className={`flex items-center gap-2 rounded border px-3 py-2 ${
-                    selectedFormats[format] ? "border-blue-500 bg-blue-500/20" : "border-gray-800"
+                    selectedFormat === format ? "border-blue-500 bg-blue-500/20" : "border-gray-800"
                   }`}
                 >
                   <input
-                    type="checkbox"
-                    checked={selectedFormats[format]}
-                    onChange={() => handleToggleFormat(format)}
-                    className="h-4 w-4 rounded border-gray-600 bg-gray-900 text-blue-500 focus:ring-blue-500"
+                    type="radio"
+                    name="export-format"
+                    checked={selectedFormat === format}
+                    onChange={() => setSelectedFormat(format)}
+                    className="h-4 w-4 border-gray-600 text-blue-500 focus:ring-blue-500"
                   />
                   {format.toUpperCase()}
                 </label>

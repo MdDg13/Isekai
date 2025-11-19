@@ -135,13 +135,20 @@ export default function DungeonMapView({
       )}
 
       {/* Map Container */}
-      <div className="w-full overflow-auto rounded-lg border border-gray-700" style={{ backgroundColor: colors.background }}>
+      <div
+        className="w-full overflow-hidden rounded-lg border border-gray-700"
+        style={{
+          backgroundColor: colors.background,
+          aspectRatio: `${grid.width}/${grid.height}`,
+          minHeight: 360,
+        }}
+      >
         <svg
           ref={svgRef}
-          width={svgWidth}
-          height={svgHeight}
+          width="100%"
+          height="100%"
           viewBox={`0 0 ${svgWidth} ${svgHeight}`}
-          className="block"
+          className="block h-full w-full"
         >
           {/* Define patterns */}
           <defs>
