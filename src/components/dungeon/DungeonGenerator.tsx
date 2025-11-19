@@ -3,6 +3,7 @@
 import { useMemo, useState } from 'react';
 import type { DungeonGenerationParams } from '../../types/dungeon';
 import { getDungeonTypeDefinition, type DungeonType } from '../../lib/dungeon-definitions';
+import { InfoTooltip } from '../ui/InfoTooltip';
 
 interface DungeonGeneratorProps {
   worldId: string;
@@ -138,6 +139,25 @@ export default function DungeonGenerator({
     };
     await onGenerate({ ...params, name: formData.name || undefined });
   };
+
+  const validationMessages = useMemo(() => {
+    const messages: string[] = [];
+    if (formData.min_room_size >= formData.max_room_size) {
+      messages.push('Minimum room size must be smaller than maximum room size.');
+    }
+    if (formData.grid_width < 20 || formData.grid_width > 100 || formData.grid_height < 20 || formData.grid_height > 100) {
+      messages.push('Grid width/height must stay between 20 and 100 cells.');
+    }
+    if (formData.room_density < 0.1 || formData.room_density > 0.8) {
+      messages.push('Room density must stay between 10% and 80%.');
+    }
+    if (formData.num_levels < 1 || formData.num_levels > 5) {
+      messages.push('Levels must be between 1 and 5.');
+    }
+    return messages;
+  }, [formData.min_room_size, formData.max_room_size, formData.grid_width, formData.grid_height, formData.room_density, formData.num_levels]);
+
+  const isFormValid = validationMessages.length === 0;
 
   return (
     <div className="space-y-4">
@@ -348,9 +368,18 @@ export default function DungeonGenerator({
             {/* Room vs Corridor Density */}
             <div className="grid grid-cols-2 gap-3">
               <div>
-                <label className="block text-xs font-medium text-gray-300 mb-1">
-                  Room Density: {Math.round(formData.room_density * 100)}% (0.0-1.0)
-                </label>
+                <div className="flex items-center justify-between text-xs font-medium text-gray-300 mb-1">
+                  <span>
+                    Room Density: {Math.round(formData.room_density * 100)}% (0.0-1.0)
+                    <InfoTooltip
+                      content={
+                        <p>
+                          Controls how many rooms are carved from the BSP tree. Higher density produces more chambers with smaller corridors. Lower density favours long hallways.
+                        </p>
+                      }
+                    />
+                  </span>
+                </div>
                 <input
                   type="range"
                   min="0.1"
@@ -437,9 +466,20 @@ export default function DungeonGenerator({
         />
 
         {/* Submit */}
+        {validationMessages.length > 0 && (
+          <div className="rounded-lg border border-red-800/40 bg-red-900/10 p-3">
+            <p className="text-sm font-medium text-red-300">Fix the following before generating:</p>
+            <ul className="mt-2 list-disc pl-5 text-xs text-red-200">
+              {validationMessages.map((message) => (
+                <li key={message}>{message}</li>
+              ))}
+            </ul>
+          </div>
+        )}
+
         <button
           type="submit"
-          disabled={isGenerating}
+          disabled={isGenerating || !isFormValid}
           className="w-full px-4 py-2 bg-blue-600 text-white rounded-md hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors text-sm font-medium"
         >
           {isGenerating ? 'Generating...' : 'Generate Dungeon'}
