@@ -27,13 +27,22 @@ export default function NPCRouteClient({ placeholderWorldId, placeholderNpcId }:
       console.log('[NPCRouteClient] Not mounted yet, returning empty worldId');
       return '';
     }
-    
+
     console.log('[NPCRouteClient] Extracting worldId...');
     console.log('[NPCRouteClient] Current URL:', typeof window !== 'undefined' ? window.location.href : 'N/A');
-    console.log('[NPCRouteClient] Hash:', typeof window !== 'undefined' ? window.location.hash : 'N/A');
     console.log('[NPCRouteClient] Placeholder worldId:', placeholderWorldId);
-    
-    // Priority 1: search params (preferred in static export)
+
+    // Priority 1: extract from pathname /world/[id]/npc/[npcId]
+    if (typeof window !== 'undefined') {
+      const pathname = window.location.pathname;
+      const pathMatch = pathname.match(/\/world\/([^\/]+)\/npc\/([^\/]+)/);
+      if (pathMatch && pathMatch[1] && pathMatch[1] !== 'world') {
+        console.log('[NPCRouteClient] Using path-derived worldId:', pathMatch[1]);
+        return pathMatch[1];
+      }
+    }
+
+    // Priority 2: search params (preferred fallback)
     const worldIdParam = searchParams?.get('worldId');
     console.log('[NPCRouteClient] Search param worldId:', worldIdParam);
     if (worldIdParam) {
@@ -41,7 +50,7 @@ export default function NPCRouteClient({ placeholderWorldId, placeholderNpcId }:
       return worldIdParam;
     }
     
-    // Priority 2: sessionStorage (set by View button before navigation)
+    // Priority 3: sessionStorage (set by View button before navigation)
     const storedWorldId = sessionStorage.getItem('npcView_worldId');
     console.log('[NPCRouteClient] SessionStorage worldId:', storedWorldId);
     if (storedWorldId) {
@@ -49,7 +58,7 @@ export default function NPCRouteClient({ placeholderWorldId, placeholderNpcId }:
       return storedWorldId;
     }
     
-    // Priority 3: URL hash (legacy support)
+    // Priority 4: URL hash (legacy support)
     if (typeof window !== 'undefined' && window.location.hash) {
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const hashWorldId = hashParams.get('w');
@@ -58,17 +67,6 @@ export default function NPCRouteClient({ placeholderWorldId, placeholderNpcId }:
         const decoded = decodeURIComponent(hashWorldId);
         console.log('[NPCRouteClient] Using hash worldId:', decoded);
         return decoded;
-      }
-    }
-    
-    // Priority 4: Try to extract from browser URL (before redirect)
-    if (typeof window !== 'undefined') {
-      const fullUrl = window.location.href;
-      const urlMatch = fullUrl.match(/\/world\/([^\/]+)/);
-      console.log('[NPCRouteClient] URL match:', urlMatch);
-      if (urlMatch && urlMatch[1] && urlMatch[1] !== 'world') {
-        console.log('[NPCRouteClient] Using URL-extracted worldId:', urlMatch[1]);
-        return urlMatch[1];
       }
     }
     
@@ -86,7 +84,17 @@ export default function NPCRouteClient({ placeholderWorldId, placeholderNpcId }:
     
     console.log('[NPCRouteClient] Extracting npcId...');
     
-    // Priority 1: search params
+    // Priority 1: extract from pathname
+    if (typeof window !== 'undefined') {
+      const pathname = window.location.pathname;
+      const pathMatch = pathname.match(/\/world\/([^\/]+)\/npc\/([^\/]+)/);
+      if (pathMatch && pathMatch[2] && pathMatch[2] !== 'npc') {
+        console.log('[NPCRouteClient] Using path-derived npcId:', pathMatch[2]);
+        return pathMatch[2];
+      }
+    }
+
+    // Priority 2: search params
     const npcIdParam = searchParams?.get('npcId');
     console.log('[NPCRouteClient] Search param npcId:', npcIdParam);
     if (npcIdParam) {
@@ -94,7 +102,7 @@ export default function NPCRouteClient({ placeholderWorldId, placeholderNpcId }:
       return npcIdParam;
     }
     
-    // Priority 2: sessionStorage
+    // Priority 3: sessionStorage
     const storedNpcId = sessionStorage.getItem('npcView_npcId');
     console.log('[NPCRouteClient] SessionStorage npcId:', storedNpcId);
     if (storedNpcId) {
@@ -102,7 +110,7 @@ export default function NPCRouteClient({ placeholderWorldId, placeholderNpcId }:
       return storedNpcId;
     }
     
-    // Priority 3: URL hash
+    // Priority 4: URL hash
     if (typeof window !== 'undefined' && window.location.hash) {
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const hashNpcId = hashParams.get('n');
@@ -111,17 +119,6 @@ export default function NPCRouteClient({ placeholderWorldId, placeholderNpcId }:
         const decoded = decodeURIComponent(hashNpcId);
         console.log('[NPCRouteClient] Using hash npcId:', decoded);
         return decoded;
-      }
-    }
-    
-    // Priority 4: Try to extract from browser URL (before redirect)
-    if (typeof window !== 'undefined') {
-      const fullUrl = window.location.href;
-      const urlMatch = fullUrl.match(/\/npc\/([^\/\?]+)/);
-      console.log('[NPCRouteClient] URL match for npcId:', urlMatch);
-      if (urlMatch && urlMatch[1] && urlMatch[1] !== 'npc') {
-        console.log('[NPCRouteClient] Using URL-extracted npcId:', urlMatch[1]);
-        return urlMatch[1];
       }
     }
     

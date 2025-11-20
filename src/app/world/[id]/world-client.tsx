@@ -992,21 +992,21 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
                                 return;
                               }
 
-                              const placeholderPath = `/world/world/npc/npc?worldId=${encodeURIComponent(
+                              const targetPath = `/world/${worldId}/npc/${npc.id}#w=${encodeURIComponent(
                                 worldId
-                              )}&npcId=${encodeURIComponent(npc.id)}`;
+                              )}&n=${encodeURIComponent(npc.id)}`;
 
                               console.log('[Navigation] View button clicked', {
                                 worldId,
                                 npcId: npc.id,
                                 npcName: npc.name,
-                                targetUrl: placeholderPath,
+                                targetUrl: targetPath,
                               });
 
                               sessionStorage.setItem('npcView_worldId', worldId);
                               sessionStorage.setItem('npcView_npcId', npc.id);
 
-                              window.location.href = placeholderPath;
+                              window.location.href = targetPath;
                             }}
                             className="rounded border border-gray-700 px-3 py-1 text-xs hover:bg-gray-800"
                           >
