@@ -17,19 +17,42 @@ export default function NPCRouteClient({ placeholderWorldId, placeholderNpcId }:
   // Get the actual browser URL (not the rewritten one)
   useEffect(() => {
     if (typeof window !== 'undefined') {
+      // Get the full URL including query params
+      const fullUrl = window.location.href;
       setWindowPath(window.location.pathname);
+      
+      // Also try to extract from full URL if pathname doesn't work
+      const urlMatch = fullUrl.match(/\/world\/([^\/]+)\/npc\/([^\/\?]+)/);
+      if (urlMatch && urlMatch[1] && urlMatch[1] !== 'world' && urlMatch[2] && urlMatch[2] !== 'npc') {
+        // IDs found in URL, will be used by useMemo below
+      }
     }
   }, [pathname]);
   
   const worldId = useMemo(() => {
-    // Try search params first (if passed via query)
+    // Try sessionStorage first (set by View button)
+    if (typeof window !== 'undefined') {
+      const stored = sessionStorage.getItem('npcView_worldId');
+      if (stored) {
+        sessionStorage.removeItem('npcView_worldId'); // Clear after use
+        return stored;
+      }
+    }
+    
+    // Try search params (if passed via query)
     const worldIdParam = searchParams?.get('worldId');
     if (worldIdParam) return worldIdParam;
     
-    // Try actual browser pathname (before redirect)
-    if (windowPath) {
-      const match = windowPath.match(/\/world\/([^\/]+)/);
-      if (match && match[1] && match[1] !== 'world') return match[1];
+    // Try actual browser URL (before redirect) - check both pathname and full href
+    if (typeof window !== 'undefined') {
+      const fullUrl = window.location.href;
+      const urlMatch = fullUrl.match(/\/world\/([^\/]+)/);
+      if (urlMatch && urlMatch[1] && urlMatch[1] !== 'world') return urlMatch[1];
+      
+      if (windowPath) {
+        const match = windowPath.match(/\/world\/([^\/]+)/);
+        if (match && match[1] && match[1] !== 'world') return match[1];
+      }
     }
     
     // Try Next.js pathname
@@ -42,14 +65,29 @@ export default function NPCRouteClient({ placeholderWorldId, placeholderNpcId }:
   }, [pathname, windowPath, searchParams, placeholderWorldId]);
   
   const npcId = useMemo(() => {
-    // Try search params first (if passed via query)
+    // Try sessionStorage first (set by View button)
+    if (typeof window !== 'undefined') {
+      const stored = sessionStorage.getItem('npcView_npcId');
+      if (stored) {
+        sessionStorage.removeItem('npcView_npcId'); // Clear after use
+        return stored;
+      }
+    }
+    
+    // Try search params (if passed via query)
     const npcIdParam = searchParams?.get('npcId');
     if (npcIdParam) return npcIdParam;
     
-    // Try actual browser pathname (before redirect)
-    if (windowPath) {
-      const match = windowPath.match(/\/npc\/([^\/]+)/);
-      if (match && match[1] && match[1] !== 'npc') return match[1];
+    // Try actual browser URL (before redirect) - check both pathname and full href
+    if (typeof window !== 'undefined') {
+      const fullUrl = window.location.href;
+      const urlMatch = fullUrl.match(/\/npc\/([^\/\?]+)/);
+      if (urlMatch && urlMatch[1] && urlMatch[1] !== 'npc') return urlMatch[1];
+      
+      if (windowPath) {
+        const match = windowPath.match(/\/npc\/([^\/]+)/);
+        if (match && match[1] && match[1] !== 'npc') return match[1];
+      }
     }
     
     // Try Next.js pathname
@@ -68,6 +106,11 @@ export default function NPCRouteClient({ placeholderWorldId, placeholderNpcId }:
           <p className="text-gray-400 mb-4">NPC not found</p>
           <p className="text-xs text-gray-500">Pathname: {pathname}</p>
           <p className="text-xs text-gray-500">Window: {windowPath || 'loading...'}</p>
+          <p className="text-xs text-gray-500">Query: worldId={searchParams?.get('worldId') || 'none'}, npcId={searchParams?.get('npcId') || 'none'}</p>
+          <p className="text-xs text-gray-500">Placeholder: worldId={placeholderWorldId}, npcId={placeholderNpcId}</p>
+          {typeof window !== 'undefined' && (
+            <p className="text-xs text-gray-500">Full URL: {window.location.href}</p>
+          )}
         </div>
       </div>
     );

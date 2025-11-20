@@ -952,12 +952,19 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap gap-2">
-                          <Link
-                            href={`/world/${worldId}/npc/${npc.id}?worldId=${worldId}&npcId=${npc.id}`}
-                            className="rounded border border-gray-700 px-3 py-1 text-xs hover:bg-gray-800 inline-block text-center"
+                          <button
+                            onClick={() => {
+                              // Store IDs in sessionStorage for route client to pick up
+                              if (typeof window !== 'undefined') {
+                                sessionStorage.setItem('npcView_worldId', worldId);
+                                sessionStorage.setItem('npcView_npcId', npc.id);
+                              }
+                              router.push(`/world/${worldId}/npc/${npc.id}`);
+                            }}
+                            className="rounded border border-gray-700 px-3 py-1 text-xs hover:bg-gray-800"
                           >
                             View
-                          </Link>
+                          </button>
                           <button
                             onClick={async () => {
                               if (!supabase) return;
