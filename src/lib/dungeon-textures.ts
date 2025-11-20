@@ -233,60 +233,123 @@ export function createStairsPattern(id: string, direction: 'up' | 'down', theme:
   `;
 }
 
-// Get texture set for a dungeon type
+// Get texture set for a dungeon type (prefers AI-generated, falls back to procedural)
 export function getTextureSetForType(type: DungeonType): Record<string, string> {
   const textures: Record<string, string> = {};
+  const aiTextures = AI_TEXTURE_MAP[type] ?? {};
   
-  // Floor textures
-  switch (type) {
-    case 'cave':
-      textures.floor = getTexturePatternId(type, 'floor', 'dirt');
-      break;
-    case 'ruin':
-    case 'temple':
-      textures.floor = getTexturePatternId(type, 'floor', 'stone');
-      break;
-    case 'fortress':
-    case 'tower':
-      textures.floor = getTexturePatternId(type, 'floor', 'brick');
-      break;
-    case 'lair':
-      textures.floor = getTexturePatternId(type, 'floor', 'dirt');
-      break;
-    default: // dungeon
-      textures.floor = getTexturePatternId(type, 'floor', 'stone');
+  // Floor textures - prefer AI-generated, fallback to procedural
+  if (aiTextures.floor) {
+    textures.floor = getTexturePatternId(type, 'floor', 'ai');
+  } else {
+    switch (type) {
+      case 'cave':
+        textures.floor = getTexturePatternId(type, 'floor', 'dirt');
+        break;
+      case 'ruin':
+      case 'temple':
+        textures.floor = getTexturePatternId(type, 'floor', 'stone');
+        break;
+      case 'fortress':
+      case 'tower':
+        textures.floor = getTexturePatternId(type, 'floor', 'stone'); // Fallback to stone
+        break;
+      case 'lair':
+        textures.floor = getTexturePatternId(type, 'floor', 'dirt');
+        break;
+      default: // dungeon
+        textures.floor = getTexturePatternId(type, 'floor', 'stone');
+    }
   }
   
-  // Wall textures
-  switch (type) {
-    case 'cave':
-    case 'lair':
-      textures.wall = getTexturePatternId(type, 'wall', 'cave');
-      break;
-    case 'temple':
-      textures.wall = getTexturePatternId(type, 'wall', 'smooth');
-      break;
-    default:
-      textures.wall = getTexturePatternId(type, 'wall', 'stone');
+  // Wall textures - prefer AI-generated, fallback to procedural
+  if (aiTextures.wall) {
+    textures.wall = getTexturePatternId(type, 'wall', 'ai');
+  } else {
+    switch (type) {
+      case 'cave':
+      case 'lair':
+        textures.wall = getTexturePatternId(type, 'wall', 'cave');
+        break;
+      case 'temple':
+        textures.wall = getTexturePatternId(type, 'wall', 'stone'); // Fallback to stone
+        break;
+      default:
+        textures.wall = getTexturePatternId(type, 'wall', 'stone');
+    }
   }
   
   return textures;
+}
+
+// Map dungeon types to AI-generated texture assets
+const AI_TEXTURE_MAP: Record<DungeonType, { floor?: string; wall?: string }> = {
+  dungeon: {
+    floor: '/generated/textures/floor/stone_floor_modular.png',
+  },
+  cave: {
+    floor: '/generated/textures/floor/forest_floor_moss.png', // Fallback to moss for cave floors
+    wall: '/generated/textures/wall/cave_wall_organic.png',
+  },
+  ruin: {
+    wall: '/generated/textures/wall/ruin_wall_cracked.png',
+  },
+  fortress: {
+    floor: '/generated/textures/floor/fortress_floor_metal.png',
+  },
+  tower: {
+    floor: '/generated/textures/floor/fortress_floor_metal.png', // Reuse fortress floor
+  },
+  temple: {
+    floor: '/generated/textures/floor/temple_floor_marble.png',
+    wall: '/generated/textures/wall/temple_wall_gilded.png',
+  },
+  lair: {
+    floor: '/generated/textures/floor/forest_floor_moss.png', // Fallback to moss for lair floors
+    wall: '/generated/textures/wall/cave_wall_organic.png',
+  },
+};
+
+// Create SVG pattern using AI-generated image texture
+function createImageTexturePattern(id: string, imagePath: string, size: number = 256): string {
+  return `
+    <pattern id="${id}" patternUnits="userSpaceOnUse" width="${size}" height="${size}">
+      <image href="${imagePath}" width="${size}" height="${size}" preserveAspectRatio="none"/>
+    </pattern>
+  `;
 }
 
 // Generate all texture patterns for a dungeon type
 export function generateTexturePatterns(type: DungeonType, theme: 'light' | 'dark'): string {
   const patterns: string[] = [];
   const palette = getTexturePalette(type);
+  const aiTextures = AI_TEXTURE_MAP[type] ?? {};
   
-  // Floor patterns
+  // Floor patterns - use AI-generated if available, fallback to procedural
+  if (aiTextures.floor) {
+    const floorPatternId = getTexturePatternId(type, 'floor', 'ai');
+    patterns.push(createImageTexturePattern(floorPatternId, aiTextures.floor, 256));
+  } else {
+    patterns.push(createStoneFloorPattern(getTexturePatternId(type, 'floor', 'stone'), theme, palette.floor));
+    patterns.push(createDirtFloorPattern(getTexturePatternId(type, 'floor', 'dirt'), theme, palette.floor));
+  }
+  
+  // Wall patterns - use AI-generated if available, fallback to procedural
+  if (aiTextures.wall) {
+    const wallPatternId = getTexturePatternId(type, 'wall', 'ai');
+    patterns.push(createImageTexturePattern(wallPatternId, aiTextures.wall, 256));
+  } else {
+    patterns.push(createStoneWallPattern(getTexturePatternId(type, 'wall', 'stone'), theme, palette.wall));
+    patterns.push(createCaveWallPattern(getTexturePatternId(type, 'wall', 'cave'), theme, palette.wall));
+  }
+  
+  // Always include procedural patterns as fallback
   patterns.push(createStoneFloorPattern(getTexturePatternId(type, 'floor', 'stone'), theme, palette.floor));
   patterns.push(createDirtFloorPattern(getTexturePatternId(type, 'floor', 'dirt'), theme, palette.floor));
-  
-  // Wall patterns
   patterns.push(createStoneWallPattern(getTexturePatternId(type, 'wall', 'stone'), theme, palette.wall));
   patterns.push(createCaveWallPattern(getTexturePatternId(type, 'wall', 'cave'), theme, palette.wall));
   
-  // Stairs patterns
+  // Stairs patterns (always procedural)
   patterns.push(createStairsPattern(getTexturePatternId(type, 'feature', 'stairs_up'), 'up', theme));
   patterns.push(createStairsPattern(getTexturePatternId(type, 'feature', 'stairs_down'), 'down', theme));
   

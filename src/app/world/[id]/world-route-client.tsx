@@ -12,6 +12,12 @@ export default function WorldRouteClient({ placeholderId }: Props) {
   const pathname = usePathname();
   const searchParams = useSearchParams();
 
+  // Don't render if we're on an NPC route (should be handled by NPC page)
+  const isNpcRoute = useMemo(() => {
+    if (!pathname) return false;
+    return pathname.includes('/npc/');
+  }, [pathname]);
+
   const worldId = useMemo(() => {
     const queryWorldId = searchParams?.get('worldId');
     if (queryWorldId) {
@@ -25,6 +31,11 @@ export default function WorldRouteClient({ placeholderId }: Props) {
 
     return placeholderId !== 'world' ? placeholderId : '';
   }, [pathname, placeholderId, searchParams]);
+
+  // If on NPC route, don't render (let NPC page handle it)
+  if (isNpcRoute) {
+    return null;
+  }
 
   if (!worldId) {
     return (

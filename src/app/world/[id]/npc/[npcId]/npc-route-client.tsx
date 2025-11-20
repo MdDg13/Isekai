@@ -84,8 +84,8 @@ export default function NPCRouteClient({ placeholderWorldId, placeholderNpcId }:
     
     console.log('[NPCRouteClient] Extracting npcId...');
     
-    // Priority 1: search params
-    const npcIdParam = searchParams?.get('npcId');
+    // Priority 1: search params (check both npcId and npcld - handle typo)
+    const npcIdParam = searchParams?.get('npcId') || searchParams?.get('npcld');
     console.log('[NPCRouteClient] Search param npcId:', npcIdParam);
     if (npcIdParam) {
       console.log('[NPCRouteClient] Using search param npcId:', npcIdParam);
