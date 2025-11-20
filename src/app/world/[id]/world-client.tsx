@@ -3,7 +3,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
-import { useRouter, usePathname } from "next/navigation";
+import { useRouter } from "next/navigation";
 import DungeonGenerator from "../../../components/dungeon/DungeonGenerator";
 import DungeonDetailView from "../../../components/dungeon/DungeonDetailView";
 import DungeonExportDrawer from "../../../components/dungeon/DungeonExportDrawer";
@@ -212,44 +212,6 @@ const formatDateTime = (value: string): string => {
 
 export default function WorldClient({ worldId }: WorldClientProps) {
   const router = useRouter();
-  const pathname = usePathname();
-  
-  // Check if we're actually on an NPC route (shouldn't be here if we are)
-  useEffect(() => {
-    if (typeof window !== 'undefined') {
-      const currentPath = window.location.pathname;
-      const hash = window.location.hash;
-      
-      // If URL suggests we're on an NPC route but we're rendering WorldClient, redirect
-      if (currentPath.includes('/npc/') || hash.includes('n=')) {
-        console.log('[WorldClient] Detected NPC route but rendering WorldClient - this should not happen');
-        console.log('[WorldClient] Current path:', currentPath);
-        console.log('[WorldClient] Hash:', hash);
-        
-        // Extract IDs from hash or path
-        let targetWorldId = worldId;
-        let targetNpcId = '';
-        
-        if (hash) {
-          const hashParams = new URLSearchParams(hash.substring(1));
-          targetWorldId = hashParams.get('w') || worldId;
-          targetNpcId = hashParams.get('n') || '';
-        }
-        
-        if (currentPath.includes('/npc/')) {
-          const match = currentPath.match(/\/npc\/([^\/]+)/);
-          if (match && match[1] && match[1] !== 'npc') {
-            targetNpcId = match[1];
-          }
-        }
-        
-        if (targetNpcId) {
-          console.log('[WorldClient] Redirecting to NPC page:', { targetWorldId, targetNpcId });
-          window.location.href = `/world/${targetWorldId}/npc/${targetNpcId}#w=${encodeURIComponent(targetWorldId)}&n=${encodeURIComponent(targetNpcId)}`;
-        }
-      }
-    }
-  }, [worldId, pathname]);
   const supabase = useMemo(() => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
@@ -1024,35 +986,27 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
                             onClick={(e) => {
                               e.preventDefault();
                               e.stopPropagation();
-                              
+
+                              if (typeof window === 'undefined') {
+                                console.error('[Navigation] window is not available');
+                                return;
+                              }
+
+                              const placeholderPath = `/world/world/npc/npc?worldId=${encodeURIComponent(
+                                worldId
+                              )}&npcId=${encodeURIComponent(npc.id)}`;
+
                               console.log('[Navigation] View button clicked', {
                                 worldId,
                                 npcId: npc.id,
                                 npcName: npc.name,
-                                currentUrl: typeof window !== 'undefined' ? window.location.href : 'N/A',
+                                targetUrl: placeholderPath,
                               });
-                              
-                              // Store IDs in sessionStorage with a timestamp to ensure they persist
-                              // Use a unique key that won't conflict
-                              if (typeof window !== 'undefined') {
-                                const key = `npcView_${Date.now()}`;
-                                sessionStorage.setItem('npcView_worldId', worldId);
-                                sessionStorage.setItem('npcView_npcId', npc.id);
-                                sessionStorage.setItem('npcView_timestamp', key);
-                                
-                                const targetUrl = `/world/${worldId}/npc/${npc.id}#w=${encodeURIComponent(worldId)}&n=${encodeURIComponent(npc.id)}`;
-                                console.log('[Navigation] Setting sessionStorage:', {
-                                  worldId,
-                                  npcId: npc.id,
-                                  timestamp: key,
-                                });
-                                console.log('[Navigation] Navigating to:', targetUrl);
-                                
-                                // Use hash-based navigation to preserve IDs through redirect
-                                window.location.href = targetUrl;
-                              } else {
-                                console.error('[Navigation] window is not available');
-                              }
+
+                              sessionStorage.setItem('npcView_worldId', worldId);
+                              sessionStorage.setItem('npcView_npcId', npc.id);
+
+                              window.location.href = placeholderPath;
                             }}
                             className="rounded border border-gray-700 px-3 py-1 text-xs hover:bg-gray-800"
                           >

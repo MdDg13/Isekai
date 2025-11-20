@@ -22,20 +22,6 @@ export default function NPCRouteClient({ placeholderWorldId, placeholderNpcId }:
     setMounted(true);
   }, [placeholderWorldId, placeholderNpcId]);
   
-  // Also listen for hash changes (in case navigation happens after mount)
-  useEffect(() => {
-    if (!mounted) return;
-    
-    const handleHashChange = () => {
-      console.log('[NPCRouteClient] Hash changed:', window.location.hash);
-      // Force re-evaluation of IDs when hash changes
-      window.location.reload();
-    };
-    
-    window.addEventListener('hashchange', handleHashChange);
-    return () => window.removeEventListener('hashchange', handleHashChange);
-  }, [mounted]);
-  
   const worldId = useMemo(() => {
     if (!mounted) {
       console.log('[NPCRouteClient] Not mounted yet, returning empty worldId');
@@ -47,16 +33,12 @@ export default function NPCRouteClient({ placeholderWorldId, placeholderNpcId }:
     console.log('[NPCRouteClient] Hash:', typeof window !== 'undefined' ? window.location.hash : 'N/A');
     console.log('[NPCRouteClient] Placeholder worldId:', placeholderWorldId);
     
-    // Priority 1: URL hash (preserved through redirects)
-    if (typeof window !== 'undefined' && window.location.hash) {
-      const hashParams = new URLSearchParams(window.location.hash.substring(1));
-      const hashWorldId = hashParams.get('w');
-      console.log('[NPCRouteClient] Hash worldId:', hashWorldId);
-      if (hashWorldId) {
-        const decoded = decodeURIComponent(hashWorldId);
-        console.log('[NPCRouteClient] Using hash worldId:', decoded);
-        return decoded;
-      }
+    // Priority 1: search params (preferred in static export)
+    const worldIdParam = searchParams?.get('worldId');
+    console.log('[NPCRouteClient] Search param worldId:', worldIdParam);
+    if (worldIdParam) {
+      console.log('[NPCRouteClient] Using search param worldId:', worldIdParam);
+      return worldIdParam;
     }
     
     // Priority 2: sessionStorage (set by View button before navigation)
@@ -67,12 +49,16 @@ export default function NPCRouteClient({ placeholderWorldId, placeholderNpcId }:
       return storedWorldId;
     }
     
-    // Priority 3: search params (if passed via query)
-    const worldIdParam = searchParams?.get('worldId');
-    console.log('[NPCRouteClient] Search param worldId:', worldIdParam);
-    if (worldIdParam) {
-      console.log('[NPCRouteClient] Using search param worldId:', worldIdParam);
-      return worldIdParam;
+    // Priority 3: URL hash (legacy support)
+    if (typeof window !== 'undefined' && window.location.hash) {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const hashWorldId = hashParams.get('w');
+      console.log('[NPCRouteClient] Hash worldId:', hashWorldId);
+      if (hashWorldId) {
+        const decoded = decodeURIComponent(hashWorldId);
+        console.log('[NPCRouteClient] Using hash worldId:', decoded);
+        return decoded;
+      }
     }
     
     // Priority 4: Try to extract from browser URL (before redirect)
@@ -100,7 +86,23 @@ export default function NPCRouteClient({ placeholderWorldId, placeholderNpcId }:
     
     console.log('[NPCRouteClient] Extracting npcId...');
     
-    // Priority 1: URL hash (preserved through redirects)
+    // Priority 1: search params
+    const npcIdParam = searchParams?.get('npcId');
+    console.log('[NPCRouteClient] Search param npcId:', npcIdParam);
+    if (npcIdParam) {
+      console.log('[NPCRouteClient] Using search param npcId:', npcIdParam);
+      return npcIdParam;
+    }
+    
+    // Priority 2: sessionStorage
+    const storedNpcId = sessionStorage.getItem('npcView_npcId');
+    console.log('[NPCRouteClient] SessionStorage npcId:', storedNpcId);
+    if (storedNpcId) {
+      console.log('[NPCRouteClient] Using sessionStorage npcId:', storedNpcId);
+      return storedNpcId;
+    }
+    
+    // Priority 3: URL hash
     if (typeof window !== 'undefined' && window.location.hash) {
       const hashParams = new URLSearchParams(window.location.hash.substring(1));
       const hashNpcId = hashParams.get('n');
@@ -110,22 +112,6 @@ export default function NPCRouteClient({ placeholderWorldId, placeholderNpcId }:
         console.log('[NPCRouteClient] Using hash npcId:', decoded);
         return decoded;
       }
-    }
-    
-    // Priority 2: sessionStorage (set by View button before navigation)
-    const storedNpcId = sessionStorage.getItem('npcView_npcId');
-    console.log('[NPCRouteClient] SessionStorage npcId:', storedNpcId);
-    if (storedNpcId) {
-      console.log('[NPCRouteClient] Using sessionStorage npcId:', storedNpcId);
-      return storedNpcId;
-    }
-    
-    // Priority 3: search params (if passed via query)
-    const npcIdParam = searchParams?.get('npcId');
-    console.log('[NPCRouteClient] Search param npcId:', npcIdParam);
-    if (npcIdParam) {
-      console.log('[NPCRouteClient] Using search param npcId:', npcIdParam);
-      return npcIdParam;
     }
     
     // Priority 4: Try to extract from browser URL (before redirect)
