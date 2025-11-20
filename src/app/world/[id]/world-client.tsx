@@ -909,6 +909,18 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
                               src={npc.image_url}
                               alt={npc.name}
                               className="w-full h-full object-cover"
+                              onError={(e) => {
+                                // If image fails to load, show placeholder
+                                const target = e.target as HTMLImageElement;
+                                target.style.display = 'none';
+                                const parent = target.parentElement;
+                                if (parent && !parent.querySelector('.placeholder')) {
+                                  const placeholder = document.createElement('div');
+                                  placeholder.className = 'placeholder w-full h-full bg-gray-800 flex items-center justify-center';
+                                  placeholder.innerHTML = '<span class="text-gray-600 text-xs">—</span>';
+                                  parent.appendChild(placeholder);
+                                }
+                              }}
                             />
                           ) : (
                             <div className="w-full h-full bg-gray-800 flex items-center justify-center">
@@ -940,14 +952,12 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
                       </td>
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap gap-2">
-                          <button
-                            onClick={() => {
-                              router.push(`/world/${worldId}/npc/${npc.id}`);
-                            }}
-                            className="rounded border border-gray-700 px-3 py-1 text-xs hover:bg-gray-800"
+                          <Link
+                            href={`/world/${worldId}/npc/${npc.id}?worldId=${worldId}&npcId=${npc.id}`}
+                            className="rounded border border-gray-700 px-3 py-1 text-xs hover:bg-gray-800 inline-block text-center"
                           >
                             View
-                          </button>
+                          </Link>
                           <button
                             onClick={async () => {
                               if (!supabase) return;
