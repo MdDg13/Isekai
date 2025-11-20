@@ -14,14 +14,17 @@ interface NPCDetailPageProps {
 type TabType = 'overview' | 'stats' | 'personality' | 'backstory' | 'details';
 
 export default function NPCDetailPage({ worldId, npcId }: NPCDetailPageProps) {
+  console.log('[NPCDetailPage] Component rendered with:', { worldId, npcId });
+  
   const router = useRouter();
   const supabase = useMemo(() => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     if (!url || !key) {
-      console.warn('Supabase environment variables not found');
+      console.warn('[NPCDetailPage] Supabase environment variables not found');
       return null;
     }
+    console.log('[NPCDetailPage] Supabase client created');
     return createClient(url, key);
   }, []);
 
@@ -42,11 +45,16 @@ export default function NPCDetailPage({ worldId, npcId }: NPCDetailPageProps) {
   const [activeTab, setActiveTab] = useState<TabType>('overview');
 
   const loadNPC = useCallback(async () => {
-    if (!supabase || !npcId) return;
+    console.log('[NPCDetailPage] loadNPC called with:', { supabase: !!supabase, npcId });
+    if (!supabase || !npcId) {
+      console.warn('[NPCDetailPage] Cannot load NPC - missing supabase or npcId');
+      return;
+    }
     
     setLoading(true);
     setError(null);
     
+    console.log('[NPCDetailPage] Fetching NPC from database...');
     const { data, error: err } = await supabase
       .from('world_npc')
       .select('*')
@@ -54,12 +62,13 @@ export default function NPCDetailPage({ worldId, npcId }: NPCDetailPageProps) {
       .single();
     
     if (err) {
-      console.error('Error loading NPC:', err);
+      console.error('[NPCDetailPage] Error loading NPC:', err);
       setError(`Error loading NPC: ${err.message}`);
     } else {
+      console.log('[NPCDetailPage] NPC loaded successfully:', { id: data?.id, name: data?.name });
       setNpc(data);
     }
-    
+
     setLoading(false);
   }, [supabase, npcId]);
 
@@ -125,7 +134,9 @@ export default function NPCDetailPage({ worldId, npcId }: NPCDetailPageProps) {
         throw deleteError;
       }
       
-      router.push(`/world/${worldId}`);
+      console.log('[NPCDetailPage] NPC deleted, redirecting to world page');
+      // Use window.location to ensure navigation works
+      window.location.href = `/world/${worldId}`;
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : String(e);
       setError(`Failed to delete NPC: ${message}`);

@@ -963,7 +963,17 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
                       <td className="px-4 py-3">
                         <div className="flex flex-wrap gap-2">
                           <button
-                            onClick={() => {
+                            onClick={(e) => {
+                              e.preventDefault();
+                              e.stopPropagation();
+                              
+                              console.log('[Navigation] View button clicked', {
+                                worldId,
+                                npcId: npc.id,
+                                npcName: npc.name,
+                                currentUrl: typeof window !== 'undefined' ? window.location.href : 'N/A',
+                              });
+                              
                               // Store IDs in sessionStorage with a timestamp to ensure they persist
                               // Use a unique key that won't conflict
                               if (typeof window !== 'undefined') {
@@ -971,8 +981,19 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
                                 sessionStorage.setItem('npcView_worldId', worldId);
                                 sessionStorage.setItem('npcView_npcId', npc.id);
                                 sessionStorage.setItem('npcView_timestamp', key);
+                                
+                                const targetUrl = `/world/${worldId}/npc/${npc.id}#w=${encodeURIComponent(worldId)}&n=${encodeURIComponent(npc.id)}`;
+                                console.log('[Navigation] Setting sessionStorage:', {
+                                  worldId,
+                                  npcId: npc.id,
+                                  timestamp: key,
+                                });
+                                console.log('[Navigation] Navigating to:', targetUrl);
+                                
                                 // Use hash-based navigation to preserve IDs through redirect
-                                window.location.href = `/world/${worldId}/npc/${npc.id}#w=${encodeURIComponent(worldId)}&n=${encodeURIComponent(npc.id)}`;
+                                window.location.href = targetUrl;
+                              } else {
+                                console.error('[Navigation] window is not available');
                               }
                             }}
                             className="rounded border border-gray-700 px-3 py-1 text-xs hover:bg-gray-800"
