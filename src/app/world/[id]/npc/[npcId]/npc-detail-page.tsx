@@ -142,7 +142,7 @@ export default function NPCDetailPage({ worldId, npcId }: NPCDetailPageProps) {
       setError(`Failed to delete NPC: ${message}`);
       setDeleting(false);
     }
-  }, [supabase, npc, npcId, worldId, router]);
+  }, [supabase, npc, npcId, worldId]);
 
   if (loading) {
     return (

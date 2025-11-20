@@ -3,7 +3,7 @@
 import { createClient } from "@supabase/supabase-js";
 import { useMemo, useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, usePathname } from "next/navigation";
 import DungeonGenerator from "../../../components/dungeon/DungeonGenerator";
 import DungeonDetailView from "../../../components/dungeon/DungeonDetailView";
 import DungeonExportDrawer from "../../../components/dungeon/DungeonExportDrawer";
@@ -192,6 +192,44 @@ const formatDateTime = (value: string) =>
 
 export default function WorldClient({ worldId }: WorldClientProps) {
   const router = useRouter();
+  const pathname = usePathname();
+  
+  // Check if we're actually on an NPC route (shouldn't be here if we are)
+  useEffect(() => {
+    if (typeof window !== 'undefined') {
+      const currentPath = window.location.pathname;
+      const hash = window.location.hash;
+      
+      // If URL suggests we're on an NPC route but we're rendering WorldClient, redirect
+      if (currentPath.includes('/npc/') || hash.includes('n=')) {
+        console.log('[WorldClient] Detected NPC route but rendering WorldClient - this should not happen');
+        console.log('[WorldClient] Current path:', currentPath);
+        console.log('[WorldClient] Hash:', hash);
+        
+        // Extract IDs from hash or path
+        let targetWorldId = worldId;
+        let targetNpcId = '';
+        
+        if (hash) {
+          const hashParams = new URLSearchParams(hash.substring(1));
+          targetWorldId = hashParams.get('w') || worldId;
+          targetNpcId = hashParams.get('n') || '';
+        }
+        
+        if (currentPath.includes('/npc/')) {
+          const match = currentPath.match(/\/npc\/([^\/]+)/);
+          if (match && match[1] && match[1] !== 'npc') {
+            targetNpcId = match[1];
+          }
+        }
+        
+        if (targetNpcId) {
+          console.log('[WorldClient] Redirecting to NPC page:', { targetWorldId, targetNpcId });
+          window.location.href = `/world/${targetWorldId}/npc/${targetNpcId}#w=${encodeURIComponent(targetWorldId)}&n=${encodeURIComponent(targetNpcId)}`;
+        }
+      }
+    }
+  }, [worldId, pathname]);
   const supabase = useMemo(() => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;

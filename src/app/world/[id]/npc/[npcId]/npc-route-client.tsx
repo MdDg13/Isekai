@@ -16,8 +16,25 @@ export default function NPCRouteClient({ placeholderWorldId, placeholderNpcId }:
   // Wait for client-side mount to access sessionStorage
   useEffect(() => {
     console.log('[NPCRouteClient] Component mounting');
+    console.log('[NPCRouteClient] Initial URL:', typeof window !== 'undefined' ? window.location.href : 'N/A');
+    console.log('[NPCRouteClient] Initial hash:', typeof window !== 'undefined' ? window.location.hash : 'N/A');
+    console.log('[NPCRouteClient] Placeholders:', { placeholderWorldId, placeholderNpcId });
     setMounted(true);
-  }, []);
+  }, [placeholderWorldId, placeholderNpcId]);
+  
+  // Also listen for hash changes (in case navigation happens after mount)
+  useEffect(() => {
+    if (!mounted) return;
+    
+    const handleHashChange = () => {
+      console.log('[NPCRouteClient] Hash changed:', window.location.hash);
+      // Force re-evaluation of IDs when hash changes
+      window.location.reload();
+    };
+    
+    window.addEventListener('hashchange', handleHashChange);
+    return () => window.removeEventListener('hashchange', handleHashChange);
+  }, [mounted]);
   
   const worldId = useMemo(() => {
     if (!mounted) {
