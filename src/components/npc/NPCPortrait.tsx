@@ -26,13 +26,13 @@ export default function NPCPortrait({
     large: 'w-full aspect-[3/4] max-w-md',
   };
 
-  const handleRegenerate = async () => {
+  const handleRegenerate = () => {
     if (!onRegenerate) return;
-    
     setShowConfirm(true);
   };
 
   const confirmRegenerate = async () => {
+    if (!onRegenerate) return;
     setShowConfirm(false);
     setRegenerating(true);
     try {
