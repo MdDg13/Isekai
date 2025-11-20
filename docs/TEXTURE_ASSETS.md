@@ -238,3 +238,39 @@ Generated assets live under `public/generated/<category>/<id>.png`. They are cre
 - Model: @cf/stabilityai/stable-diffusion-xl-base-1.0
 - Prompt: `Top-down view, simple treasure chest icon, clear shape, minimal detail, high contrast, game icon style, transparent background, 256x256`
 - Output: `public/generated/icons/item/item_icon_treasure_chest.png`
+
+### item_icon_magic_scroll
+- Category: icons/item
+- Model: @cf/stabilityai/stable-diffusion-xl-base-1.0
+- Prompt: `Top-down view, simple scroll icon, clear shape, minimal detail, high contrast, game icon style, transparent background, 256x256`
+- Output: `public/generated/icons/item/item_icon_magic_scroll.png`
+
+### item_icon_potion_set
+- Category: icons/item
+- Model: @cf/stabilityai/stable-diffusion-xl-base-1.0
+- Prompt: `Top-down view, simple potion bottles icon, clear shapes, minimal detail, high contrast, game icon style, transparent background, 256x256`
+- Output: `public/generated/icons/item/item_icon_potion_set.png`
+
+### ui_emblem_arcane
+- Category: ui/icons
+- Model: @cf/stabilityai/stable-diffusion-xl-base-1.0
+- Prompt: `Simple arcane emblem icon, circular glyphs, teal and gold, clear design, minimal detail, high contrast, UI friendly, transparent background, 256x256`
+- Output: `public/generated/ui/icons/ui_emblem_arcane.png`
+
+### ui_button_gold
+- Category: ui/elements
+- Model: @cf/stabilityai/stable-diffusion-xl-base-1.0
+- Prompt: `Simple fantasy UI button, gold trim, blue center, clear design, minimal detail, high contrast, transparent background, 256x256`
+- Output: `public/generated/ui/elements/ui_button_gold.png`
+
+### spell_card_fire
+- Category: ui/cards
+- Model: @cf/stabilityai/stable-diffusion-xl-base-1.0
+- Prompt: `Illustrated card art for a fire spell with phoenix motif, card border included, 768x1024, fantasy art`
+- Output: `public/generated/ui/cards/spell_card_fire.png`
+
+### spell_card_water
+- Category: ui/cards
+- Model: @cf/stabilityai/stable-diffusion-xl-base-1.0
+- Prompt: `Illustrated card art for a water spell with cresting waves, card border included, 768x1024`
+- Output: `public/generated/ui/cards/spell_card_water.png`

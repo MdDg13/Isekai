@@ -111,6 +111,7 @@ interface WorldNpcRecord {
   traits?: NpcTraits | null;
   stats?: NpcStats | null;
   location_id?: string | null;
+  image_url?: string | null;
   affiliations?: unknown[];
   relationships?: Record<string, unknown>;
 }
@@ -274,7 +275,7 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
     if (!supabase) return;
     const { data, error } = await supabase
       .from('world_npc')
-      .select('id,name,created_at,bio,backstory,traits,stats,location_id')
+      .select('id,name,created_at,bio,backstory,traits,stats,location_id,image_url')
       .eq('world_id', worldId)
       .order('created_at', { ascending: false });
     if (error) {
@@ -706,6 +707,20 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
                     if (!supabase || !selectedNpc) return;
                     if (!confirm(`Delete ${selectedNpc.name}? This cannot be undone.`)) return;
                     try {
+                      // Delete portrait from storage if it exists
+                      if (selectedNpc.image_url) {
+                        try {
+                          const urlParts = selectedNpc.image_url.split('/npc-portraits/');
+                          if (urlParts.length > 1) {
+                            const fileName = `npc-portraits/${urlParts[1]}`;
+                            await supabase.storage.from('npc-assets').remove([fileName]);
+                          }
+                        } catch (storageError) {
+                          console.warn('Failed to delete portrait from storage:', storageError);
+                          // Continue with NPC deletion
+                        }
+                      }
+                      
                       const { error } = await supabase.from('world_npc').delete().eq('id', selectedNpc.id);
                       if (error) throw error;
                       setStatus(`${selectedNpc.name} deleted`);
@@ -782,6 +797,37 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
                 setStatus('Deleting NPCs...');
                 try {
                   const ids = Array.from(selectedNpcs);
+                  
+                  // Get NPCs with image URLs to delete from storage
+                  const { data: npcsToDelete } = await supabase
+                    .from('world_npc')
+                    .select('id, image_url')
+                    .in('id', ids);
+                  
+                  // Delete portraits from storage
+                  if (npcsToDelete) {
+                    const filesToDelete = npcsToDelete
+                      .filter((npc) => npc.image_url)
+                      .map((npc) => {
+                        const urlParts = npc.image_url?.split('/npc-portraits/');
+                        if (urlParts && urlParts.length > 1) {
+                          return `npc-portraits/${urlParts[1]}`;
+                        }
+                        return null;
+                      })
+                      .filter((f): f is string => f !== null);
+                    
+                    if (filesToDelete.length > 0) {
+                      try {
+                        await supabase.storage.from('npc-assets').remove(filesToDelete);
+                      } catch (storageError) {
+                        console.warn('Failed to delete some portraits from storage:', storageError);
+                        // Continue with NPC deletion
+                      }
+                    }
+                  }
+                  
+                  // Delete NPC records
                   await Promise.all(ids.map((id) => supabase.from('world_npc').delete().eq('id', id)));
                   setStatus(`${ids.length} NPC${ids.length !== 1 ? 's' : ''} deleted`);
                   setSelectedNpcs(new Set());
@@ -822,6 +868,7 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
                       }}
                     />
                   </th>
+                  <th className="px-4 py-3 text-left font-semibold">Portrait</th>
                   <th className="px-4 py-3 text-left font-semibold">Name</th>
                   <th className="px-4 py-3 text-left font-semibold">Race</th>
                   <th className="px-4 py-3 text-left font-semibold">Class</th>
@@ -853,6 +900,22 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
                             setSelectedNpcs(updated);
                           }}
                         />
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="w-12 h-12 rounded-lg border border-gray-800 bg-gray-900/50 overflow-hidden flex-shrink-0">
+                          {npc.image_url ? (
+                            // eslint-disable-next-line @next/next/no-img-element
+                            <img
+                              src={npc.image_url}
+                              alt={npc.name}
+                              className="w-full h-full object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gray-800 flex items-center justify-center">
+                              <span className="text-gray-600 text-xs">—</span>
+                            </div>
+                          )}
+                        </div>
                       </td>
                       <td className="px-4 py-3">
                         <div className="font-medium">{npc.name}</div>
@@ -892,6 +955,20 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
                               if (!confirm(`Delete NPC "${npc.name}"? This cannot be undone.`)) return;
                               setStatus('Deleting NPC...');
                               try {
+                                // Delete portrait from storage if it exists
+                                if (npc.image_url) {
+                                  try {
+                                    const urlParts = npc.image_url.split('/npc-portraits/');
+                                    if (urlParts.length > 1) {
+                                      const fileName = `npc-portraits/${urlParts[1]}`;
+                                      await supabase.storage.from('npc-assets').remove([fileName]);
+                                    }
+                                  } catch (storageError) {
+                                    console.warn('Failed to delete portrait from storage:', storageError);
+                                    // Continue with NPC deletion even if storage deletion fails
+                                  }
+                                }
+                                
                                 const { error } = await supabase.from('world_npc').delete().eq('id', npc.id);
                                 if (error) throw error;
                                 setStatus(`NPC "${npc.name}" deleted`);
