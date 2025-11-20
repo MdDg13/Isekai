@@ -954,12 +954,14 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
                         <div className="flex flex-wrap gap-2">
                           <button
                             onClick={() => {
-                              // Store IDs in sessionStorage for route client to pick up
+                              // Store IDs in sessionStorage BEFORE navigation
+                              // This ensures the route client can read them even after redirect
                               if (typeof window !== 'undefined') {
                                 sessionStorage.setItem('npcView_worldId', worldId);
                                 sessionStorage.setItem('npcView_npcId', npc.id);
+                                // Use window.location for direct navigation (bypasses Next.js router issues)
+                                window.location.href = `/world/${worldId}/npc/${npc.id}`;
                               }
-                              router.push(`/world/${worldId}/npc/${npc.id}`);
                             }}
                             className="rounded border border-gray-700 px-3 py-1 text-xs hover:bg-gray-800"
                           >
