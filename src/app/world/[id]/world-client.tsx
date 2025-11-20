@@ -942,8 +942,7 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
                         <div className="flex flex-wrap gap-2">
                           <button
                             onClick={() => {
-                              setSelectedNpcId(npc.id);
-                              setViewMode('detail');
+                              router.push(`/world/${worldId}/npc/${npc.id}`);
                             }}
                             className="rounded border border-gray-700 px-3 py-1 text-xs hover:bg-gray-800"
                           >
