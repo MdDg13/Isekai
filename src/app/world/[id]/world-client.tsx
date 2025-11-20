@@ -987,7 +987,7 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
                               e.preventDefault();
                               e.stopPropagation();
 
-                              const targetPath = `/world/world/npc/npc?worldId=${encodeURIComponent(
+                              const targetPath = `/world/world/npc/npc/?worldId=${encodeURIComponent(
                                 worldId
                               )}&npcId=${encodeURIComponent(npc.id)}`;
 

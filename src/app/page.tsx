@@ -254,7 +254,7 @@ export default function Home() {
                       <div className="flex items-start justify-between mb-3">
                         <div className="flex-1">
                           <Link
-                            href={`/world/world?worldId=${world.id}`}
+                            href={`/world/world/?worldId=${world.id}`}
                             className="font-medium text-base sm:text-lg hover:text-blue-400 transition-colors block"
                           >
                             {world.name}
