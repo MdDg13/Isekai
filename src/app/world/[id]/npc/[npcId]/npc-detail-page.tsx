@@ -3,7 +3,6 @@
 import { createClient } from "@supabase/supabase-js";
 import { useMemo, useState, useEffect, useCallback } from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import NPCPortrait from "../../../../../components/npc/NPCPortrait";
 
 interface NPCDetailPageProps {
@@ -15,8 +14,6 @@ type TabType = 'overview' | 'stats' | 'personality' | 'backstory' | 'details';
 
 export default function NPCDetailPage({ worldId, npcId }: NPCDetailPageProps) {
   console.log('[NPCDetailPage] Component rendered with:', { worldId, npcId });
-  
-  const router = useRouter();
   const supabase = useMemo(() => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;

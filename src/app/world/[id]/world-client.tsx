@@ -180,15 +180,35 @@ interface WorldClientProps {
   worldId: string;
 }
 
-const formatDateTime = (value: string) =>
-  new Date(value).toLocaleString(undefined, {
-    year: 'numeric',
-    month: 'short',
-    day: '2-digit',
-    hour: '2-digit',
-    minute: '2-digit',
-    timeZoneName: 'short',
-  });
+const UTC_DATE_OPTIONS: Intl.DateTimeFormatOptions = {
+  year: 'numeric',
+  month: 'short',
+  day: '2-digit',
+  timeZone: 'UTC',
+};
+
+const UTC_DATETIME_OPTIONS: Intl.DateTimeFormatOptions = {
+  ...UTC_DATE_OPTIONS,
+  hour: '2-digit',
+  minute: '2-digit',
+  timeZoneName: 'short',
+};
+
+const formatDateOnly = (value: string): string => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return 'Invalid date';
+  }
+  return new Intl.DateTimeFormat('en-US', UTC_DATE_OPTIONS).format(date);
+};
+
+const formatDateTime = (value: string): string => {
+  const date = new Date(value);
+  if (Number.isNaN(date.getTime())) {
+    return 'Invalid date';
+  }
+  return new Intl.DateTimeFormat('en-US', UTC_DATETIME_OPTIONS).format(date);
+};
 
 export default function WorldClient({ worldId }: WorldClientProps) {
   const router = useRouter();
@@ -984,7 +1004,7 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
                       <td className="px-4 py-3">{traits.race || '-'}</td>
                       <td className="px-4 py-3">{traits.class || '-'}</td>
                       <td className="px-4 py-3">{stats.level ?? 0}</td>
-                      <td className="px-4 py-3 text-gray-400">{new Date(npc.created_at).toLocaleDateString()}</td>
+                      <td className="px-4 py-3 text-gray-400">{formatDateOnly(npc.created_at)}</td>
                       <td className="px-4 py-3">
                         <span
                           className={`inline-flex rounded-full px-3 py-1 text-xs font-semibold ${
@@ -1739,7 +1759,7 @@ function DungeonsTab({
                     >
                       <div>
                         <p className="font-medium text-gray-100">{entry.name}</p>
-                        <p className="text-gray-500">{new Date(entry.created_at).toLocaleString()}</p>
+                        <p className="text-gray-500">{formatDateTime(entry.created_at)}</p>
                       </div>
                       <div className="flex items-center gap-2">
                         <button
@@ -1877,7 +1897,7 @@ function DungeonsTab({
                         {dungeon.name}
                       </button>
                     </td>
-                    <td className="px-4 py-3 text-gray-400">{new Date(dungeon.created_at).toLocaleDateString()}</td>
+                    <td className="px-4 py-3 text-gray-400">{formatDateOnly(dungeon.created_at)}</td>
                     <td className="px-4 py-3">
                       {detail ? `${detail.identity.type} • ${detail.identity.theme}` : '—'}
                     </td>
