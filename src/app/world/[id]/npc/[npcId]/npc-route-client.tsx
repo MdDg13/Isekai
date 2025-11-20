@@ -21,17 +21,26 @@ export default function NPCRouteClient({ placeholderWorldId, placeholderNpcId }:
   const worldId = useMemo(() => {
     if (!mounted) return '';
     
-    // Priority 1: sessionStorage (set by View button before navigation)
+    // Priority 1: URL hash (preserved through redirects)
+    if (typeof window !== 'undefined' && window.location.hash) {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const hashWorldId = hashParams.get('w');
+      if (hashWorldId) {
+        return decodeURIComponent(hashWorldId);
+      }
+    }
+    
+    // Priority 2: sessionStorage (set by View button before navigation)
     const storedWorldId = sessionStorage.getItem('npcView_worldId');
     if (storedWorldId) {
       return storedWorldId;
     }
     
-    // Priority 2: search params (if passed via query)
+    // Priority 3: search params (if passed via query)
     const worldIdParam = searchParams?.get('worldId');
     if (worldIdParam) return worldIdParam;
     
-    // Priority 3: Try to extract from browser URL (before redirect)
+    // Priority 4: Try to extract from browser URL (before redirect)
     if (typeof window !== 'undefined') {
       const fullUrl = window.location.href;
       const urlMatch = fullUrl.match(/\/world\/([^\/]+)/);
@@ -40,24 +49,33 @@ export default function NPCRouteClient({ placeholderWorldId, placeholderNpcId }:
       }
     }
     
-    // Priority 4: placeholder (fallback)
+    // Priority 5: placeholder (fallback)
     return placeholderWorldId !== 'world' ? placeholderWorldId : '';
   }, [mounted, searchParams, placeholderWorldId]);
   
   const npcId = useMemo(() => {
     if (!mounted) return '';
     
-    // Priority 1: sessionStorage (set by View button before navigation)
+    // Priority 1: URL hash (preserved through redirects)
+    if (typeof window !== 'undefined' && window.location.hash) {
+      const hashParams = new URLSearchParams(window.location.hash.substring(1));
+      const hashNpcId = hashParams.get('n');
+      if (hashNpcId) {
+        return decodeURIComponent(hashNpcId);
+      }
+    }
+    
+    // Priority 2: sessionStorage (set by View button before navigation)
     const storedNpcId = sessionStorage.getItem('npcView_npcId');
     if (storedNpcId) {
       return storedNpcId;
     }
     
-    // Priority 2: search params (if passed via query)
+    // Priority 3: search params (if passed via query)
     const npcIdParam = searchParams?.get('npcId');
     if (npcIdParam) return npcIdParam;
     
-    // Priority 3: Try to extract from browser URL (before redirect)
+    // Priority 4: Try to extract from browser URL (before redirect)
     if (typeof window !== 'undefined') {
       const fullUrl = window.location.href;
       const urlMatch = fullUrl.match(/\/npc\/([^\/\?]+)/);
@@ -66,7 +84,7 @@ export default function NPCRouteClient({ placeholderWorldId, placeholderNpcId }:
       }
     }
     
-    // Priority 4: placeholder (fallback)
+    // Priority 5: placeholder (fallback)
     return placeholderNpcId !== 'npc' ? placeholderNpcId : '';
   }, [mounted, searchParams, placeholderNpcId]);
 

@@ -902,26 +902,36 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
                         />
                       </td>
                       <td className="px-4 py-3">
-                        <div className="w-12 h-12 rounded-lg border border-gray-800 bg-gray-900/50 overflow-hidden flex-shrink-0">
+                        <div className="w-12 h-12 rounded-lg border border-gray-800 bg-gray-900/50 overflow-hidden flex-shrink-0 relative">
                           {npc.image_url ? (
-                            // eslint-disable-next-line @next/next/no-img-element
-                            <img
-                              src={npc.image_url}
-                              alt={npc.name}
-                              className="w-full h-full object-cover"
-                              onError={(e) => {
-                                // If image fails to load, show placeholder
-                                const target = e.target as HTMLImageElement;
-                                target.style.display = 'none';
-                                const parent = target.parentElement;
-                                if (parent && !parent.querySelector('.placeholder')) {
-                                  const placeholder = document.createElement('div');
-                                  placeholder.className = 'placeholder w-full h-full bg-gray-800 flex items-center justify-center';
-                                  placeholder.innerHTML = '<span class="text-gray-600 text-xs">—</span>';
-                                  parent.appendChild(placeholder);
-                                }
-                              }}
-                            />
+                            <>
+                              {/* eslint-disable-next-line @next/next/no-img-element */}
+                              <img
+                                src={npc.image_url}
+                                alt={npc.name}
+                                className="w-full h-full object-cover"
+                                onError={(e) => {
+                                  // If image fails to load, show placeholder
+                                  const target = e.target as HTMLImageElement;
+                                  target.style.display = 'none';
+                                  const parent = target.parentElement;
+                                  if (parent && !parent.querySelector('.image-placeholder')) {
+                                    const placeholder = document.createElement('div');
+                                    placeholder.className = 'image-placeholder absolute inset-0 w-full h-full bg-gray-800 flex items-center justify-center';
+                                    placeholder.innerHTML = '<span class="text-gray-600 text-xs">—</span>';
+                                    parent.appendChild(placeholder);
+                                  }
+                                  console.error('Failed to load NPC image:', npc.image_url);
+                                }}
+                                onLoad={() => {
+                                  console.log('NPC image loaded successfully:', npc.image_url);
+                                }}
+                              />
+                              {/* Fallback placeholder (hidden if image loads) */}
+                              <div className="image-placeholder absolute inset-0 w-full h-full bg-gray-800 flex items-center justify-center pointer-events-none" style={{ display: 'none' }}>
+                                <span className="text-gray-600 text-xs">—</span>
+                              </div>
+                            </>
                           ) : (
                             <div className="w-full h-full bg-gray-800 flex items-center justify-center">
                               <span className="text-gray-600 text-xs">—</span>
@@ -954,13 +964,15 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
                         <div className="flex flex-wrap gap-2">
                           <button
                             onClick={() => {
-                              // Store IDs in sessionStorage BEFORE navigation
-                              // This ensures the route client can read them even after redirect
+                              // Store IDs in sessionStorage with a timestamp to ensure they persist
+                              // Use a unique key that won't conflict
                               if (typeof window !== 'undefined') {
+                                const key = `npcView_${Date.now()}`;
                                 sessionStorage.setItem('npcView_worldId', worldId);
                                 sessionStorage.setItem('npcView_npcId', npc.id);
-                                // Use window.location for direct navigation (bypasses Next.js router issues)
-                                window.location.href = `/world/${worldId}/npc/${npc.id}`;
+                                sessionStorage.setItem('npcView_timestamp', key);
+                                // Use hash-based navigation to preserve IDs through redirect
+                                window.location.href = `/world/${worldId}/npc/${npc.id}#w=${encodeURIComponent(worldId)}&n=${encodeURIComponent(npc.id)}`;
                               }
                             }}
                             className="rounded border border-gray-700 px-3 py-1 text-xs hover:bg-gray-800"
