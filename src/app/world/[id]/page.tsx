@@ -1,3 +1,4 @@
+import { Suspense } from 'react';
 import WorldRouteClient from './world-route-client';
 
 // For static export, we need to generate at least one path
@@ -11,7 +12,19 @@ interface PageProps {
 }
 
 export default function WorldPage({ params }: PageProps) {
-  // Server component wrapper; client-side route parsing happens in WorldRouteClient
-  return <WorldRouteClient placeholderId={params.id} />;
+  return (
+    <Suspense
+      fallback={
+        <div className="min-h-screen bg-black text-white flex items-center justify-center">
+          <div className="text-center">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600 mx-auto mb-4"></div>
+            <p className="text-gray-400">Loading world...</p>
+          </div>
+        </div>
+      }
+    >
+      <WorldRouteClient placeholderId={params.id} />
+    </Suspense>
+  );
 }
 

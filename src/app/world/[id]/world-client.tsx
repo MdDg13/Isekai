@@ -987,14 +987,9 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
                               e.preventDefault();
                               e.stopPropagation();
 
-                              if (typeof window === 'undefined') {
-                                console.error('[Navigation] window is not available');
-                                return;
-                              }
-
-                              const targetPath = `/world/${worldId}/npc/${npc.id}#w=${encodeURIComponent(
+                              const targetPath = `/world/world/npc/npc?worldId=${encodeURIComponent(
                                 worldId
-                              )}&n=${encodeURIComponent(npc.id)}`;
+                              )}&npcId=${encodeURIComponent(npc.id)}`;
 
                               console.log('[Navigation] View button clicked', {
                                 worldId,

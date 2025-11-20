@@ -32,7 +32,15 @@ export default function NPCRouteClient({ placeholderWorldId, placeholderNpcId }:
     console.log('[NPCRouteClient] Current URL:', typeof window !== 'undefined' ? window.location.href : 'N/A');
     console.log('[NPCRouteClient] Placeholder worldId:', placeholderWorldId);
 
-    // Priority 1: extract from pathname /world/[id]/npc/[npcId]
+    // Priority 1: search params (static export friendly)
+    const worldIdParam = searchParams?.get('worldId');
+    console.log('[NPCRouteClient] Search param worldId:', worldIdParam);
+    if (worldIdParam) {
+      console.log('[NPCRouteClient] Using search param worldId:', worldIdParam);
+      return worldIdParam;
+    }
+
+    // Priority 2: extract from pathname (local dev)
     if (typeof window !== 'undefined') {
       const pathname = window.location.pathname;
       const pathMatch = pathname.match(/\/world\/([^\/]+)\/npc\/([^\/]+)/);
@@ -40,14 +48,6 @@ export default function NPCRouteClient({ placeholderWorldId, placeholderNpcId }:
         console.log('[NPCRouteClient] Using path-derived worldId:', pathMatch[1]);
         return pathMatch[1];
       }
-    }
-
-    // Priority 2: search params (preferred fallback)
-    const worldIdParam = searchParams?.get('worldId');
-    console.log('[NPCRouteClient] Search param worldId:', worldIdParam);
-    if (worldIdParam) {
-      console.log('[NPCRouteClient] Using search param worldId:', worldIdParam);
-      return worldIdParam;
     }
     
     // Priority 3: sessionStorage (set by View button before navigation)
@@ -84,7 +84,15 @@ export default function NPCRouteClient({ placeholderWorldId, placeholderNpcId }:
     
     console.log('[NPCRouteClient] Extracting npcId...');
     
-    // Priority 1: extract from pathname
+    // Priority 1: search params
+    const npcIdParam = searchParams?.get('npcId');
+    console.log('[NPCRouteClient] Search param npcId:', npcIdParam);
+    if (npcIdParam) {
+      console.log('[NPCRouteClient] Using search param npcId:', npcIdParam);
+      return npcIdParam;
+    }
+    
+    // Priority 2: extract from pathname
     if (typeof window !== 'undefined') {
       const pathname = window.location.pathname;
       const pathMatch = pathname.match(/\/world\/([^\/]+)\/npc\/([^\/]+)/);
@@ -92,14 +100,6 @@ export default function NPCRouteClient({ placeholderWorldId, placeholderNpcId }:
         console.log('[NPCRouteClient] Using path-derived npcId:', pathMatch[2]);
         return pathMatch[2];
       }
-    }
-
-    // Priority 2: search params
-    const npcIdParam = searchParams?.get('npcId');
-    console.log('[NPCRouteClient] Search param npcId:', npcIdParam);
-    if (npcIdParam) {
-      console.log('[NPCRouteClient] Using search param npcId:', npcIdParam);
-      return npcIdParam;
     }
     
     // Priority 3: sessionStorage

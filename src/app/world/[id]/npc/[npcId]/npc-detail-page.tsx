@@ -132,8 +132,7 @@ export default function NPCDetailPage({ worldId, npcId }: NPCDetailPageProps) {
       }
       
       console.log('[NPCDetailPage] NPC deleted, redirecting to world page');
-      // Use window.location to ensure navigation works
-      window.location.href = `/world/${worldId}`;
+      window.location.href = `/world/world?worldId=${worldId}`;
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : String(e);
       setError(`Failed to delete NPC: ${message}`);
@@ -157,7 +156,7 @@ export default function NPCDetailPage({ worldId, npcId }: NPCDetailPageProps) {
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-400 mb-4">{error || 'NPC not found'}</p>
-          <Link href={`/world/${worldId}`} className="text-blue-400 hover:text-blue-300 underline">
+          <Link href={`/world/world?worldId=${worldId}`} className="text-blue-400 hover:text-blue-300 underline">
             Back to World
           </Link>
         </div>
@@ -218,7 +217,7 @@ export default function NPCDetailPage({ worldId, npcId }: NPCDetailPageProps) {
         <div className="w-full max-w-6xl mx-auto px-4 sm:px-6 py-4">
           <div className="flex items-center justify-between mb-4">
             <div className="flex items-center gap-4">
-              <Link href={`/world/${worldId}`} className="text-blue-400 hover:text-blue-300 text-sm underline">
+              <Link href={`/world/world?worldId=${worldId}`} className="text-blue-400 hover:text-blue-300 text-sm underline">
                 ← Back to World
               </Link>
               <div>
