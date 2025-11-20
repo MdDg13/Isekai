@@ -9,8 +9,8 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 export interface GenerationLogEntry {
   generationRequestId: string;
   worldId: string;
-  step: 'procedural' | 'context_fetch' | 'ai_enhance' | 'critique' | 'style_fix' | 'grammar_fix' | 'programmatic_fix' | 'final';
-  logType: 'info' | 'warning' | 'error' | 'debug';
+  step: 'procedural' | 'context_fetch' | 'ai_enhance' | 'critique' | 'style_fix' | 'grammar_fix' | 'programmatic_fix' | 'portrait_generation' | 'portrait_upload' | 'config_check' | 'storage_check' | 'api_check' | 'final';
+  logType: 'info' | 'warning' | 'error' | 'debug' | 'diagnostic';
   message: string;
   data?: Record<string, unknown>;
   durationMs?: number;
@@ -61,7 +61,7 @@ export class GenerationLogger {
       console.error(message, entry.data || '');
     } else if (entry.logType === 'warning') {
       console.warn(message, entry.data || '');
-    } else if (entry.logType === 'debug') {
+    } else if (entry.logType === 'debug' || entry.logType === 'diagnostic') {
       console.log(message, entry.data || '');
     } else {
       console.log(message, entry.data || '');

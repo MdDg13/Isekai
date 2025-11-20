@@ -6,6 +6,7 @@
 import { createClient } from '@supabase/supabase-js';
 import { generateDungeonProcedural } from '../_lib/dungeon-generator/procedural';
 import { GenerationLogger } from '../_lib/generation-logger';
+import { runSystemDiagnostics, logDiagnostics } from '../_lib/diagnostics';
 import type { DungeonGenerationParams, DungeonDetail } from '../_lib/dungeon-generator/types';
 import type { PagesFunction } from '@cloudflare/workers-types';
 
@@ -79,25 +80,63 @@ export const onRequest: PagesFunction = async (context) => {
   // Initialize generation logger
   const logger = new GenerationLogger(supabase, reqRow.id, body.world_id);
 
+  // Run system diagnostics (development/debugging)
+  logger.startStep('config_check');
+  logger.log({
+    step: 'config_check',
+    logType: 'diagnostic',
+    message: 'Running system diagnostics before dungeon generation',
+  });
+  
+  const diagnostics = await runSystemDiagnostics(supabase, env);
+  logDiagnostics(logger, diagnostics);
+  
+  // Log diagnostic summary
+  logger.log({
+    step: 'config_check',
+    logType: diagnostics.overallStatus === 'unhealthy' ? 'error' : diagnostics.overallStatus === 'degraded' ? 'warning' : 'info',
+    message: `Diagnostics complete: ${diagnostics.overallStatus} (${diagnostics.summary.passed}/${diagnostics.summary.total} checks passed)`,
+    data: {
+      summary: diagnostics.summary,
+      failedChecks: diagnostics.checks.filter(c => c.status === 'fail').map(c => c.check),
+      warnings: diagnostics.checks.filter(c => c.status === 'warning').map(c => c.check),
+    },
+  });
+  logger.endStep('config_check');
+
   try {
     let dungeon: DungeonDetail;
     const usingProvidedDetail = Boolean(body.detail);
 
     if (!usingProvidedDetail) {
-      await logger.startStep('procedural_generation');
+      logger.startStep('procedural');
+      logger.log({
+        step: 'procedural',
+        logType: 'info',
+        message: 'Starting procedural dungeon generation',
+        data: { params: body.params },
+      });
+      
       dungeon = generateDungeonProcedural({
         ...body.params,
         world_id: body.world_id,
       });
-      await logger.endStep('procedural_generation', {
-        total_rooms: dungeon.structure.levels.reduce((sum, level) => sum + level.rooms.length, 0),
-        total_corridors: dungeon.structure.levels.reduce((sum, level) => sum + level.corridors.length, 0),
-        total_doors: dungeon.structure.levels.reduce(
-          (sum, level) => sum + level.rooms.reduce((roomSum, room) => roomSum + room.doors.length, 0),
-          0
-        ),
-        num_levels: dungeon.structure.levels.length,
+      
+      logger.log({
+        step: 'procedural',
+        logType: 'info',
+        message: 'Procedural generation complete',
+        data: {
+          total_rooms: dungeon.structure.levels.reduce((sum, level) => sum + level.rooms.length, 0),
+          total_corridors: dungeon.structure.levels.reduce((sum, level) => sum + level.corridors.length, 0),
+          total_doors: dungeon.structure.levels.reduce(
+            (sum, level) => sum + level.rooms.reduce((roomSum, room) => roomSum + room.doors.length, 0),
+            0
+          ),
+          num_levels: dungeon.structure.levels.length,
+        },
       });
+      logger.endStep('procedural');
     } else {
       dungeon = body.detail!;
     }
@@ -123,7 +162,12 @@ export const onRequest: PagesFunction = async (context) => {
     }
 
     // Save to world_element
-    await logger.startStep('save_dungeon');
+    logger.startStep('final');
+    logger.log({
+      step: 'final',
+      logType: 'info',
+      message: 'Saving dungeon to database',
+    });
 
     const { data: elementData, error: elementError } = await supabase
       .from('world_element')
@@ -138,15 +182,21 @@ export const onRequest: PagesFunction = async (context) => {
       .single();
 
     if (elementError || !elementData) {
-      await logger.log({
-        step: 'save_dungeon',
+      logger.log({
+        step: 'final',
         logType: 'error',
         message: elementError?.message || 'Failed to save dungeon',
       });
       throw new Error(elementError?.message || 'Failed to save dungeon');
     }
 
-    await logger.endStep('save_dungeon', { dungeon_id: elementData.id });
+    logger.log({
+      step: 'final',
+      logType: 'info',
+      message: 'Dungeon saved successfully',
+      data: { dungeon_id: elementData.id },
+    });
+    logger.endStep('final');
 
     // Flush logs
     await logger.flush();
@@ -165,8 +215,8 @@ export const onRequest: PagesFunction = async (context) => {
       }
     );
   } catch (error) {
-    await logger.log({
-      step: 'generation',
+    logger.log({
+      step: 'final',
       logType: 'error',
       message: error instanceof Error ? error.message : String(error),
       data: { error: String(error) },

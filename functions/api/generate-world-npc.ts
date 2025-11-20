@@ -4,6 +4,7 @@ import { generateNPC, type GenerateNPCOptions, type GeneratedNPC } from '../_lib
 import { getWorldContext, getRandomSnippets, formatContextForPrompt } from '../_lib/context-builder';
 import { GenerationLogger } from '../_lib/generation-logger';
 import { generateNPCPortrait, uploadPortraitToStorage } from '../_lib/npc-portrait';
+import { runSystemDiagnostics, logDiagnostics } from '../_lib/diagnostics';
 
 interface GenerateWorldNpcBody {
   worldId: string;
@@ -81,6 +82,30 @@ export const onRequest: PagesFunction = async (context) => {
 
   // Initialize generation logger
   const logger = new GenerationLogger(supabase, reqRow.id, body.worldId);
+
+  // Run system diagnostics (development/debugging)
+  logger.startStep('config_check');
+  logger.log({
+    step: 'config_check',
+    logType: 'diagnostic',
+    message: 'Running system diagnostics before generation',
+  });
+  
+  const diagnostics = await runSystemDiagnostics(supabase, env);
+  logDiagnostics(logger, diagnostics);
+  
+  // Log diagnostic summary
+  logger.log({
+    step: 'config_check',
+    logType: diagnostics.overallStatus === 'unhealthy' ? 'error' : diagnostics.overallStatus === 'degraded' ? 'warning' : 'info',
+    message: `Diagnostics complete: ${diagnostics.overallStatus} (${diagnostics.summary.passed}/${diagnostics.summary.total} checks passed)`,
+    data: {
+      summary: diagnostics.summary,
+      failedChecks: diagnostics.checks.filter(c => c.status === 'fail').map(c => c.check),
+      warnings: diagnostics.checks.filter(c => c.status === 'warning').map(c => c.check),
+    },
+  });
+  logger.endStep('config_check');
 
   // Parse tags for race, class, temperament - extract from phrases too
   const allTagText = body.tags?.join(' ').toLowerCase() || '';
