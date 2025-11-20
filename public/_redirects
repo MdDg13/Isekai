@@ -2,9 +2,10 @@
 # Rewrite all /campaign/* to /campaign/campaign/ so static export can handle it
 /campaign/* /campaign/campaign/ 200
 
+# Rewrite all /world/*/npc/* to /world/world/npc/npc/ so static export can handle it
+# (must appear before the generic /world/* rule)
+/world/*/npc/* /world/world/npc/npc/ 200
+
 # Rewrite all /world/* to /world/world/ so static export can handle it
 /world/* /world/world/ 200
-
-# Rewrite all /world/*/npc/* to /world/world/npc/npc/ so static export can handle it
-/world/*/npc/* /world/world/npc/npc/ 200
 
