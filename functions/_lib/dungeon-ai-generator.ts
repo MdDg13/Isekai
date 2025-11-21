@@ -5,7 +5,7 @@
  * using Cloudflare Workers AI (Stable Diffusion XL)
  */
 
-import type { DungeonLevel, Room, Corridor, Door, Stair } from './dungeon-generator/types';
+import type { DungeonLevel } from './dungeon-generator/types';
 
 export type DungeonType = 'dungeon' | 'cave' | 'ruin' | 'fortress' | 'tower' | 'temple' | 'lair';
 
@@ -171,7 +171,7 @@ export async function uploadMapToStorage(
   // Convert ArrayBuffer to Blob
   const blob = new Blob([imageData], { type: 'image/png' });
   
-  const { data, error } = await supabase.storage
+  const { error } = await supabase.storage
     .from(bucket)
     .upload(fileName, blob, {
       contentType: 'image/png',
@@ -179,6 +179,10 @@ export async function uploadMapToStorage(
     });
   
   if (error) {
+    // If bucket doesn't exist, provide helpful error
+    if (error.message.includes('Bucket not found') || error.message.includes('does not exist')) {
+      throw new Error(`Storage bucket '${bucket}' not found. Please run the setup SQL: docs/db/setup-dungeon-maps-storage.sql`);
+    }
     throw new Error(`Failed to upload map: ${error.message}`);
   }
   

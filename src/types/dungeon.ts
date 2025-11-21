@@ -82,7 +82,7 @@ export interface DungeonLevel {
   rooms: Room[];
   corridors: Corridor[];
   stairs: Stair[];
-  texture_set?: string;
+  map_image_url?: string; // URL to AI-generated map image
   fog_of_war?: FogOfWarState;
   tile_type?: "square" | "hex";
 }
