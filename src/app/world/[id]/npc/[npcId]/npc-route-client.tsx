@@ -181,6 +181,22 @@ export default function NPCRouteClient({ placeholderWorldId, placeholderNpcId }:
 
   console.log('[NPCRouteClient] IDs extracted successfully:', { worldId, npcId });
   console.log('[NPCRouteClient] Rendering NPCDetailPage');
+  console.log('[NPCRouteClient] Current URL:', typeof window !== 'undefined' ? window.location.href : 'N/A');
+  console.log('[NPCRouteClient] Pathname:', typeof window !== 'undefined' ? window.location.pathname : 'N/A');
+  
+  // Ensure we're definitely on an NPC route
+  if (typeof window !== 'undefined' && !window.location.pathname.includes('/npc/')) {
+    console.error('[NPCRouteClient] Not on NPC route, pathname:', window.location.pathname);
+    return (
+      <div className="min-h-screen bg-black text-white flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-400 mb-4">Navigation Error</p>
+          <p className="text-xs text-gray-500">Expected NPC route but pathname doesn&apos;t match</p>
+          <p className="text-xs text-gray-500 mt-2">Pathname: {window.location.pathname}</p>
+        </div>
+      </div>
+    );
+  }
   
   return <NPCDetailPage worldId={worldId} npcId={npcId} />;
 }

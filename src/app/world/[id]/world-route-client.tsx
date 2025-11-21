@@ -33,8 +33,10 @@ export default function WorldRouteClient({ placeholderId }: Props) {
   }, [pathname, placeholderId, searchParams]);
 
   // If on NPC route, don't render (let NPC page handle it)
+  // Return empty fragment instead of null to avoid React rendering issues
   if (isNpcRoute) {
-    return null;
+    console.log('[WorldRouteClient] Detected NPC route, not rendering world client');
+    return <></>;
   }
 
   if (!worldId) {

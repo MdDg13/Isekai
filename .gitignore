@@ -26,7 +26,11 @@
 # misc
 .DS_Store
 *.pem
-public/generated/
+# Allow generated textures and assets to be committed (needed for deployment)
+!public/generated/textures/
+!public/generated/portraits/
+!public/generated/icons/
+!public/generated/ui/
 
 # debug
 npm-debug.log*
