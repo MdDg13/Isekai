@@ -7,7 +7,9 @@ import { useRouter } from "next/navigation";
 import DungeonGenerator from "../../../components/dungeon/DungeonGenerator";
 import DungeonDetailView from "../../../components/dungeon/DungeonDetailView";
 import DungeonExportDrawer from "../../../components/dungeon/DungeonExportDrawer";
+import ProcessLogViewer from "../../../components/dungeon/ProcessLogViewer";
 import type { DungeonDetail, DungeonGenerationParams, DungeonLevel } from "../../../types/dungeon";
+import type { ProcessLogEntry } from "../../../types/generation";
 import { Toast, type ToastVariant } from "../../../components/ui/Toast";
 
 function generateDungeonName(theme: string, difficulty: string, worldName: string) {
@@ -43,6 +45,7 @@ interface PreviewDungeonState {
   detail: DungeonDetail;
   params: DungeonGenerationParams & { name?: string };
   saved?: boolean;
+  process_log?: ProcessLogEntry[];
 }
 
 interface WorldRecord {
@@ -1505,6 +1508,7 @@ function DungeonsTab({
         throw new Error(errorText);
       }
       const data = await res.json();
+      const processLog: ProcessLogEntry[] = data.generation_log?.entries ?? [];
       const detail = data.dungeon as DungeonDetail;
       const previewId = (crypto as Crypto | undefined)?.randomUUID?.() ?? `preview-${Date.now()}`;
       const createdAt = new Date().toISOString();
@@ -1515,6 +1519,7 @@ function DungeonsTab({
         detail,
         params: { ...params, name: resolvedName },
         saved: false,
+        process_log: processLog,
       };
       setPreviewDungeon(entry);
       setGenerationHistory((prev) => [entry, ...prev].slice(0, 5));
@@ -1629,6 +1634,13 @@ function DungeonsTab({
                   </div>
                 </div>
                 <DungeonDetailView dungeon={previewDungeon.detail} compact={true} showControls={false} />
+                {previewDungeon.process_log && previewDungeon.process_log.length > 0 ? (
+                  <ProcessLogViewer logs={previewDungeon.process_log} />
+                ) : (
+                  <div className="rounded-lg border border-gray-800 bg-gray-900/30 p-3 text-xs text-gray-400">
+                    AI process log unavailable. Ensure AI generation is enabled and environment variables are configured.
+                  </div>
+                )}
                 <div className="flex flex-wrap gap-2">
                   <button
                     disabled={isSaving || previewDungeon.saved}

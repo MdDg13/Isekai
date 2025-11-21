@@ -13,6 +13,7 @@ interface AIGenerationOptions {
   dungeonType: DungeonType;
   width: number;
   height: number;
+  seed?: number;
 }
 
 /**
@@ -106,6 +107,7 @@ export async function generateDungeonMapImage(
   accountId: string
 ): Promise<ArrayBuffer> {
   const prompt = layoutToAIPrompt(level, options);
+  const seed = options.seed ?? Math.floor(Math.random() * 1_000_000_000);
   
   // Use Stable Diffusion XL for high-quality image generation
   const model = '@cf/stabilityai/stable-diffusion-xl-base-1.0';
@@ -138,6 +140,7 @@ export async function generateDungeonMapImage(
       guidance: 7.5, // Standard guidance for line art
       width: imageWidth,
       height: imageHeight,
+      seed,
     }),
   });
   

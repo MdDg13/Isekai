@@ -36,6 +36,13 @@ export const onRequest: PagesFunction = async (context) => {
   }
 
   let body: GenerateDungeonBody;
+  const cfToken = env.CF_WORKERS_AI_TOKEN as string | undefined;
+  const cfAccountId = env.CF_ACCOUNT_ID as string | undefined;
+  const aiPreference = body.use_ai ?? body.params?.use_ai ?? true;
+  const aiEnvReady = Boolean(cfToken && cfAccountId);
+  const aiEnabled = aiPreference && aiEnvReady;
+  const storageBaseId = body.preview ? `preview-${reqRow.id}` : reqRow.id;
+
   try {
     body = (await request.json()) as GenerateDungeonBody;
   } catch {
@@ -147,8 +154,33 @@ export const onRequest: PagesFunction = async (context) => {
       dungeon.identity.name = body.name;
     }
 
+    if (!aiPreference) {
+      logger.log({
+        step: 'ai_map_generation',
+        logType: 'info',
+        message: 'AI map generation disabled via request payload',
+      });
+    } else if (!aiEnvReady) {
+      logger.log({
+        step: 'ai_map_generation',
+        logType: 'warning',
+        message: 'AI map generation skipped: Missing CF_WORKERS_AI_TOKEN or CF_ACCOUNT_ID',
+      });
+    }
+
     // Generate AI map images if enabled
-    if (body.use_ai !== false && env.CF_WORKERS_AI_TOKEN && env.CF_ACCOUNT_ID) {
+    const aiAlreadyProvided = usingProvidedDetail && dungeon.structure.levels.every((level) => Boolean(level.map_image_url));
+    const shouldGenerateAI = aiEnabled && !aiAlreadyProvided;
+
+    if (aiAlreadyProvided) {
+      logger.log({
+        step: 'ai_map_generation',
+        logType: 'info',
+        message: 'AI map generation skipped: map_image_url already provided in detail payload',
+      });
+    }
+
+    if (shouldGenerateAI) {
       logger.startStep('ai_map_generation');
       logger.log({
         step: 'ai_map_generation',
@@ -158,15 +190,19 @@ export const onRequest: PagesFunction = async (context) => {
       });
 
       try {
-        const cfToken = env.CF_WORKERS_AI_TOKEN as string;
-        const cfAccountId = env.CF_ACCOUNT_ID as string;
-
         // Generate maps for each level
         for (const level of dungeon.structure.levels) {
+          const seed = Math.floor(Math.random() * 1_000_000_000);
+          const startedAt = Date.now();
           logger.log({
             step: 'ai_map_generation',
             logType: 'info',
             message: `Generating AI map for level ${level.level_index}: ${level.name}`,
+            data: {
+              level_index: level.level_index,
+              level_name: level.name,
+              seed,
+            },
           });
 
           try {
@@ -177,23 +213,25 @@ export const onRequest: PagesFunction = async (context) => {
                 dungeonType: dungeon.identity.type,
                 width: level.grid.width,
                 height: level.grid.height,
+                seed,
               },
-              cfToken,
-              cfAccountId
+              cfToken!,
+              cfAccountId!
             );
 
             logger.log({
               step: 'ai_map_generation',
               logType: 'info',
               message: `AI map generated for level ${level.level_index}, uploading to storage`,
+              data: {
+                level_index: level.level_index,
+                seed,
+              },
             });
 
-            // Upload to Supabase Storage (we'll get the dungeon ID after saving)
-            // For now, we'll generate a temporary ID and update after save
-            const tempDungeonId = `temp-${Date.now()}`;
             const mapUrl = await uploadMapToStorage(
               imageData,
-              tempDungeonId,
+              storageBaseId,
               level.level_index,
               supabaseUrl,
               serviceKey
@@ -206,7 +244,13 @@ export const onRequest: PagesFunction = async (context) => {
               step: 'ai_map_generation',
               logType: 'info',
               message: `Map uploaded successfully for level ${level.level_index}`,
-              data: { map_url: mapUrl },
+              data: {
+                level_index: level.level_index,
+                seed,
+                map_url: mapUrl,
+                storage_path: `${storageBaseId}/${level.level_index}.png`,
+                duration_ms: Date.now() - startedAt,
+              },
             });
           } catch (levelError) {
             logger.log({
@@ -228,13 +272,9 @@ export const onRequest: PagesFunction = async (context) => {
         logger.endStep('ai_map_generation');
         // Continue without AI maps - fallback to procedural rendering
       }
-    } else {
-      logger.log({
-        step: 'ai_map_generation',
-        logType: 'info',
-        message: 'AI map generation skipped (disabled or missing credentials)',
-      });
     }
+
+    const processLog = logger.getLogs();
 
     if (body.preview) {
       await logger.flush();
@@ -242,7 +282,7 @@ export const onRequest: PagesFunction = async (context) => {
         JSON.stringify({
           preview: true,
           dungeon,
-          generation_log: { request_id: reqRow.id },
+          generation_log: { request_id: reqRow.id, entries: processLog },
         }),
         {
           status: 200,
@@ -280,39 +320,6 @@ export const onRequest: PagesFunction = async (context) => {
       throw new Error(elementError?.message || 'Failed to save dungeon');
     }
 
-    // Update map URLs with real dungeon ID if AI maps were generated
-    // Note: Maps are uploaded with temp ID, then we update the dungeon record with final URLs
-    // The actual file paths in storage use temp IDs, but URLs are updated in the dungeon data
-    if (dungeon.structure.levels.some(level => level.map_image_url)) {
-      logger.startStep('update_map_urls');
-      logger.log({
-        step: 'update_map_urls',
-        logType: 'info',
-        message: 'Updating dungeon record with map URLs',
-      });
-
-      // Update dungeon record with map URLs (they're already correct from upload)
-      const { error: updateError } = await supabase
-        .from('world_element')
-        .update({ detail: dungeon })
-        .eq('id', elementData.id);
-
-      if (updateError) {
-        logger.log({
-          step: 'update_map_urls',
-          logType: 'warning',
-          message: `Failed to update dungeon with map URLs: ${updateError.message}`,
-        });
-      } else {
-        logger.log({
-          step: 'update_map_urls',
-          logType: 'info',
-          message: 'Dungeon record updated with map URLs',
-        });
-      }
-      logger.endStep('update_map_urls');
-    }
-
     logger.log({
       step: 'final',
       logType: 'info',
@@ -330,6 +337,7 @@ export const onRequest: PagesFunction = async (context) => {
         dungeon,
         generation_log: {
           request_id: reqRow.id,
+          entries: processLog,
         },
       }),
       {

@@ -9,11 +9,26 @@ import type { SupabaseClient } from '@supabase/supabase-js';
 export interface GenerationLogEntry {
   generationRequestId: string;
   worldId: string;
-  step: 'procedural' | 'context_fetch' | 'ai_enhance' | 'critique' | 'style_fix' | 'grammar_fix' | 'programmatic_fix' | 'portrait_generation' | 'portrait_upload' | 'config_check' | 'storage_check' | 'api_check' | 'final';
+  step:
+    | 'procedural'
+    | 'context_fetch'
+    | 'ai_enhance'
+    | 'critique'
+    | 'style_fix'
+    | 'grammar_fix'
+    | 'programmatic_fix'
+    | 'portrait_generation'
+    | 'portrait_upload'
+    | 'config_check'
+    | 'storage_check'
+    | 'api_check'
+    | 'ai_map_generation'
+    | 'final';
   logType: 'info' | 'warning' | 'error' | 'debug' | 'diagnostic';
   message: string;
   data?: Record<string, unknown>;
   durationMs?: number;
+  timestamp: string;
 }
 
 export class GenerationLogger {
@@ -46,11 +61,12 @@ export class GenerationLogger {
     }
   }
 
-  log(entry: Omit<GenerationLogEntry, 'generationRequestId' | 'worldId'>): void {
+  log(entry: Omit<GenerationLogEntry, 'generationRequestId' | 'worldId' | 'timestamp'>): void {
     const logEntry: GenerationLogEntry = {
       ...entry,
       generationRequestId: this.generationRequestId,
       worldId: this.worldId,
+      timestamp: new Date().toISOString(),
     };
     this.logs.push(logEntry);
     
@@ -80,7 +96,7 @@ export class GenerationLogger {
         step: log.step,
         log_type: log.logType,
         message: log.message,
-        data: log.data || null,
+        data: { ...(log.data || {}), timestamp: log.timestamp },
         duration_ms: log.durationMs || null,
       }));
 
