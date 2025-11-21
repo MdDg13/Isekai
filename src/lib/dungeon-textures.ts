@@ -233,51 +233,13 @@ export function createStairsPattern(id: string, direction: 'up' | 'down', theme:
   `;
 }
 
-// Get texture set for a dungeon type (prefers AI-generated, falls back to procedural)
+// Get texture set for a dungeon type (uses blended patterns for cohesive look)
 export function getTextureSetForType(type: DungeonType): Record<string, string> {
   const textures: Record<string, string> = {};
-  const aiTextures = AI_TEXTURE_MAP[type] ?? {};
   
-  // Floor textures - prefer AI-generated, fallback to procedural
-  if (aiTextures.floor) {
-    textures.floor = getTexturePatternId(type, 'floor', 'ai');
-  } else {
-    switch (type) {
-      case 'cave':
-        textures.floor = getTexturePatternId(type, 'floor', 'dirt');
-        break;
-      case 'ruin':
-      case 'temple':
-        textures.floor = getTexturePatternId(type, 'floor', 'stone');
-        break;
-      case 'fortress':
-      case 'tower':
-        textures.floor = getTexturePatternId(type, 'floor', 'stone'); // Fallback to stone
-        break;
-      case 'lair':
-        textures.floor = getTexturePatternId(type, 'floor', 'dirt');
-        break;
-      default: // dungeon
-        textures.floor = getTexturePatternId(type, 'floor', 'stone');
-    }
-  }
-  
-  // Wall textures - prefer AI-generated, fallback to procedural
-  if (aiTextures.wall) {
-    textures.wall = getTexturePatternId(type, 'wall', 'ai');
-  } else {
-    switch (type) {
-      case 'cave':
-      case 'lair':
-        textures.wall = getTexturePatternId(type, 'wall', 'cave');
-        break;
-      case 'temple':
-        textures.wall = getTexturePatternId(type, 'wall', 'stone'); // Fallback to stone
-        break;
-      default:
-        textures.wall = getTexturePatternId(type, 'wall', 'stone');
-    }
-  }
+  // Always use the main blended pattern (procedural + AI overlay)
+  textures.floor = getTexturePatternId(type, 'floor', 'main');
+  textures.wall = getTexturePatternId(type, 'wall', 'main');
   
   return textures;
 }
@@ -310,46 +272,78 @@ const AI_TEXTURE_MAP: Record<DungeonType, { floor?: string; wall?: string }> = {
   },
 };
 
-// Create SVG pattern using AI-generated image texture
-function createImageTexturePattern(id: string, imagePath: string, size: number = 256): string {
-  return `
-    <pattern id="${id}" patternUnits="userSpaceOnUse" width="${size}" height="${size}">
-      <image href="${imagePath}" width="${size}" height="${size}" preserveAspectRatio="none"/>
-    </pattern>
-  `;
+// Create a blended texture pattern that combines procedural base with AI texture overlay
+function createBlendedTexturePattern(
+  id: string,
+  basePatternId: string,
+  textureImagePath: string | null,
+  cellSize: number = 20,
+  theme: 'light' | 'dark',
+  palette: ColorSwatch
+): string {
+  const patternSize = cellSize * 4;
+  const patterns: string[] = [];
+  
+  // Base procedural pattern with subtle tile detail
+  patterns.push(`<pattern id="${id}-base" patternUnits="userSpaceOnUse" width="${patternSize}" height="${patternSize}">`);
+  patterns.push(`<rect width="${patternSize}" height="${patternSize}" fill="${palette.base}"/>`);
+  // Add subtle procedural detail for visual interest
+  patterns.push(`<rect x="0" y="0" width="${patternSize/2}" height="${patternSize/2}" fill="${palette.base}" stroke="${palette.detail}" strokeWidth="0.5" opacity="0.25"/>`);
+  patterns.push(`<rect x="${patternSize/2}" y="${patternSize/2}" width="${patternSize/2}" height="${patternSize/2}" fill="${palette.base}" stroke="${palette.detail}" strokeWidth="0.5" opacity="0.25"/>`);
+  // Add subtle highlight for depth
+  patterns.push(`<ellipse cx="${patternSize/4}" cy="${patternSize/4}" rx="${patternSize/8}" ry="${patternSize/12}" fill="${palette.highlight}" opacity="0.15"/>`);
+  patterns.push(`</pattern>`);
+  
+  // Combined pattern with texture overlay (subtle blend)
+  patterns.push(`<pattern id="${id}" patternUnits="userSpaceOnUse" width="${patternSize}" height="${patternSize}">`);
+  patterns.push(`<rect width="${patternSize}" height="${patternSize}" fill="url(#${id}-base)"/>`);
+  if (textureImagePath) {
+    // Use lower opacity for more subtle texture overlay
+    patterns.push(`<image href="${textureImagePath}" width="${patternSize}" height="${patternSize}" preserveAspectRatio="none" opacity="0.3"/>`);
+  }
+  patterns.push(`</pattern>`);
+  
+  return patterns.join('\n');
 }
 
 // Generate all texture patterns for a dungeon type
-export function generateTexturePatterns(type: DungeonType, theme: 'light' | 'dark'): string {
+// Uses a cohesive design: procedural base patterns with subtle AI texture overlays
+export function generateTexturePatterns(type: DungeonType, theme: 'light' | 'dark', cellSize: number = 20): string {
   const patterns: string[] = [];
   const palette = getTexturePalette(type);
   const aiTextures = AI_TEXTURE_MAP[type] ?? {};
   
-  // Floor patterns - use AI-generated if available, fallback to procedural
-  if (aiTextures.floor) {
-    const floorPatternId = getTexturePatternId(type, 'floor', 'ai');
-    patterns.push(createImageTexturePattern(floorPatternId, aiTextures.floor, 256));
-  } else {
-    patterns.push(createStoneFloorPattern(getTexturePatternId(type, 'floor', 'stone'), theme, palette.floor));
-    patterns.push(createDirtFloorPattern(getTexturePatternId(type, 'floor', 'dirt'), theme, palette.floor));
-  }
+  // Floor patterns - blended approach: procedural base + AI texture overlay
+  const floorPatternId = getTexturePatternId(type, 'floor', 'main');
+  patterns.push(createBlendedTexturePattern(
+    floorPatternId,
+    getTexturePatternId(type, 'floor', 'stone'),
+    aiTextures.floor ?? null,
+    cellSize,
+    theme,
+    palette.floor
+  ));
   
-  // Wall patterns - use AI-generated if available, fallback to procedural
-  if (aiTextures.wall) {
-    const wallPatternId = getTexturePatternId(type, 'wall', 'ai');
-    patterns.push(createImageTexturePattern(wallPatternId, aiTextures.wall, 256));
-  } else {
-    patterns.push(createStoneWallPattern(getTexturePatternId(type, 'wall', 'stone'), theme, palette.wall));
-    patterns.push(createCaveWallPattern(getTexturePatternId(type, 'wall', 'cave'), theme, palette.wall));
-  }
-  
-  // Always include procedural patterns as fallback
+  // Always include pure procedural patterns as fallback
   patterns.push(createStoneFloorPattern(getTexturePatternId(type, 'floor', 'stone'), theme, palette.floor));
   patterns.push(createDirtFloorPattern(getTexturePatternId(type, 'floor', 'dirt'), theme, palette.floor));
+  
+  // Wall patterns - blended approach
+  const wallPatternId = getTexturePatternId(type, 'wall', 'main');
+  patterns.push(createBlendedTexturePattern(
+    wallPatternId,
+    getTexturePatternId(type, 'wall', 'stone'),
+    aiTextures.wall ?? null,
+    cellSize,
+    theme,
+    palette.wall
+  ));
+  
+  // Always include pure procedural wall patterns as fallback
   patterns.push(createStoneWallPattern(getTexturePatternId(type, 'wall', 'stone'), theme, palette.wall));
   patterns.push(createCaveWallPattern(getTexturePatternId(type, 'wall', 'cave'), theme, palette.wall));
   
-  // Stairs patterns (always procedural)
+  // Stairs patterns (always procedural for clarity)
   patterns.push(createStairsPattern(getTexturePatternId(type, 'feature', 'stairs_up'), 'up', theme));
   patterns.push(createStairsPattern(getTexturePatternId(type, 'feature', 'stairs_down'), 'down', theme));
   

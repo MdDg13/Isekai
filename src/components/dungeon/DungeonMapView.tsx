@@ -56,10 +56,10 @@ export default function DungeonMapView({
   // Theme-aware colors (shared map palette)
   const colors = getMapThemePalette(theme);
 
-  // Generate improved texture patterns based on dungeon type
-  const texturePatterns = generateTexturePatterns(dungeonType, theme);
+  // Generate improved texture patterns based on dungeon type (with cell size for proper scaling)
+  const texturePatterns = generateTexturePatterns(dungeonType, theme, cellSize);
   const textures = getTextureSetForType(dungeonType);
-  const chamberPatternId = textures?.floor ?? getTexturePatternId(dungeonType, 'floor', 'stone');
+  const chamberPatternId = textures?.floor ?? getTexturePatternId(dungeonType, 'floor', 'main');
   const corridorPatternId = textures?.corridor ?? 'corridor-texture';
   const corridorPatternFill = corridorPatternId === 'corridor-texture' ? 'url(#corridor-texture)' : `url(#${corridorPatternId})`;
   

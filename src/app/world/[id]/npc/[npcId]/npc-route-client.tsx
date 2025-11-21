@@ -1,6 +1,6 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
+import { useSearchParams, usePathname } from "next/navigation";
 import { useMemo, useState, useEffect } from "react";
 import NPCDetailPage from "./npc-detail-page";
 
@@ -11,16 +11,18 @@ interface NPCRouteClientProps {
 
 export default function NPCRouteClient({ placeholderWorldId, placeholderNpcId }: NPCRouteClientProps) {
   const searchParams = useSearchParams();
+  const pathname = usePathname();
   const [mounted, setMounted] = useState(false);
   
   // Wait for client-side mount to access sessionStorage
   useEffect(() => {
     console.log('[NPCRouteClient] Component mounting');
+    console.log('[NPCRouteClient] Pathname from hook:', pathname);
     console.log('[NPCRouteClient] Initial URL:', typeof window !== 'undefined' ? window.location.href : 'N/A');
     console.log('[NPCRouteClient] Initial hash:', typeof window !== 'undefined' ? window.location.hash : 'N/A');
     console.log('[NPCRouteClient] Placeholders:', { placeholderWorldId, placeholderNpcId });
     setMounted(true);
-  }, [placeholderWorldId, placeholderNpcId]);
+  }, [placeholderWorldId, placeholderNpcId, pathname]);
   
   const worldId = useMemo(() => {
     if (!mounted) {
@@ -184,20 +186,29 @@ export default function NPCRouteClient({ placeholderWorldId, placeholderNpcId }:
   console.log('[NPCRouteClient] Current URL:', typeof window !== 'undefined' ? window.location.href : 'N/A');
   console.log('[NPCRouteClient] Pathname:', typeof window !== 'undefined' ? window.location.pathname : 'N/A');
   
-  // Ensure we're definitely on an NPC route
-  if (typeof window !== 'undefined' && !window.location.pathname.includes('/npc/')) {
-    console.error('[NPCRouteClient] Not on NPC route, pathname:', window.location.pathname);
+  // Ensure we're definitely on an NPC route (check both pathname hook and window.location)
+  const isNpcRoute = pathname?.includes('/npc/') || (typeof window !== 'undefined' && window.location.pathname.includes('/npc/'));
+  
+  if (!isNpcRoute) {
+    console.error('[NPCRouteClient] Not on NPC route', {
+      pathnameFromHook: pathname,
+      pathnameFromWindow: typeof window !== 'undefined' ? window.location.pathname : 'N/A',
+    });
     return (
       <div className="min-h-screen bg-black text-white flex items-center justify-center">
         <div className="text-center">
           <p className="text-red-400 mb-4">Navigation Error</p>
           <p className="text-xs text-gray-500">Expected NPC route but pathname doesn&apos;t match</p>
-          <p className="text-xs text-gray-500 mt-2">Pathname: {window.location.pathname}</p>
+          <p className="text-xs text-gray-500 mt-2">Pathname (hook): {pathname || 'N/A'}</p>
+          {typeof window !== 'undefined' && (
+            <p className="text-xs text-gray-500">Pathname (window): {window.location.pathname}</p>
+          )}
         </div>
       </div>
     );
   }
   
+  console.log('[NPCRouteClient] Rendering NPCDetailPage component');
   return <NPCDetailPage worldId={worldId} npcId={npcId} />;
 }
 
