@@ -12,11 +12,13 @@ You must create a `.env.local` file in the repo root **before** running any AI g
    New-Item -Path .env.local -ItemType File -Force
    ```
    (This creates an empty file; re-running overwrites nothing because `-Force` just keeps it.)
-3. Open `.env.local` in Cursor (or any editor) and paste:
+3. Open `.env.local` in Cursor (or any editor) and add your Cloudflare credentials:
    ```
-   CF_ACCOUNT_ID=9b19a6844783aa1bc6a7ee3e978cfcad
-   CF_WORKERS_AI_TOKEN=QFygAQpOipm9V_ruUeqvRTWKUl5gioYmahkXTy0v
+   CLOUDFLARE_ACCOUNT_ID=<your-cloudflare-account-id>
+   CLOUDFLARE_API_TOKEN=<your-workers-ai-api-token>
    ```
+   - These names exactly match Cloudflare’s dashboard.  
+   - Legacy names (`CF_ACCOUNT_ID`, `CF_WORKERS_AI_TOKEN`) are deprecated—rename them to avoid warnings.
 4. Save. The file is git-ignored, so the token stays local.
 
 If the token ever changes, edit `.env.local` with the new value and save.

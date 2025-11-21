@@ -96,15 +96,17 @@ export function buildPortraitPrompt(npc: GeneratedNPC): string {
 /**
  * Generate NPC portrait using Workers AI
  */
+export interface CloudflareAIEnv {
+  accountId?: string;
+  apiToken?: string;
+}
+
 export async function generateNPCPortrait(
   npc: GeneratedNPC,
-  env: {
-    CF_ACCOUNT_ID?: string;
-    CF_WORKERS_AI_TOKEN?: string;
-  }
+  env: CloudflareAIEnv
 ): Promise<Buffer | null> {
-  const accountId = env.CF_ACCOUNT_ID;
-  const token = env.CF_WORKERS_AI_TOKEN;
+  const accountId = env.accountId;
+  const token = env.apiToken;
   
   if (!accountId || !token) {
     console.warn('Workers AI credentials not available for portrait generation');

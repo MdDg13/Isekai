@@ -5,6 +5,7 @@ import { getWorldContext, getRandomSnippets, formatContextForPrompt } from '../_
 import { GenerationLogger } from '../_lib/generation-logger';
 import { generateNPCPortrait, uploadPortraitToStorage } from '../_lib/npc-portrait';
 import { runSystemDiagnostics, logDiagnostics } from '../_lib/diagnostics';
+import { resolveCloudflareAIEnv } from '../_lib/cloudflare-env';
 
 interface GenerateWorldNpcBody {
   worldId: string;
@@ -82,9 +83,24 @@ export const onRequest: PagesFunction = async (context) => {
 
   // Initialize generation logger
   const logger = new GenerationLogger(supabase, reqRow.id, body.worldId);
+  logger.startStep('config_check');
+
+  const { accountId: cfAccountId, apiToken: cfApiToken, warnings: cfEnvWarnings } =
+    resolveCloudflareAIEnv(env);
+  const workersAIEnv = {
+    CLOUDFLARE_ACCOUNT_ID: cfAccountId,
+    CLOUDFLARE_API_TOKEN: cfApiToken,
+    WORKERS_AI_MODEL: (env.WORKERS_AI_MODEL as string | undefined) || undefined,
+  };
+  cfEnvWarnings.forEach((warning) => {
+    logger.log({
+      step: 'config_check',
+      logType: 'warning',
+      message: warning,
+    });
+  });
 
   // Run system diagnostics (development/debugging)
-  logger.startStep('config_check');
   logger.log({
     step: 'config_check',
     logType: 'diagnostic',
@@ -432,11 +448,7 @@ ${JSON.stringify(npcDraft)}`;
       const temperature = hasExplicitConstraints ? 0.3 : 0.5;
       
       const aiEnhanced = await runWorkersAIJSON<Enhanced>(
-        {
-          CLOUDFLARE_API_TOKEN: env.CLOUDFLARE_API_TOKEN as string | undefined,
-          CLOUDFLARE_ACCOUNT_ID: env.CLOUDFLARE_ACCOUNT_ID as string | undefined,
-          WORKERS_AI_MODEL: (env.WORKERS_AI_MODEL as string | undefined) || undefined,
-        },
+        workersAIEnv,
         enhancePrompt,
         { maxTokens: 1200, temperature }
       );
@@ -453,7 +465,7 @@ ${JSON.stringify(npcDraft)}`;
           summaryOneLiner: aiEnhanced.summary?.oneLiner?.substring(0, 100),
           summaryKeyPointsCount: aiEnhanced.summary?.keyPoints?.length || 0,
           temperature,
-          model: env.WORKERS_AI_MODEL
+          model: workersAIEnv.WORKERS_AI_MODEL
         }
       });
 
@@ -483,11 +495,7 @@ Provide JSON: { "issues": string[], "edits": Partial<Enhanced> }.
 Only include edits that materially improve adherence/quality; keep structure.`;
 
       const critique = await runWorkersAIJSON<Critique>(
-        {
-          CLOUDFLARE_API_TOKEN: env.CLOUDFLARE_API_TOKEN as string | undefined,
-          CLOUDFLARE_ACCOUNT_ID: env.CLOUDFLARE_ACCOUNT_ID as string | undefined,
-          WORKERS_AI_MODEL: (env.WORKERS_AI_MODEL as string | undefined) || undefined,
-        },
+        workersAIEnv,
         `Current NPC:\n${JSON.stringify(aiEnhanced)}\n\n${critiquePrompt}`,
         { maxTokens: 800, temperature: 0.3 }
       );
@@ -536,11 +544,7 @@ Return ONLY a name in JSON format: { "name": "FirstName LastName" }.
 Examples: "shy dwarf training to become wizard" → "Thorin Spellweaver", "apprentice blacksmith" → "Gareth Forgehand"`;
         
         const nameGen = await runWorkersAIJSON<{ name?: string }>(
-          {
-            CLOUDFLARE_API_TOKEN: env.CLOUDFLARE_API_TOKEN as string | undefined,
-            CLOUDFLARE_ACCOUNT_ID: env.CLOUDFLARE_ACCOUNT_ID as string | undefined,
-            WORKERS_AI_MODEL: (env.WORKERS_AI_MODEL as string | undefined) || undefined,
-          },
+          workersAIEnv,
           nameGenPrompt,
           { maxTokens: 50, temperature: 0.7 }
         );
@@ -645,11 +649,7 @@ GOOD: "a guard known for their opportunistic nature and willingness to bend rule
 Now apply ALL fixes to the bio and backstory.`;
 
       const styleEdits = await runWorkersAIJSON<StyleEdit>(
-        {
-          CLOUDFLARE_API_TOKEN: env.CLOUDFLARE_API_TOKEN as string | undefined,
-          CLOUDFLARE_ACCOUNT_ID: env.CLOUDFLARE_ACCOUNT_ID as string | undefined,
-          WORKERS_AI_MODEL: (env.WORKERS_AI_MODEL as string | undefined) || undefined,
-        },
+        workersAIEnv,
         stylePrompt,
         { maxTokens: 800, temperature: 0.3 }
       );
@@ -700,11 +700,7 @@ Return JSON: { "bio": string, "summary": { "oneLiner": string, "keyPoints": stri
 Keep everything else exactly the same.`;
 
       const grammarEdits = await runWorkersAIJSON<StyleEdit>(
-        {
-          CLOUDFLARE_API_TOKEN: env.CLOUDFLARE_API_TOKEN as string | undefined,
-          CLOUDFLARE_ACCOUNT_ID: env.CLOUDFLARE_ACCOUNT_ID as string | undefined,
-          WORKERS_AI_MODEL: (env.WORKERS_AI_MODEL as string | undefined) || undefined,
-        },
+        workersAIEnv,
         grammarPrompt,
         { maxTokens: 600, temperature: 0.1 }
       );
@@ -759,11 +755,7 @@ Return JSON: { "bio": string, "summary": { "oneLiner": string, "keyPoints": stri
 - Ensure summary.keyPoints are 3-5 actionable, specific bullet points`;
 
       const qualityEdits = await runWorkersAIJSON<StyleEdit>(
-        {
-          CLOUDFLARE_API_TOKEN: env.CLOUDFLARE_API_TOKEN as string | undefined,
-          CLOUDFLARE_ACCOUNT_ID: env.CLOUDFLARE_ACCOUNT_ID as string | undefined,
-          WORKERS_AI_MODEL: (env.WORKERS_AI_MODEL as string | undefined) || undefined,
-        },
+        workersAIEnv,
         qualityPrompt,
         { maxTokens: 700, temperature: 0.2 }
       );
@@ -795,11 +787,7 @@ Summary key points: ${JSON.stringify(readabilitySourceSummary.keyPoints || [])}
 Backstory: "${npcDraft.backstory || ''}"`;
 
       const readabilityEdits = await runWorkersAIJSON<StyleEdit>(
-        {
-          CLOUDFLARE_API_TOKEN: env.CLOUDFLARE_API_TOKEN as string | undefined,
-          CLOUDFLARE_ACCOUNT_ID: env.CLOUDFLARE_ACCOUNT_ID as string | undefined,
-          WORKERS_AI_MODEL: (env.WORKERS_AI_MODEL as string | undefined) || undefined,
-        },
+        workersAIEnv,
         readabilityPrompt,
         { maxTokens: 600, temperature: 0.2 }
       );
@@ -924,47 +912,55 @@ Backstory: "${npcDraft.backstory || ''}"`;
   const portraitEnabled = (env.WORKERS_AI_ENABLE as string | undefined)?.toLowerCase() === 'true';
   
   if (portraitEnabled) {
-    try {
-      logger.startStep('portrait_generation');
+    if (!cfAccountId || !cfApiToken) {
       logger.log({
         step: 'portrait_generation',
-        logType: 'info',
-        message: 'Starting NPC portrait generation'
+        logType: 'warning',
+        message: 'Portrait generation skipped: CLOUDFLARE_API_TOKEN and/or CLOUDFLARE_ACCOUNT_ID not set',
       });
-      
-      portraitBuffer = await generateNPCPortrait(npcDraft, {
-        CF_ACCOUNT_ID: env.CLOUDFLARE_ACCOUNT_ID as string | undefined,
-        CF_WORKERS_AI_TOKEN: env.CLOUDFLARE_API_TOKEN as string | undefined,
-      });
-      
-      if (portraitBuffer) {
+    } else {
+      try {
+        logger.startStep('portrait_generation');
         logger.log({
           step: 'portrait_generation',
           logType: 'info',
-          message: 'Portrait generated successfully',
-          data: { size: portraitBuffer.length }
+          message: 'Starting NPC portrait generation'
         });
-      } else {
+        
+        portraitBuffer = await generateNPCPortrait(npcDraft, {
+          accountId: cfAccountId,
+          apiToken: cfApiToken,
+        });
+        
+        if (portraitBuffer) {
+          logger.log({
+            step: 'portrait_generation',
+            logType: 'info',
+            message: 'Portrait generated successfully',
+            data: { size: portraitBuffer.length }
+          });
+        } else {
+          logger.log({
+            step: 'portrait_generation',
+            logType: 'warning',
+            message: 'Portrait generation returned null (credentials may be missing)'
+          });
+        }
+        
+        logger.endStep('portrait_generation');
+      } catch (portraitError) {
         logger.log({
           step: 'portrait_generation',
-          logType: 'warn',
-          message: 'Portrait generation returned null (credentials may be missing)'
+          logType: 'error',
+          message: 'Portrait generation failed',
+          data: {
+            error: portraitError instanceof Error ? portraitError.message : String(portraitError)
+          }
         });
+        logger.endStep('portrait_generation');
+        // Continue without portrait - not critical
+        console.warn('Portrait generation failed:', portraitError);
       }
-      
-      logger.endStep('portrait_generation');
-    } catch (portraitError) {
-      logger.log({
-        step: 'portrait_generation',
-        logType: 'error',
-        message: 'Portrait generation failed',
-        data: {
-          error: portraitError instanceof Error ? portraitError.message : String(portraitError)
-        }
-      });
-      logger.endStep('portrait_generation');
-      // Continue without portrait - not critical
-      console.warn('Portrait generation failed:', portraitError);
     }
   }
 

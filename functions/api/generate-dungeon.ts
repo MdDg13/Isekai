@@ -8,6 +8,7 @@ import { generateDungeonProcedural } from '../_lib/dungeon-generator/procedural'
 import { GenerationLogger } from '../_lib/generation-logger';
 import { runSystemDiagnostics, logDiagnostics } from '../_lib/diagnostics';
 import { generateDungeonMapImage, uploadMapToStorage } from '../_lib/dungeon-ai-generator';
+import { resolveCloudflareAIEnv } from '../_lib/cloudflare-env';
 import type { DungeonGenerationParams, DungeonDetail } from '../_lib/dungeon-generator/types';
 import type { PagesFunction } from '@cloudflare/workers-types';
 
@@ -36,13 +37,6 @@ export const onRequest: PagesFunction = async (context) => {
   }
 
   let body: GenerateDungeonBody;
-  const cfToken = env.CF_WORKERS_AI_TOKEN as string | undefined;
-  const cfAccountId = env.CF_ACCOUNT_ID as string | undefined;
-  const aiPreference = body.use_ai ?? body.params?.use_ai ?? true;
-  const aiEnvReady = Boolean(cfToken && cfAccountId);
-  const aiEnabled = aiPreference && aiEnvReady;
-  const storageBaseId = body.preview ? `preview-${reqRow.id}` : reqRow.id;
-
   try {
     body = (await request.json()) as GenerateDungeonBody;
   } catch {
@@ -87,9 +81,23 @@ export const onRequest: PagesFunction = async (context) => {
 
   // Initialize generation logger
   const logger = new GenerationLogger(supabase, reqRow.id, body.world_id);
+  logger.startStep('config_check');
+
+  const { accountId: cfAccountId, apiToken: cfApiToken, warnings: cfEnvWarnings } =
+    resolveCloudflareAIEnv(env);
+  cfEnvWarnings.forEach((warning) => {
+    logger.log({
+      step: 'config_check',
+      logType: 'warning',
+      message: warning,
+    });
+  });
+
+  const aiPreference = body.use_ai ?? body.params?.use_ai ?? true;
+  const aiEnvReady = Boolean(cfAccountId && cfApiToken);
+  const storageBaseId = body.preview ? `preview-${reqRow.id}` : reqRow.id;
 
   // Run system diagnostics (development/debugging)
-  logger.startStep('config_check');
   logger.log({
     step: 'config_check',
     logType: 'diagnostic',
@@ -154,33 +162,31 @@ export const onRequest: PagesFunction = async (context) => {
       dungeon.identity.name = body.name;
     }
 
+    const aiAlreadyProvided =
+      usingProvidedDetail &&
+      dungeon.structure.levels.every((level) => Boolean(level.map_image_url));
+    const shouldGenerateAI = aiPreference && aiEnvReady && !aiAlreadyProvided;
+
     if (!aiPreference) {
       logger.log({
         step: 'ai_map_generation',
         logType: 'info',
-        message: 'AI map generation disabled via request payload',
+        message: 'AI map generation disabled via request payload/use_ai flag',
       });
     } else if (!aiEnvReady) {
       logger.log({
         step: 'ai_map_generation',
         logType: 'warning',
-        message: 'AI map generation skipped: Missing CF_WORKERS_AI_TOKEN or CF_ACCOUNT_ID',
+        message:
+          'AI map generation skipped: CLOUDFLARE_API_TOKEN and/or CLOUDFLARE_ACCOUNT_ID not configured',
       });
-    }
-
-    // Generate AI map images if enabled
-    const aiAlreadyProvided = usingProvidedDetail && dungeon.structure.levels.every((level) => Boolean(level.map_image_url));
-    const shouldGenerateAI = aiEnabled && !aiAlreadyProvided;
-
-    if (aiAlreadyProvided) {
+    } else if (aiAlreadyProvided) {
       logger.log({
         step: 'ai_map_generation',
         logType: 'info',
         message: 'AI map generation skipped: map_image_url already provided in detail payload',
       });
-    }
-
-    if (shouldGenerateAI) {
+    } else if (shouldGenerateAI) {
       logger.startStep('ai_map_generation');
       logger.log({
         step: 'ai_map_generation',
@@ -215,7 +221,7 @@ export const onRequest: PagesFunction = async (context) => {
                 height: level.grid.height,
                 seed,
               },
-              cfToken!,
+              cfApiToken!,
               cfAccountId!
             );
 

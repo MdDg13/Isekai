@@ -1,19 +1,24 @@
 import { runWorkersAIText } from '../_lib/ai';
+import { resolveCloudflareAIEnv } from '../_lib/cloudflare-env';
 
 export const onRequest: PagesFunction = async (context) => {
   const { env } = context;
   const enabled = (env.WORKERS_AI_ENABLE as string | undefined)?.toLowerCase() === 'true';
   const model = (env.WORKERS_AI_MODEL as string | undefined) || '@cf/meta/llama-3.1-8b-instruct';
+  const { accountId, apiToken } = resolveCloudflareAIEnv(env);
 
   const started = Date.now();
   let ok = false;
   let message = 'disabled';
   try {
     if (enabled) {
+      if (!accountId || !apiToken) {
+        throw new Error('Cloudflare Workers AI credentials not configured');
+      }
       const res = await runWorkersAIText(
         {
-          CLOUDFLARE_API_TOKEN: env.CLOUDFLARE_API_TOKEN as string | undefined,
-          CLOUDFLARE_ACCOUNT_ID: env.CLOUDFLARE_ACCOUNT_ID as string | undefined,
+          CLOUDFLARE_API_TOKEN: apiToken,
+          CLOUDFLARE_ACCOUNT_ID: accountId,
           WORKERS_AI_MODEL: model,
         },
         'Respond with ok',

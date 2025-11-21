@@ -40,11 +40,15 @@ async function loadLocalEnv() {
 
 async function main() {
   await loadLocalEnv();
-  accountId = process.env.CF_ACCOUNT_ID || process.env.NEXT_PUBLIC_CF_ACCOUNT_ID;
-  token = process.env.CF_WORKERS_AI_TOKEN;
+  accountId =
+    process.env.CLOUDFLARE_ACCOUNT_ID ||
+    process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID ||
+    process.env.CF_ACCOUNT_ID ||
+    process.env.NEXT_PUBLIC_CF_ACCOUNT_ID;
+  token = process.env.CLOUDFLARE_API_TOKEN || process.env.CF_WORKERS_AI_TOKEN;
 
   if (!accountId || !token) {
-    console.error("⚠️  Missing CF_ACCOUNT_ID or CF_WORKERS_AI_TOKEN environment variables.");
+    console.error("⚠️  Missing CLOUDFLARE_ACCOUNT_ID or CLOUDFLARE_API_TOKEN environment variables.");
     console.error("   Set them in .env.local or your shell before running generate:ai.");
     process.exit(1);
   }

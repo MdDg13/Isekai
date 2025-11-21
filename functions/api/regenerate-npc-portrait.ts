@@ -1,5 +1,6 @@
 import { createClient } from '@supabase/supabase-js';
 import { generateNPCPortrait, uploadPortraitToStorage } from '../_lib/npc-portrait';
+import { resolveCloudflareAIEnv } from '../_lib/cloudflare-env';
 import type { GeneratedNPC } from '../_lib/npc-procedural';
 
 interface RegeneratePortraitBody {
@@ -67,6 +68,10 @@ export const onRequest: PagesFunction = async (context) => {
     stats: (npc.stats as GeneratedNPC['stats']) || {},
   };
 
+  const { accountId: cfAccountId, apiToken: cfApiToken, warnings: cfEnvWarnings } =
+    resolveCloudflareAIEnv(env);
+  cfEnvWarnings.forEach((warning) => console.warn(`[regenerate-npc-portrait] ${warning}`));
+
   // Generate new portrait
   const portraitEnabled = (env.WORKERS_AI_ENABLE as string | undefined)?.toLowerCase() === 'true';
   if (!portraitEnabled) {
@@ -75,11 +80,22 @@ export const onRequest: PagesFunction = async (context) => {
       headers: { 'content-type': 'application/json' },
     });
   }
+  if (!cfAccountId || !cfApiToken) {
+    return new Response(
+      JSON.stringify({
+        error: 'Cloudflare Workers AI credentials not configured. Set CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN.',
+      }),
+      {
+        status: 400,
+        headers: { 'content-type': 'application/json' },
+      }
+    );
+  }
 
   try {
     const portraitBuffer = await generateNPCPortrait(npcDraft, {
-      CF_ACCOUNT_ID: env.CLOUDFLARE_ACCOUNT_ID as string | undefined,
-      CF_WORKERS_AI_TOKEN: env.CLOUDFLARE_API_TOKEN as string | undefined,
+      accountId: cfAccountId,
+      apiToken: cfApiToken,
     });
 
     if (!portraitBuffer) {

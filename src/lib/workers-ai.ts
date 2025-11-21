@@ -9,11 +9,17 @@ interface GenerateOptions {
 }
 
 export async function generateWorkersAIImage(options: GenerateOptions) {
-  const accountId = process.env.CF_ACCOUNT_ID || process.env.NEXT_PUBLIC_CF_ACCOUNT_ID;
-  const token = process.env.CF_WORKERS_AI_TOKEN;
+  const accountId =
+    process.env.CLOUDFLARE_ACCOUNT_ID ||
+    process.env.NEXT_PUBLIC_CLOUDFLARE_ACCOUNT_ID ||
+    process.env.CF_ACCOUNT_ID ||
+    process.env.NEXT_PUBLIC_CF_ACCOUNT_ID;
+  const token = process.env.CLOUDFLARE_API_TOKEN || process.env.CF_WORKERS_AI_TOKEN;
 
   if (!accountId || !token) {
-    throw new Error("Cloudflare Workers AI credentials are not configured.");
+    throw new Error(
+      "Cloudflare Workers AI credentials are not configured. Set CLOUDFLARE_ACCOUNT_ID and CLOUDFLARE_API_TOKEN."
+    );
   }
 
   const model = options.model || "@cf/stabilityai/stable-diffusion-xl-base-1.0";

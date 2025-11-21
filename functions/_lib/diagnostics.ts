@@ -7,6 +7,7 @@
 
 import type { SupabaseClient } from '@supabase/supabase-js';
 import type { GenerationLogger } from './generation-logger';
+import { resolveCloudflareAIEnv } from './cloudflare-env';
 
 export interface DiagnosticResult {
   check: string;
@@ -246,9 +247,15 @@ export async function runSystemDiagnostics(
   }
 
   // 3. Check Workers AI connectivity
-  const accountId = env.CLOUDFLARE_ACCOUNT_ID as string | undefined;
-  const token = env.CLOUDFLARE_API_TOKEN as string | undefined;
-  checks.push(...await checkWorkersAI(accountId, token));
+  const { accountId, apiToken, warnings: cfEnvWarnings } = resolveCloudflareAIEnv(env);
+  cfEnvWarnings.forEach((warning) => {
+    checks.push({
+      check: 'env.cloudflare',
+      status: 'warning',
+      message: warning,
+    });
+  });
+  checks.push(...await checkWorkersAI(accountId, apiToken));
 
   // Calculate summary
   const summary = {
