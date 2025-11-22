@@ -5,6 +5,8 @@ import { jsPDF } from "jspdf";
 import DungeonMapView from "./DungeonMapView";
 import type { DungeonDetail } from "../../types/dungeon";
 import type { DungeonType } from "../../lib/dungeon-textures";
+import { useToast } from "@/shared/contexts/ToastContext";
+import { AppError } from "@/shared/lib/errors/types";
 
 type ExportFormat = "svg" | "png" | "pdf" | "json";
 type ViewMode = "dm" | "player";
@@ -13,15 +15,14 @@ interface DungeonExportDrawerProps {
   open: boolean;
   dungeon: DungeonDetail;
   onClose: () => void;
-  pushToast?: (message: string, variant?: "success" | "error" | "info") => void;
 }
 
 export default function DungeonExportDrawer({
   open,
   dungeon,
   onClose,
-  pushToast,
 }: DungeonExportDrawerProps) {
+  const { showSuccess, showError, showInfo } = useToast();
   const [selectedFormat, setSelectedFormat] = useState<ExportFormat>("svg");
   const [viewMode, setViewMode] = useState<ViewMode>("dm");
   const [showGrid, setShowGrid] = useState(true);
@@ -59,7 +60,7 @@ export default function DungeonExportDrawer({
 
   const handleExport = async () => {
     if (!svgElement && selectedFormat !== "json") {
-      pushToast?.("Preparing map for export...", "info");
+      showInfo("Preparing map for export...");
       return;
     }
     setExporting(true);
@@ -79,13 +80,16 @@ export default function DungeonExportDrawer({
           await exportJson(dungeon, levelIndex, filenameBase);
           break;
       }
-      pushToast?.("Export complete", "success");
+      showSuccess("Export complete");
       onClose();
     } catch (error) {
-      pushToast?.(
-        error instanceof Error ? `Export failed: ${error.message}` : "Export failed",
-        "error",
-      );
+      const errorMessage = error instanceof Error ? `Export failed: ${error.message}` : "Export failed";
+      showError(new AppError(errorMessage, 'EXPORT_ERROR', {
+        source: 'DungeonExportDrawer',
+        operation: 'handleExport',
+        userMessage: errorMessage,
+        technical: { originalError: error instanceof Error ? error.message : String(error) },
+      }));
     } finally {
       setExporting(false);
     }

@@ -1,7 +1,7 @@
 "use client";
 
 import { createClient } from "@supabase/supabase-js";
-import { useMemo, useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import DungeonGenerator from "../../../components/dungeon/DungeonGenerator";
@@ -10,7 +10,11 @@ import DungeonExportDrawer from "../../../components/dungeon/DungeonExportDrawer
 import ProcessLogViewer from "../../../components/dungeon/ProcessLogViewer";
 import type { DungeonDetail, DungeonGenerationParams, DungeonLevel } from "../../../types/dungeon";
 import type { ProcessLogEntry } from "../../../types/generation";
-import { Toast, type ToastVariant } from "../../../components/ui/Toast";
+import { useWorldData } from "@/features/world/hooks/useWorldData";
+import { useWorldNPCs } from "@/features/world/hooks/useWorldNPCs";
+import { useToast } from "@/shared/contexts/ToastContext";
+import { AppError } from "@/shared/lib/errors/types";
+import type { WorldNPC } from "@/features/world/api/npc-api";
 
 function generateDungeonName(theme: string, difficulty: string, worldName: string) {
   const themeDescriptors: Record<string, string[]> = {
@@ -46,14 +50,6 @@ interface PreviewDungeonState {
   params: DungeonGenerationParams & { name?: string };
   saved?: boolean;
   process_log?: ProcessLogEntry[];
-}
-
-interface WorldRecord {
-  id: string;
-  name: string;
-  slug?: string | null;
-  ruleset?: string | null;
-  created_at: string;
 }
 
 interface NpcSummary {
@@ -105,20 +101,6 @@ interface NpcStats {
   };
 }
 
-interface WorldNpcRecord {
-  id: string;
-  name: string;
-  created_at: string;
-  bio?: string;
-  backstory?: string;
-  traits?: NpcTraits | null;
-  stats?: NpcStats | null;
-  location_id?: string | null;
-  image_url?: string | null;
-  affiliations?: unknown[];
-  relationships?: Record<string, unknown>;
-}
-
 interface NpcQualityCheck {
   id: string;
   label: string;
@@ -141,9 +123,9 @@ interface NpcQualitySummary {
 const CONTEXT_KEYWORDS = ['village', 'city', 'district', 'guild', 'order', 'temple', 'clan', 'faction', 'fort', 'port', 'festival', 'tavern'];
 const HOOK_KEYWORDS = ['perform', 'stage', 'crowd', 'song', 'story', 'wander', 'tongue', 'bard', 'actor', 'cabal', 'secret'];
 
-const evaluateNpcQuality = (npc: WorldNpcRecord): NpcQualitySummary => {
-  const traits = npc.traits ?? {};
-  const stats = npc.stats ?? {};
+const evaluateNpcQuality = (npc: WorldNPC): NpcQualitySummary => {
+  const traits = (npc.traits ?? {}) as NpcTraits;
+  const stats = (npc.stats ?? {}) as NpcStats;
   const summary = traits.summary;
   const bioText = npc.bio ?? '';
   const backstoryText = npc.backstory ?? '';
@@ -215,25 +197,27 @@ const formatDateTime = (value: string): string => {
 
 export default function WorldClient({ worldId }: WorldClientProps) {
   const router = useRouter();
-  const supabase = useMemo(() => {
+  const { showError, showSuccess } = useToast();
+  
+  // Use new hooks for world and NPC data
+  const { world, error: worldError, updating: worldUpdating, updateName: updateWorldName } = useWorldData(worldId);
+  const { npcs: worldNpcs, error: npcsError, generating: npcGenerating, generateNPC, deleteNPC, deleteBulk } = useWorldNPCs(worldId);
+  
+  // Keep Supabase client for dungeons (will refactor later)
+  const supabase = (() => {
     const url = process.env.NEXT_PUBLIC_SUPABASE_URL;
     const key = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
     if (!url || !key) {
-      console.warn('Supabase environment variables not found');
       return null;
     }
     return createClient(url, key);
-  }, []);
+  })();
 
-  const [world, setWorld] = useState<WorldRecord | null>(null);
-  const [worldNpcs, setWorldNpcs] = useState<WorldNpcRecord[]>([]);
   const [worldDungeons, setWorldDungeons] = useState<Array<{ id: string; name: string; created_at: string; detail: unknown }>>([]);
   const [status, setStatus] = useState<string>("");
-  const [toast, setToast] = useState<{ message: string; variant: ToastVariant } | null>(null);
   const [activeTab, setActiveTab] = useState<'npc-generator' | 'npcs' | 'locations' | 'items' | 'dungeons'>('npc-generator');
   const [isRenamingWorld, setIsRenamingWorld] = useState(false);
   const [renameValue, setRenameValue] = useState('');
-  const [savingWorldName, setSavingWorldName] = useState(false);
   const [showWorldMenu, setShowWorldMenu] = useState(false);
   const worldMenuRef = useRef<HTMLDivElement | null>(null);
   const npcSelectAllRef = useRef<HTMLInputElement | null>(null);
@@ -266,47 +250,22 @@ export default function WorldClient({ worldId }: WorldClientProps) {
   const [selectedNpcs, setSelectedNpcs] = useState<Set<string>>(new Set());
   
   // Detail view state
-  const [viewMode, setViewMode] = useState<'list' | 'detail'>('list');
   const [selectedNpcId, setSelectedNpcId] = useState<string | null>(null);
-const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
+  const [selectedNpc, setSelectedNpc] = useState<WorldNPC | null>(null);
+  const [viewMode, setViewMode] = useState<'list' | 'detail'>('list');
 
-  const pushToast = useCallback(
-    (message: string, variant: ToastVariant = 'info') => {
-      setToast({ message, variant });
-    },
-    [],
-  );
-
-  const loadWorld = useCallback(async () => {
-    if (!supabase) return;
-    
-    const { data, error } = await supabase
-      .from('world')
-      .select('id,name,slug,ruleset,created_at')
-      .eq('id', worldId)
-      .single();
-    
-    if (error) {
-      console.error('Error loading world:', error);
-      setStatus(`Error loading world: ${error.message}`);
-    } else {
-      setWorld(data as WorldRecord);
+  // Show errors via toast
+  useEffect(() => {
+    if (worldError) {
+      showError(worldError);
     }
-  }, [supabase, worldId]);
+  }, [worldError, showError]);
 
-  const loadWorldNpcs = useCallback(async () => {
-    if (!supabase) return;
-    const { data, error } = await supabase
-      .from('world_npc')
-      .select('id,name,created_at,bio,backstory,traits,stats,location_id,image_url')
-      .eq('world_id', worldId)
-      .order('created_at', { ascending: false });
-    if (error) {
-      console.error('Error loading world NPCs:', error);
-    } else {
-      setWorldNpcs((data as WorldNpcRecord[]) || []);
+  useEffect(() => {
+    if (npcsError) {
+      showError(npcsError);
     }
-  }, [supabase, worldId]);
+  }, [npcsError, showError]);
 
   const loadWorldDungeons = useCallback(async () => {
     if (!supabase) return;
@@ -317,7 +276,8 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
       .eq('type', 'dungeon')
       .order('created_at', { ascending: false });
     if (error) {
-      console.error('Error loading dungeons:', error);
+      // Error will be handled by toast system if needed
+      setStatus(`Error loading dungeons: ${error.message}`);
     } else {
       setWorldDungeons((data || []) as Array<{ id: string; name: string; created_at: string; detail: unknown }>);
     }
@@ -325,12 +285,9 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
 
   useEffect(() => {
     if (!supabase) return;
-    
-    loadWorld();
-    loadWorldNpcs();
     loadWorldDungeons();
-  }, [supabase, worldId, loadWorld, loadWorldNpcs, loadWorldDungeons]);
-  
+  }, [supabase, worldId, loadWorldDungeons]);
+
   useEffect(() => {
     if (selectedNpcId && worldNpcs.length > 0) {
       const npc = worldNpcs.find(n => n.id === selectedNpcId);
@@ -338,7 +295,7 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
     } else {
       setSelectedNpc(null);
     }
-  }, [selectedNpcId, worldNpcs]);
+  }, [selectedNpcId, worldNpcs, setSelectedNpc]);
 
   useEffect(() => {
     if (!showWorldMenu) return;
@@ -372,27 +329,17 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
   };
 
   const handleSaveWorldName = async () => {
-    if (!supabase || !world || !renameValue.trim()) return;
-    setSavingWorldName(true);
+    if (!world || !renameValue.trim()) return;
     setStatus('Updating world name...');
     try {
-      const { data, error } = await supabase
-        .from('world')
-        .update({ name: renameValue.trim() })
-        .eq('id', worldId)
-        .select('*')
-        .single();
-
-      if (error) throw error;
-      setWorld(data);
+      await updateWorldName(renameValue.trim());
       setIsRenamingWorld(false);
       setRenameValue('');
       setStatus('World name updated');
-    } catch (e: unknown) {
-      const message = e instanceof Error ? e.message : String(e);
-      setStatus(`Rename failed: ${message}`);
-    } finally {
-      setSavingWorldName(false);
+      showSuccess('World name updated successfully');
+    } catch {
+      // Error already logged and shown by hook
+      setStatus('Rename failed');
     }
   };
 
@@ -466,7 +413,7 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
     }
   };
 
-  const filterAndSortNpcs = () => {
+  const filterAndSortNpcs = useCallback((): WorldNPC[] => {
     return worldNpcs
       .filter((n) => {
         if (!searchQuery) return true;
@@ -509,7 +456,7 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
         }
         return aVal < bVal ? 1 : aVal > bVal ? -1 : 0;
       });
-  };
+  }, [worldNpcs, searchQuery, sortBy, sortOrder]);
 
   const renderNpcDetailView = () => {
     if (!selectedNpc) return null;
@@ -727,32 +674,17 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
               <div className="flex gap-2">
                 <button
                   onClick={async () => {
-                    if (!supabase || !selectedNpc) return;
-                    if (!confirm(`Delete ${selectedNpc.name}? This cannot be undone.`)) return;
+                    if (!selectedNpc) return;
+                    if (!window.confirm(`Delete ${selectedNpc.name}? This cannot be undone.`)) return;
                     try {
-                      // Delete portrait from storage if it exists
-                      if (selectedNpc.image_url) {
-                        try {
-                          const urlParts = selectedNpc.image_url.split('/npc-portraits/');
-                          if (urlParts.length > 1) {
-                            const fileName = `npc-portraits/${urlParts[1]}`;
-                            await supabase.storage.from('npc-assets').remove([fileName]);
-                          }
-                        } catch (storageError) {
-                          console.warn('Failed to delete portrait from storage:', storageError);
-                          // Continue with NPC deletion
-                        }
-                      }
-                      
-                      const { error } = await supabase.from('world_npc').delete().eq('id', selectedNpc.id);
-                      if (error) throw error;
+                      await deleteNPC(selectedNpc.id);
                       setStatus(`${selectedNpc.name} deleted`);
+                      showSuccess(`NPC "${selectedNpc.name}" deleted`);
                       setViewMode('list');
                       setSelectedNpcId(null);
-                      loadWorldNpcs();
-                    } catch (e: unknown) {
-                      const message = e instanceof Error ? e.message : String(e);
-                      setStatus(`Delete failed: ${message}`);
+                    } catch {
+                      // Error already logged and shown by hook
+                      setStatus('Delete failed');
                     }
                   }}
                   className="flex-1 px-4 py-2 rounded-md bg-red-600 text-sm font-medium text-white hover:bg-red-700 active:bg-red-800 transition-colors"
@@ -815,49 +747,18 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
             </span>
             <button
               onClick={async () => {
-                if (!supabase) return;
-                if (!confirm(`Delete ${selectedNpcs.size} NPC${selectedNpcs.size !== 1 ? 's' : ''}? This cannot be undone.`)) return;
+                if (selectedNpcs.size === 0) return;
+                if (!window.confirm(`Delete ${selectedNpcs.size} NPC${selectedNpcs.size !== 1 ? 's' : ''}? This cannot be undone.`)) return;
                 setStatus('Deleting NPCs...');
                 try {
                   const ids = Array.from(selectedNpcs);
-                  
-                  // Get NPCs with image URLs to delete from storage
-                  const { data: npcsToDelete } = await supabase
-                    .from('world_npc')
-                    .select('id, image_url')
-                    .in('id', ids);
-                  
-                  // Delete portraits from storage
-                  if (npcsToDelete) {
-                    const filesToDelete = npcsToDelete
-                      .filter((npc) => npc.image_url)
-                      .map((npc) => {
-                        const urlParts = npc.image_url?.split('/npc-portraits/');
-                        if (urlParts && urlParts.length > 1) {
-                          return `npc-portraits/${urlParts[1]}`;
-                        }
-                        return null;
-                      })
-                      .filter((f): f is string => f !== null);
-                    
-                    if (filesToDelete.length > 0) {
-                      try {
-                        await supabase.storage.from('npc-assets').remove(filesToDelete);
-                      } catch (storageError) {
-                        console.warn('Failed to delete some portraits from storage:', storageError);
-                        // Continue with NPC deletion
-                      }
-                    }
-                  }
-                  
-                  // Delete NPC records
-                  await Promise.all(ids.map((id) => supabase.from('world_npc').delete().eq('id', id)));
+                  await deleteBulk(ids);
                   setStatus(`${ids.length} NPC${ids.length !== 1 ? 's' : ''} deleted`);
+                  showSuccess(`${ids.length} NPC${ids.length !== 1 ? 's' : ''} deleted`);
                   setSelectedNpcs(new Set());
-                  loadWorldNpcs();
-                } catch (e: unknown) {
-                  const message = e instanceof Error ? e.message : String(e);
-                  setStatus(`Delete failed: ${message}`);
+                } catch {
+                  // Error already logged and shown by hook
+                  setStatus('Delete failed');
                 }
               }}
               className="px-4 py-2 rounded-md bg-red-600 text-sm font-medium text-white hover:bg-red-700 active:bg-red-800 transition-colors"
@@ -944,10 +845,6 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
                                     placeholder.innerHTML = '<span class="text-gray-600 text-xs">—</span>';
                                     parent.appendChild(placeholder);
                                   }
-                                  console.error('Failed to load NPC image:', npc.image_url);
-                                }}
-                                onLoad={() => {
-                                  console.log('NPC image loaded successfully:', npc.image_url);
                                 }}
                               />
                               {/* Fallback placeholder (hidden if image loads) */}
@@ -994,13 +891,6 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
                                 worldId
                               )}&npcId=${encodeURIComponent(npc.id)}`;
 
-                              console.log('[Navigation] View button clicked', {
-                                worldId,
-                                npcId: npc.id,
-                                npcName: npc.name,
-                                targetUrl: targetPath,
-                              });
-
                               sessionStorage.setItem('npcView_worldId', worldId);
                               sessionStorage.setItem('npcView_npcId', npc.id);
 
@@ -1012,36 +902,20 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
                           </button>
                           <button
                             onClick={async () => {
-                              if (!supabase) return;
-                              if (!confirm(`Delete NPC "${npc.name}"? This cannot be undone.`)) return;
+                              if (!window.confirm(`Delete NPC "${npc.name}"? This cannot be undone.`)) return;
                               setStatus('Deleting NPC...');
                               try {
-                                // Delete portrait from storage if it exists
-                                if (npc.image_url) {
-                                  try {
-                                    const urlParts = npc.image_url.split('/npc-portraits/');
-                                    if (urlParts.length > 1) {
-                                      const fileName = `npc-portraits/${urlParts[1]}`;
-                                      await supabase.storage.from('npc-assets').remove([fileName]);
-                                    }
-                                  } catch (storageError) {
-                                    console.warn('Failed to delete portrait from storage:', storageError);
-                                    // Continue with NPC deletion even if storage deletion fails
-                                  }
-                                }
-                                
-                                const { error } = await supabase.from('world_npc').delete().eq('id', npc.id);
-                                if (error) throw error;
+                                await deleteNPC(npc.id);
                                 setStatus(`NPC "${npc.name}" deleted`);
+                                showSuccess(`NPC "${npc.name}" deleted`);
                                 setSelectedNpcs((prev) => {
                                   const updated = new Set(prev);
                                   updated.delete(npc.id);
                                   return updated;
                                 });
-                                loadWorldNpcs();
-                              } catch (e: unknown) {
-                                const message = e instanceof Error ? e.message : String(e);
-                                setStatus(`Delete failed: ${message}`);
+                              } catch {
+                                // Error already logged and shown by hook
+                                setStatus('Delete failed');
                               }
                             }}
                             className="rounded bg-red-600 px-3 py-1 text-xs text-white hover:bg-red-700"
@@ -1155,14 +1029,14 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
               />
               <button
                 onClick={handleSaveWorldName}
-                disabled={savingWorldName || !renameValue.trim()}
+                disabled={worldUpdating || !renameValue.trim()}
                 className="rounded-md bg-blue-600 px-3 py-1.5 text-xs font-medium text-white hover:bg-blue-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {savingWorldName ? 'Saving...' : 'Save'}
+                {worldUpdating ? 'Saving...' : 'Save'}
               </button>
               <button
                 onClick={handleCancelRename}
-                disabled={savingWorldName}
+                disabled={worldUpdating}
                 className="rounded-md border border-gray-700 px-3 py-1.5 text-xs font-medium hover:bg-gray-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
                 Cancel
@@ -1315,70 +1189,50 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
                     try {
                       const parsedLevel = Number.parseInt(npcForm.level, 10);
                       const safeLevel = Number.isFinite(parsedLevel) ? Math.min(Math.max(parsedLevel, 0), 20) : 0;
-                      // Parse keywords: split on commas/newlines, but preserve phrases
-                      // If no commas/newlines, treat entire input as single tag
-                      const keywordTags = npcForm.keywords.trim()
-                        ? npcForm.keywords.includes(',') || npcForm.keywords.includes('\n')
-                          ? npcForm.keywords.split(/[,\n]+/)
-                              .map(tag => tag.trim())
-                              .filter(tag => tag.length > 0)
-                          : [npcForm.keywords.trim()] // Single phrase as one tag
-                        : [];
-
-                      const res = await fetch('/api/generate-world-npc', {
-                        method: 'POST',
-                        headers: { 'content-type': 'application/json' },
-                        body: JSON.stringify({
-                          worldId,
-                          ruleset: 'DND5E_2024',
-                          locationId: npcForm.locationId || undefined,
-                          level: safeLevel,
-                          temperament: npcForm.temperament !== 'random' ? npcForm.temperament : undefined,
-                          tags: keywordTags.length ? keywordTags : undefined,
-                          fullyRandom: keywordTags.length === 0 && npcForm.temperament === 'random',
-                        }),
+                      
+                      await generateNPC({
+                        keywords: npcForm.keywords.trim() || undefined,
+                        level: safeLevel.toString(),
+                        temperament: npcForm.temperament !== 'random' ? npcForm.temperament : undefined,
+                        locationId: npcForm.locationId.trim() || undefined,
                       });
-                      if (!res.ok) throw new Error(await res.text());
-                      await res.json();
-                      setStatus('World NPC created');
+                      
+                      setStatus('NPC generated successfully');
+                      showSuccess('NPC generated successfully');
                       setNpcForm({ keywords: '', level: '0', temperament: 'random', locationId: '' });
-                      loadWorldNpcs();
+                      
                       if (!stayOnGenerator) {
                         setActiveTab('npcs');
                       }
-                    } catch (e: unknown) {
-                      const message = e instanceof Error ? e.message : String(e);
-                      setStatus(`NPC generation failed: ${message}`);
+                    } catch {
+                      // Error already logged and shown by hook
+                      setStatus('NPC generation failed');
                     }
                   }}
-                  className="flex-1 rounded-md bg-blue-600 px-4 py-3 text-sm font-medium text-white hover:bg-blue-700 active:bg-blue-800 transition-colors touch-manipulation"
+                  disabled={npcGenerating}
+                  className="px-6 py-2.5 rounded-md bg-blue-600 text-sm font-medium text-white hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  Generate World NPC
+                  {npcGenerating ? 'Generating...' : 'Generate NPC'}
                 </button>
                 <button
                   onClick={async () => {
                     setStatus('Generating random world NPC...');
                     try {
-                      const res = await fetch('/api/generate-world-npc', {
-                        method: 'POST',
-                        headers: { 'content-type': 'application/json' },
-                        body: JSON.stringify({ worldId, ruleset: 'DND5E_2024', fullyRandom: true })
-                      });
-                      if (!res.ok) throw new Error(await res.text());
-                      await res.json();
+                      await generateNPC({});
                       setStatus('Random world NPC created');
-                      loadWorldNpcs();
+                      showSuccess('Random NPC generated successfully');
                       if (!stayOnGenerator) {
                         setActiveTab('npcs');
                       }
-                    } catch (e: unknown) {
-                      const message = e instanceof Error ? e.message : String(e);
-                      setStatus(`Random generation failed: ${message}`);
+                    } catch {
+                      // Error already logged and shown by hook
+                      setStatus('Random generation failed');
                     }
                   }}
-                  className="flex-1 rounded-md border border-gray-700 px-4 py-3 text-sm font-medium hover:bg-gray-800 active:bg-gray-700 transition-colors touch-manipulation"
+                  disabled={npcGenerating}
+                  className="px-6 py-2.5 rounded-md border border-gray-700 text-sm font-medium hover:bg-gray-800 active:bg-gray-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
                 >
-                  Random Generate
+                  {npcGenerating ? 'Generating...' : 'Random Generate'}
                 </button>
               </div>
             </div>
@@ -1426,17 +1280,9 @@ const [selectedNpc, setSelectedNpc] = useState<WorldNpcRecord | null>(null);
             setStatus={setStatus}
             supabase={supabase as ReturnType<typeof createClient>}
             loadWorldDungeons={loadWorldDungeons}
-            pushToast={pushToast}
           />
         )}
       </div>
-      {toast && (
-        <Toast
-          message={toast.message}
-          variant={toast.variant}
-          onDismiss={() => setToast(null)}
-        />
-      )}
     </div>
   );
 }
@@ -1451,7 +1297,6 @@ function DungeonsTab({
   setStatus,
   supabase,
   loadWorldDungeons,
-  pushToast,
 }: {
   worldId: string;
   worldName: string;
@@ -1461,8 +1306,8 @@ function DungeonsTab({
   setStatus: (s: string) => void;
   supabase: ReturnType<typeof createClient>;
   loadWorldDungeons: () => Promise<void>;
-  pushToast: (message: string, variant?: ToastVariant) => void;
 }) {
+  const { showSuccess, showError, showInfo } = useToast();
   const [viewMode, setViewMode] = useState<'generator' | 'list' | 'detail'>('generator');
   const [selectedDungeon, setSelectedDungeon] = useState<{ id: string; name: string; created_at: string; detail: unknown } | null>(null);
   const [isGenerating, setIsGenerating] = useState(false);
@@ -1524,12 +1369,18 @@ function DungeonsTab({
       setPreviewDungeon(entry);
       setGenerationHistory((prev) => [entry, ...prev].slice(0, 5));
       setStatus('Preview generated. Save when ready.');
-      pushToast('Preview generated. Review before saving.', 'info');
+      showInfo('Preview generated. Review before saving.');
     } catch (e: unknown) {
       const message = e instanceof Error ? e.message : String(e);
       const errorMessage = `Generation failed: ${message}`;
       setStatus(errorMessage);
-      pushToast(errorMessage, 'error');
+      showError(new AppError(errorMessage, 'DUNGEON_GENERATION_ERROR', {
+        source: 'DungeonsTab',
+        operation: 'handleGenerate',
+        userMessage: errorMessage,
+        technical: { originalError: message },
+        entityIds: { worldId },
+      }, 'medium'));
     } finally {
       setIsGenerating(false);
     }
@@ -1547,14 +1398,20 @@ function DungeonsTab({
       if (error) throw error;
       const successMessage = `${ids.length} dungeon${ids.length !== 1 ? 's' : ''} deleted`;
       setStatus(successMessage);
-      pushToast(successMessage, 'success');
+      showSuccess(successMessage);
       setSelectedDungeons(new Set());
       await loadWorldDungeons();
     } catch (err) {
       const message = err instanceof Error ? err.message : String(err);
       const errorMessage = `Delete failed: ${message}`;
       setStatus(errorMessage);
-      pushToast(errorMessage, 'error');
+      showError(new AppError(errorMessage, 'DUNGEON_DELETE_ERROR', {
+        source: 'DungeonsTab',
+        operation: 'handleBulkDeleteDungeons',
+        userMessage: errorMessage,
+        technical: { originalError: message },
+        entityIds: { worldId },
+      }, 'medium'));
     }
   };
 
@@ -1666,7 +1523,7 @@ function DungeonsTab({
                         const data = await res.json();
                         const successMessage = 'Dungeon saved successfully!';
                         setStatus(successMessage);
-                        pushToast(successMessage, 'success');
+                        showSuccess(successMessage);
                         await onGenerate();
                         const previousId = previewDungeon.id;
                         const savedPreview = {
@@ -1684,7 +1541,13 @@ function DungeonsTab({
                         const message = err instanceof Error ? err.message : String(err);
                         const errorMessage = `Save failed: ${message}`;
                         setStatus(errorMessage);
-                        pushToast(errorMessage, 'error');
+                        showError(new AppError(errorMessage, 'DUNGEON_SAVE_ERROR', {
+                          source: 'DungeonsTab',
+                          operation: 'handleSaveDungeon',
+                          userMessage: errorMessage,
+                          technical: { originalError: message },
+                          entityIds: { worldId },
+                        }, 'medium'));
                       } finally {
                         setIsSaving(false);
                       }
@@ -1751,7 +1614,6 @@ function DungeonsTab({
             open={exportDrawerOpen}
             dungeon={previewDungeon.detail}
             onClose={() => setExportDrawerOpen(false)}
-            pushToast={pushToast}
           />
         )}
       </div>
@@ -1890,11 +1752,17 @@ function DungeonsTab({
                               await loadWorldDungeons();
                               const successMessage = 'Dungeon deleted successfully';
                               setStatus(successMessage);
-                              pushToast(successMessage, 'success');
+                              showSuccess(successMessage);
                             } catch (err) {
                               const errorMessage = `Error deleting dungeon: ${err instanceof Error ? err.message : 'Unknown error'}`;
                               setStatus(errorMessage);
-                              pushToast(errorMessage, 'error');
+                              showError(new AppError(errorMessage, 'DUNGEON_DELETE_ERROR', {
+                                source: 'DungeonsTab',
+                                operation: 'handleDeleteDungeon',
+                                userMessage: errorMessage,
+                                technical: { originalError: err instanceof Error ? err.message : 'Unknown error' },
+                                entityIds: { worldId },
+                              }, 'medium'));
                             }
                           }}
                           className="rounded bg-red-600 px-3 py-1 text-xs text-white hover:bg-red-700"

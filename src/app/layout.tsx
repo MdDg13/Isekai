@@ -3,6 +3,8 @@ import { Inter, Unbounded } from "next/font/google";
 import "./globals.css";
 import GlobalSettingsButton from "@/components/GlobalSettingsButton";
 import { ThemeProvider } from "@/providers/theme-context";
+import { ToastProvider } from "@/shared/contexts/ToastContext";
+import { ErrorBoundary } from "@/shared/components/ErrorBoundary";
 
 const inter = Inter({
   variable: "--font-inter",
@@ -29,12 +31,16 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={`${inter.variable} ${unbounded.variable} antialiased`}>
-        <ThemeProvider>
-          <div className="app-root">
-            {children}
-          </div>
-          <GlobalSettingsButton />
-        </ThemeProvider>
+        <ErrorBoundary>
+          <ThemeProvider>
+            <ToastProvider>
+              <div className="app-root">
+                {children}
+              </div>
+              <GlobalSettingsButton />
+            </ToastProvider>
+          </ThemeProvider>
+        </ErrorBoundary>
       </body>
     </html>
   );

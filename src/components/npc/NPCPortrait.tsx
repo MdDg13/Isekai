@@ -8,6 +8,7 @@ interface NPCPortraitProps {
   onRegenerate?: () => Promise<void>;
   size?: 'small' | 'medium' | 'large';
   showRegenerate?: boolean;
+  isRegenerating?: boolean;
 }
 
 export default function NPCPortrait({
@@ -16,8 +17,8 @@ export default function NPCPortrait({
   onRegenerate,
   size = 'large',
   showRegenerate = false,
+  isRegenerating = false,
 }: NPCPortraitProps) {
-  const [regenerating, setRegenerating] = useState(false);
   const [showConfirm, setShowConfirm] = useState(false);
 
   const sizeClasses = {
@@ -34,13 +35,10 @@ export default function NPCPortrait({
   const confirmRegenerate = async () => {
     if (!onRegenerate) return;
     setShowConfirm(false);
-    setRegenerating(true);
     try {
       await onRegenerate();
-    } catch (error) {
-      console.error('Failed to regenerate portrait:', error);
-    } finally {
-      setRegenerating(false);
+    } catch {
+      // Error handling is done by parent component via toast
     }
   };
 
@@ -65,10 +63,10 @@ export default function NPCPortrait({
         <div className="mt-2">
           <button
             onClick={handleRegenerate}
-            disabled={regenerating}
+            disabled={isRegenerating}
             className="w-full px-3 py-2 text-sm rounded-md bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
           >
-            {regenerating ? 'Regenerating...' : 'Regenerate Portrait'}
+            {isRegenerating ? 'Regenerating...' : 'Regenerate Portrait'}
           </button>
         </div>
       )}
@@ -89,10 +87,10 @@ export default function NPCPortrait({
               </button>
               <button
                 onClick={confirmRegenerate}
-                disabled={regenerating}
+                disabled={isRegenerating}
                 className="flex-1 px-4 py-2 rounded-md bg-blue-600 text-white hover:bg-blue-700 active:bg-blue-800 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
               >
-                {regenerating ? 'Regenerating...' : 'Confirm'}
+                {isRegenerating ? 'Regenerating...' : 'Confirm'}
               </button>
             </div>
           </div>

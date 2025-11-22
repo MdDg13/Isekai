@@ -2,7 +2,7 @@
 
 import { useEffect } from "react";
 
-export type ToastVariant = "success" | "error" | "info";
+export type ToastVariant = "success" | "error" | "info" | "warning";
 
 interface ToastProps {
   message: string;
@@ -24,6 +24,7 @@ export function Toast({ message, variant = "info", onDismiss, autoHideMs = 3500 
     success: "bg-emerald-600/90 border-emerald-400 text-white",
     error: "bg-red-700/90 border-red-400 text-white",
     info: "bg-slate-800/90 border-slate-600 text-white",
+    warning: "bg-yellow-600/90 border-yellow-400 text-white",
   };
 
   return (
