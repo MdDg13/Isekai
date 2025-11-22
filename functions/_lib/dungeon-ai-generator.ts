@@ -73,26 +73,46 @@ export function layoutToAIPrompt(level: DungeonLevel, options: AIGenerationOptio
     `Stairs at (${stair.x},${stair.y}) leading ${stair.direction} from level ${stair.from_level} to level ${stair.to_level}`
   ).join('; ');
   
-  // Construct full prompt
-  const prompt = `Create a top-down dungeon map in hand-drawn black and white style, similar to classic D&D maps by Dyson Logos or Mike Schley.
+  // Construct detailed prompt with specific style guidance
+  const prompt = `A top-down dungeon map in hand-drawn pen-and-ink style, black lines on white paper, similar to Dyson Logos or Mike Schley D&D maps. Clean line art, no shading, no color fills, no gradients. Professional tabletop RPG map quality.
 
-Map specifications:
-- Style: Clean black lines on white background, hand-drawn aesthetic, no color fills
-- Type: ${typeDescription}
-- Grid size: ${width}x${height} cells (${width * 5}x${height * 5} feet)
-- Scale: 5-foot squares clearly visible with subtle grid lines
+STYLE REQUIREMENTS:
+- Hand-drawn pen-and-ink aesthetic, as if drawn with a fine-tip pen on graph paper
+- Pure black lines (#000000) on pure white background (#FFFFFF)
+- No shading, no gradients, no color fills, no textures
+- Thin, consistent line weight for walls (1-2 pixels)
+- Clear room boundaries with solid wall lines
+- Subtle grid lines visible (light gray, barely visible)
+- Clean, readable, minimalist design
+- Professional D&D dungeon map style
+
+MAP LAYOUT:
+- Dungeon type: ${typeDescription}
+- Grid dimensions: ${width}x${height} cells (${width * 5}x${height * 5} feet total)
+- Each cell represents 5 feet
 - Rooms: ${roomDescriptions}
 - Corridors: ${corridorDescriptions}
 ${doorDescriptions ? `- Doors: ${doorDescriptions}` : ''}
 ${stairDescriptions ? `- Stairs: ${stairDescriptions}` : ''}
 
-Requirements:
-- Black line art only, no color fills
-- Clear, readable, artistic hand-drawn style
-- Room boundaries clearly defined
-- Corridors and connections visible
-- Grid lines subtle but present
-- Professional D&D map quality`;
+TECHNICAL SPECIFICATIONS:
+- Top-down orthographic view (bird's eye view)
+- All walls shown as black lines
+- Floor areas are white/empty space
+- Doors shown as breaks in wall lines or simple door symbols
+- Stairs shown with simple directional indicators
+- Grid lines are very subtle (light gray, barely visible)
+- No perspective, no 3D effects, no shadows
+- No decorative elements beyond functional map features
+
+AVOID:
+- 3D rendering, perspective, shadows
+- Color fills, gradients, textures
+- Photorealistic or digital art style
+- Complex shading or lighting effects
+- Decorative flourishes or artistic embellishments
+- Thick or variable line weights
+- Any elements that obscure the functional map layout`;
 
   return prompt;
 }
@@ -136,8 +156,9 @@ export async function generateDungeonMapImage(
     },
     body: JSON.stringify({
       prompt,
-      num_steps: 20, // Balance quality vs speed
-      guidance: 7.5, // Standard guidance for line art
+      negative_prompt: '3D rendering, perspective, shadows, color fills, gradients, textures, photorealistic, digital art, complex shading, lighting effects, decorative elements, thick lines, variable line weights, artistic embellishments, isometric view, 3D graphics, rendered image, computer graphics',
+      num_steps: 30, // More steps for better quality line art
+      guidance: 9.0, // Higher guidance to enforce style constraints
       width: imageWidth,
       height: imageHeight,
       seed,
