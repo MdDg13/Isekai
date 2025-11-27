@@ -77,7 +77,7 @@ export function checkEnvironmentVariables(env: Record<string, unknown>): Diagnos
       });
     } else {
       const isEnabled = key === 'WORKERS_AI_ENABLE' 
-        ? (value as string).toLowerCase() === 'true'
+        ? (value as string).toLowerCase() !== 'false'
         : true;
       
       results.push({

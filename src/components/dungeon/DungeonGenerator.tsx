@@ -1,14 +1,17 @@
 "use client";
 
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import type { DungeonGenerationParams } from '../../types/dungeon';
 import { getDungeonTypeDefinition, type DungeonType } from '../../lib/dungeon-definitions';
 import { InfoTooltip } from '../ui/InfoTooltip';
+import type { AIHealth } from '@/shared/hooks/useAIHealth';
 
 interface DungeonGeneratorProps {
   worldId: string;
   onGenerate: (params: DungeonGenerationParams & { name?: string }) => Promise<void>;
   isGenerating?: boolean;
+  aiHealth?: AIHealth | null;
+  aiHealthLoading?: boolean;
 }
 
 type SizeCategory = 'tiny' | 'very_small' | 'small' | 'medium' | 'large' | 'huge';
@@ -104,9 +107,24 @@ export default function DungeonGenerator({
   worldId,
   onGenerate,
   isGenerating = false,
+  aiHealth,
+  aiHealthLoading = false,
 }: DungeonGeneratorProps) {
   const [showAdvanced, setShowAdvanced] = useState(false);
   const [formData, setFormData] = useState<FormState>(defaultFormState);
+  const aiAvailable = !!(aiHealth?.enabled && aiHealth.ok);
+  const aiUnavailableReason = aiHealthLoading
+    ? 'Checking Workers AI status…'
+    : aiHealth?.message || 'Workers AI unavailable. Hand-drawn maps will fall back to procedural view.';
+
+  useEffect(() => {
+    setFormData((prev) => {
+      if (!aiAvailable && prev.use_ai) {
+        return { ...prev, use_ai: false };
+      }
+      return prev;
+    });
+  }, [aiAvailable]);
 
   // Update size when category changes
   const handleSizeCategoryChange = (category: SizeCategory) => {
@@ -305,11 +323,15 @@ export default function DungeonGenerator({
               id="use_ai"
               checked={formData.use_ai}
               onChange={(e) => setFormData({ ...formData, use_ai: e.target.checked })}
-              className="w-4 h-4 text-blue-600 bg-gray-800 border-gray-700 rounded focus:ring-blue-500"
+              disabled={!aiAvailable}
+              className="w-4 h-4 text-blue-600 bg-gray-800 border-gray-700 rounded focus:ring-blue-500 disabled:opacity-40"
             />
-            <label htmlFor="use_ai" className="text-xs text-gray-300">
-              AI Enhancement
-            </label>
+            <div className="flex flex-col text-xs">
+              <label htmlFor="use_ai" className="text-gray-300">AI Enhancement</label>
+              <span className={`text-[11px] ${aiAvailable ? 'text-emerald-300' : 'text-amber-300'}`}>
+                {aiAvailable ? 'Hand-drawn Workers AI maps enabled' : aiUnavailableReason}
+              </span>
+            </div>
           </div>
 
           {/* Advanced Settings Toggle */}

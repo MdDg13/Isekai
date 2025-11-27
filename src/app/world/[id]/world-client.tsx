@@ -15,6 +15,9 @@ import { useWorldNPCs } from "@/features/world/hooks/useWorldNPCs";
 import { useToast } from "@/shared/contexts/ToastContext";
 import { AppError } from "@/shared/lib/errors/types";
 import type { WorldNPC } from "@/features/world/api/npc-api";
+import { useAIHealth } from "@/shared/hooks/useAIHealth";
+import type { AIHealth } from "@/shared/hooks/useAIHealth";
+import { AIStatusBadge } from "@/shared/components/AIStatusBadge";
 
 function generateDungeonName(theme: string, difficulty: string, worldName: string) {
   const themeDescriptors: Record<string, string[]> = {
@@ -198,6 +201,12 @@ const formatDateTime = (value: string): string => {
 export default function WorldClient({ worldId }: WorldClientProps) {
   const router = useRouter();
   const { showError, showSuccess } = useToast();
+  const {
+    data: aiHealth,
+    loading: aiHealthLoading,
+    error: aiHealthError,
+    refresh: refreshAIHealth,
+  } = useAIHealth(120000);
   
   // Use new hooks for world and NPC data
   const { world, error: worldError, updating: worldUpdating, updateName: updateWorldName } = useWorldData(worldId);
@@ -1106,6 +1115,14 @@ export default function WorldClient({ worldId }: WorldClientProps) {
 
       {/* Content */}
       <div className="app-shell app-shell--wide py-6">
+        <div className="mb-6">
+          <AIStatusBadge
+            status={aiHealth}
+            loading={aiHealthLoading}
+            error={aiHealthError}
+            onRetry={refreshAIHealth}
+          />
+        </div>
         {activeTab === 'npc-generator' && (
           <div className="space-y-6">
             {/* NPC Generator */}
@@ -1280,6 +1297,8 @@ export default function WorldClient({ worldId }: WorldClientProps) {
             setStatus={setStatus}
             supabase={supabase as ReturnType<typeof createClient>}
             loadWorldDungeons={loadWorldDungeons}
+            aiHealth={aiHealth}
+            aiHealthLoading={aiHealthLoading}
           />
         )}
       </div>
@@ -1297,6 +1316,8 @@ function DungeonsTab({
   setStatus,
   supabase,
   loadWorldDungeons,
+  aiHealth,
+  aiHealthLoading,
 }: {
   worldId: string;
   worldName: string;
@@ -1306,6 +1327,8 @@ function DungeonsTab({
   setStatus: (s: string) => void;
   supabase: ReturnType<typeof createClient>;
   loadWorldDungeons: () => Promise<void>;
+  aiHealth: AIHealth | null;
+  aiHealthLoading: boolean;
 }) {
   const { showSuccess, showError, showInfo } = useToast();
   const [viewMode, setViewMode] = useState<'generator' | 'list' | 'detail'>('generator');
@@ -1447,7 +1470,13 @@ function DungeonsTab({
         </div>
         <div className="grid gap-4 lg:grid-cols-[0.32fr_0.68fr] items-start">
           <div className="space-y-3">
-            <DungeonGenerator worldId={worldId} onGenerate={handleGenerate} isGenerating={isGenerating} />
+            <DungeonGenerator
+              worldId={worldId}
+              onGenerate={handleGenerate}
+              isGenerating={isGenerating}
+              aiHealth={aiHealth}
+              aiHealthLoading={aiHealthLoading}
+            />
             {status && (
               <div
                 className={`rounded-lg border p-4 ${

@@ -87,6 +87,10 @@ export const onRequest: PagesFunction = async (context) => {
 
   const { accountId: cfAccountId, apiToken: cfApiToken, warnings: cfEnvWarnings } =
     resolveCloudflareAIEnv(env);
+  const aiToggle = (env.WORKERS_AI_ENABLE as string | undefined)?.toLowerCase();
+  const aiAllowed = aiToggle !== 'false';
+  const aiCredentialsReady = Boolean(cfAccountId && cfApiToken);
+  const modelEnabled = aiAllowed && aiCredentialsReady;
   const workersAIEnv = {
     CLOUDFLARE_ACCOUNT_ID: cfAccountId,
     CLOUDFLARE_API_TOKEN: cfApiToken,
@@ -197,12 +201,15 @@ export const onRequest: PagesFunction = async (context) => {
   logger.endStep('procedural');
 
   // Optionally enhance with AI if enabled
-  const modelEnabled = (env.WORKERS_AI_ENABLE as string | undefined)?.toLowerCase() === 'true';
   logger.log({
     step: 'procedural',
     logType: modelEnabled ? 'info' : 'warning',
     message: `AI enhancement: ${modelEnabled ? 'ENABLED' : 'DISABLED'}`,
-    data: { WORKERS_AI_ENABLE: env.WORKERS_AI_ENABLE }
+    data: {
+      WORKERS_AI_ENABLE: env.WORKERS_AI_ENABLE,
+      aiAllowed,
+      aiCredentialsReady,
+    }
   });
 
   if (modelEnabled) {
@@ -909,7 +916,7 @@ Backstory: "${npcDraft.backstory || ''}"`;
 
   // Generate portrait if Workers AI is enabled (store buffer for upload after NPC creation)
   let portraitBuffer: Buffer | null = null;
-  const portraitEnabled = (env.WORKERS_AI_ENABLE as string | undefined)?.toLowerCase() === 'true';
+  const portraitEnabled = modelEnabled;
   
   if (portraitEnabled) {
     if (!cfAccountId || !cfApiToken) {
