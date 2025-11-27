@@ -1468,8 +1468,8 @@ function DungeonsTab({
             View Dungeons ({dungeons.length})
           </button>
         </div>
-        <div className="grid gap-4 lg:grid-cols-[0.32fr_0.68fr] items-start">
-          <div className="space-y-3">
+        <div className="grid gap-6 lg:grid-cols-[400px_1fr] items-start">
+          <div className="space-y-4">
             <DungeonGenerator
               worldId={worldId}
               onGenerate={handleGenerate}
@@ -1489,7 +1489,7 @@ function DungeonsTab({
               </div>
             )}
           </div>
-          <div className="space-y-4">
+          <div className="space-y-4 min-h-[600px]">
             {previewDungeon ? (
               <div className="space-y-3 rounded-xl border border-gray-800 bg-gray-900/40 p-4">
                 <div className="flex items-center justify-between">

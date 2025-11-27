@@ -23,13 +23,19 @@ export default function DungeonDetailView({
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [showGrid, setShowGrid] = useState(true);
   const [showLabels, setShowLabels] = useState(false);
-  const [mapDisplayMode, setMapDisplayMode] = useState<'ai' | 'procedural'>('procedural');
-
   const currentLevel = dungeon.structure.levels[selectedLevelIndex];
-  const hasAIMap = Boolean(currentLevel.map_image_url);
+  const hasAIMap = Boolean(currentLevel?.map_image_url);
+  
+  // Default to AI map if available, otherwise procedural
+  const [mapDisplayMode, setMapDisplayMode] = useState<'ai' | 'procedural'>(hasAIMap ? 'ai' : 'procedural');
 
   useEffect(() => {
-    setMapDisplayMode(hasAIMap ? 'ai' : 'procedural');
+    // When level changes or AI map becomes available, prefer AI view
+    if (hasAIMap) {
+      setMapDisplayMode('ai');
+    } else {
+      setMapDisplayMode('procedural');
+    }
   }, [hasAIMap, selectedLevelIndex]);
   const featureLegend = useMemo(() => {
     const legends = new Map<FeatureIconKey, string>();
@@ -123,9 +129,9 @@ export default function DungeonDetailView({
       )}
 
       {/* Map and Details */}
-      <div className={`grid grid-cols-1 ${compact ? '' : 'lg:grid-cols-3'} gap-4`}>
+      <div className={`grid grid-cols-1 ${compact ? '' : 'lg:grid-cols-[1fr_320px]'} gap-4`}>
         {/* Map */}
-        <div className={compact ? '' : 'lg:col-span-2'}>
+        <div className={compact ? '' : 'min-w-0'}>
           {hasAIMap && (
             <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
               <span className="text-gray-400 uppercase tracking-wide">Map View</span>
@@ -158,23 +164,17 @@ export default function DungeonDetailView({
 
           {mapDisplayMode === 'ai' && hasAIMap ? (
             <div className="relative overflow-hidden rounded-2xl border border-gray-800 bg-gray-950/60">
-              <div
-                className="relative w-full"
-                style={{
-                  aspectRatio:
-                    currentLevel.grid.width && currentLevel.grid.height
-                      ? `${currentLevel.grid.width} / ${currentLevel.grid.height}`
-                      : undefined,
-                }}
-              >
-                <div className="relative h-full w-full p-3 md:p-6">
+              <div className="relative w-full min-h-[400px]">
+                <div className="relative h-full w-full p-3 md:p-6 flex items-center justify-center">
                   <Image
                     src={currentLevel.map_image_url as string}
                     alt={`${dungeon.identity.name} – AI-rendered map`}
-                    fill
+                    width={1200}
+                    height={1200}
                     priority={!compact}
-                    sizes="(max-width: 768px) 100vw, 66vw"
-                    className="object-contain"
+                    sizes="(max-width: 768px) 100vw, (max-width: 1200px) 80vw, 1200px"
+                    className="object-contain max-w-full max-h-full"
+                    unoptimized
                   />
                 </div>
               </div>

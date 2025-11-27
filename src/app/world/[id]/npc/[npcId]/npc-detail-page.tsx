@@ -1,6 +1,6 @@
 'use client';
 
-import { useState, useCallback } from 'react';
+import { useState, useCallback, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { useNPCDetail } from '@/features/npc/hooks/useNPCDetail';
@@ -42,10 +42,12 @@ export default function NPCDetailPage({ worldId, npcId }: NPCDetailPageProps) {
 
   const [activeTab, setActiveTab] = useState<TabType>('overview');
 
-  // Show errors via toast
-  if (error) {
-    showError(error);
-  }
+  // Show errors via toast (useEffect to avoid render-time side effects)
+  useEffect(() => {
+    if (error) {
+      showError(error);
+    }
+  }, [error, showError]);
 
   const handleRegeneratePortrait = useCallback(async () => {
     try {
