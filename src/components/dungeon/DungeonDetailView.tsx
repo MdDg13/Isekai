@@ -1,6 +1,7 @@
 "use client";
 
-import { useMemo, useState } from 'react';
+import Image from 'next/image';
+import { useEffect, useMemo, useState } from 'react';
 import DungeonMapView from './DungeonMapView';
 import type { DungeonDetail, Room, DungeonLevel, Door } from '../../types/dungeon';
 import { FeatureLegendIcon, FEATURE_ICON_LABELS, type FeatureIconKey } from './feature-icons';
@@ -22,8 +23,14 @@ export default function DungeonDetailView({
   const [selectedRoom, setSelectedRoom] = useState<Room | null>(null);
   const [showGrid, setShowGrid] = useState(true);
   const [showLabels, setShowLabels] = useState(false);
+  const [mapDisplayMode, setMapDisplayMode] = useState<'ai' | 'procedural'>('procedural');
 
   const currentLevel = dungeon.structure.levels[selectedLevelIndex];
+  const hasAIMap = Boolean(currentLevel.map_image_url);
+
+  useEffect(() => {
+    setMapDisplayMode(hasAIMap ? 'ai' : 'procedural');
+  }, [hasAIMap, selectedLevelIndex]);
   const featureLegend = useMemo(() => {
     const legends = new Map<FeatureIconKey, string>();
     currentLevel.rooms.forEach((room) => {
@@ -119,16 +126,104 @@ export default function DungeonDetailView({
       <div className={`grid grid-cols-1 ${compact ? '' : 'lg:grid-cols-3'} gap-4`}>
         {/* Map */}
         <div className={compact ? '' : 'lg:col-span-2'}>
-          <DungeonMapView
-            level={currentLevel}
-            cellSize={mapCellSize}
-            showGrid={showGrid}
-            showLabels={showLabels}
-            interactive={!compact}
-            onRoomClick={handleRoomClick}
-            dungeonType={dungeon.identity.type as 'dungeon' | 'cave' | 'ruin' | 'fortress' | 'tower' | 'temple' | 'lair'}
-            showControls={showControls}
-          />
+          {hasAIMap && (
+            <div className="mb-3 flex flex-wrap items-center gap-2 text-xs">
+              <span className="text-gray-400 uppercase tracking-wide">Map View</span>
+              <div className="flex gap-2">
+                <button
+                  type="button"
+                  onClick={() => setMapDisplayMode('ai')}
+                  className={`rounded-full px-3 py-1 font-medium ${
+                    mapDisplayMode === 'ai'
+                      ? 'bg-blue-600/80 text-white shadow-inner shadow-blue-500/30'
+                      : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  }`}
+                >
+                  AI Illustration
+                </button>
+                <button
+                  type="button"
+                  onClick={() => setMapDisplayMode('procedural')}
+                  className={`rounded-full px-3 py-1 font-medium ${
+                    mapDisplayMode === 'procedural'
+                      ? 'bg-blue-600/80 text-white shadow-inner shadow-blue-500/30'
+                      : 'bg-gray-800 text-gray-300 hover:bg-gray-700'
+                  }`}
+                >
+                  Procedural Layout
+                </button>
+              </div>
+            </div>
+          )}
+
+          {mapDisplayMode === 'ai' && hasAIMap ? (
+            <div className="relative overflow-hidden rounded-2xl border border-gray-800 bg-gray-950/60">
+              <div
+                className="relative w-full"
+                style={{
+                  aspectRatio:
+                    currentLevel.grid.width && currentLevel.grid.height
+                      ? `${currentLevel.grid.width} / ${currentLevel.grid.height}`
+                      : undefined,
+                }}
+              >
+                <div className="relative h-full w-full p-3 md:p-6">
+                  <Image
+                    src={currentLevel.map_image_url as string}
+                    alt={`${dungeon.identity.name} – AI-rendered map`}
+                    fill
+                    priority={!compact}
+                    sizes="(max-width: 768px) 100vw, 66vw"
+                    className="object-contain"
+                  />
+                </div>
+              </div>
+              <div className="flex flex-wrap items-center justify-between gap-3 border-t border-gray-800/80 px-4 py-2 text-xs text-gray-400">
+                <span>
+                  Rendered via Workers AI • {currentLevel.grid.width}×{currentLevel.grid.height} cells
+                </span>
+                <div className="flex items-center gap-2">
+                  <a
+                    href={currentLevel.map_image_url}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-blue-400 hover:text-blue-300"
+                  >
+                    Open full size ↗
+                  </a>
+                  <button
+                    type="button"
+                    onClick={() => setMapDisplayMode('procedural')}
+                    className="rounded border border-gray-700 px-2 py-1 text-gray-200 hover:bg-gray-800"
+                  >
+                    Show layout
+                  </button>
+                </div>
+              </div>
+            </div>
+          ) : (
+            <DungeonMapView
+              level={currentLevel}
+              cellSize={mapCellSize}
+              showGrid={showGrid}
+              showLabels={showLabels}
+              interactive={!compact}
+              onRoomClick={handleRoomClick}
+              dungeonType={
+                dungeon.identity.type as 'dungeon' | 'cave' | 'ruin' | 'fortress' | 'tower' | 'temple' | 'lair'
+              }
+              showControls={showControls}
+            />
+          )}
+          {hasAIMap ? (
+            <p className="mt-2 text-xs text-gray-500">
+              Switch between the AI illustration (ideal for sharing) and the procedural layout (best for editing).
+            </p>
+          ) : (
+            <p className="mt-2 text-xs text-amber-400">
+              AI illustration missing for this level. Falling back to procedural rendering.
+            </p>
+          )}
         </div>
 
         {/* Room List / Details */}
