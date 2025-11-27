@@ -110,8 +110,20 @@ export default function Home() {
 
     const handleMagicLink = async () => {
       setStatus('Completing sign-in...');
+      const params = new URLSearchParams(hash.replace(/^#/, ''));
+      const accessToken = params.get('access_token');
+      const refreshToken = params.get('refresh_token');
+
+      if (!accessToken || !refreshToken) {
+        setStatus('Sign-in failed: missing token data in magic link.');
+        return;
+      }
+
       try {
-        const { data, error } = await supabase.auth.getSessionFromUrl({ storeSession: true });
+        const { data, error } = await supabase.auth.setSession({
+          access_token: accessToken,
+          refresh_token: refreshToken,
+        });
         if (error) {
           throw error;
         }
@@ -120,12 +132,13 @@ export default function Home() {
           await loadWorlds();
           setStatus('Signed in!');
         }
-        // Remove the hash fragment so refreshes don't re-run this logic
-        const cleanUrl = window.location.pathname + window.location.search;
-        window.history.replaceState(window.history.state, '', cleanUrl);
       } catch (err) {
         console.error('Magic link completion failed:', err);
         setStatus(`Sign-in failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+        return;
+      } finally {
+        const cleanUrl = window.location.pathname + window.location.search;
+        window.history.replaceState(window.history.state, '', cleanUrl);
       }
     };
 
