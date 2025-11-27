@@ -74,8 +74,11 @@ export default function Home() {
   useEffect(() => {
     if (!supabase) return;
     
+    let isMounted = true;
+
     // Check for existing session
     supabase.auth.getSession().then(({ data: { session } }) => {
+      if (!isMounted) return;
       setUser(session?.user ?? null);
       if (session?.user) {
         loadWorlds();
@@ -83,7 +86,8 @@ export default function Home() {
     });
 
     // Listen for auth changes
-    supabase.auth.onAuthStateChange((_event, session) => {
+    const { data: authListener } = supabase.auth.onAuthStateChange((_event, session) => {
+      if (!isMounted) return;
       setUser(session?.user ?? null);
       if (session?.user) {
         loadWorlds();
@@ -91,6 +95,41 @@ export default function Home() {
         setWorlds([]);
       }
     });
+
+    return () => {
+      isMounted = false;
+      authListener?.subscription.unsubscribe();
+    };
+  }, [supabase, loadWorlds]);
+
+  useEffect(() => {
+    if (!supabase || typeof window === 'undefined') return;
+
+    const hash = window.location.hash;
+    if (!hash || !hash.includes('access_token')) return;
+
+    const handleMagicLink = async () => {
+      setStatus('Completing sign-in...');
+      try {
+        const { data, error } = await supabase.auth.getSessionFromUrl({ storeSession: true });
+        if (error) {
+          throw error;
+        }
+        setUser(data.session?.user ?? null);
+        if (data.session?.user) {
+          await loadWorlds();
+          setStatus('Signed in!');
+        }
+        // Remove the hash fragment so refreshes don't re-run this logic
+        const cleanUrl = window.location.pathname + window.location.search;
+        window.history.replaceState(window.history.state, '', cleanUrl);
+      } catch (err) {
+        console.error('Magic link completion failed:', err);
+        setStatus(`Sign-in failed: ${err instanceof Error ? err.message : 'Unknown error'}`);
+      }
+    };
+
+    void handleMagicLink();
   }, [supabase, loadWorlds]);
 
   const createWorld = async () => {
@@ -380,6 +419,12 @@ export default function Home() {
               placeholder="you@example.com"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === 'Enter') {
+                  e.preventDefault();
+                  void onSignIn();
+                }
+              }}
             />
             <button
               onClick={onSignIn}
